@@ -1,0 +1,29 @@
+insert into public.patologia (codigo, nombre, herencia) values
+  ('FABRY',   'Enfermedad de Fabry',                      'ligada_al_x'),
+  ('POMPE',   'Enfermedad de Pompe',                      'autosomica_recesiva'),
+  ('GAUCHER', 'Enfermedad de Gaucher',                    'autosomica_recesiva'),
+  ('MPS1',    'Mucopolisacaridosis tipo 1',               'autosomica_recesiva'),
+  ('MPS2',    'Mucopolisacaridosis tipo 2',               'ligada_al_x'),
+  ('ASMD',    'Déficit de esfingomielinasa ácida (ASMD)', 'autosomica_recesiva');
+
+insert into public.gen (simbolo) values
+  ('GLA'), ('GAA'), ('GBA1'), ('IDUA'), ('IDS'), ('SMPD1');
+
+insert into public.patologia_gen (patologia_codigo, gen_simbolo) values
+  ('FABRY', 'GLA'), ('POMPE', 'GAA'), ('GAUCHER', 'GBA1'),
+  ('MPS1', 'IDUA'), ('MPS2', 'IDS'), ('ASMD', 'SMPD1');
+
+-- Lista ACMG SF v3.3: 84 genes. GLA y GAA ya existen y solo se marcan.
+insert into public.gen (simbolo, es_hallazgo_secundario)
+select s, true from unnest(array[
+  'ABCD1','ACTA2','ACTC1','ACVRL1','APC','APOB','ATP7B','BAG3','BMPR1A','BRCA1',
+  'BRCA2','BTD','CACNA1S','CALM1','CALM2','CALM3','CASQ2','COL3A1','CYP27A1','DES',
+  'DSC2','DSG2','DSP','ENG','FBN1','FLNC','GAA','GLA','HFE','HNF1A',
+  'KCNH2','KCNQ1','LDLR','LMNA','MAX','MEN1','MLH1','MSH2','MSH6','MUTYH',
+  'MYBPC3','MYH11','MYH7','MYL2','MYL3','NF2','OTC','PALB2','PCSK9','PKP2',
+  'PLN','PMS2','PRKAG2','PTEN','RB1','RBM20','RET','RPE65','RYR1','RYR2',
+  'SCN5A','SDHAF2','SDHB','SDHC','SDHD','SMAD3','SMAD4','STK11','TGFBR1','TGFBR2',
+  'TMEM127','TMEM43','TNNC1','TNNI3','TNNT2','TP53','TPM1','TRDN','TSC1','TSC2',
+  'TTN','TTR','VHL','WT1'
+]) as s
+on conflict (simbolo) do update set es_hallazgo_secundario = true;
