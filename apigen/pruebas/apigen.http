@@ -1,0 +1,78 @@
+@base = https://edmrjmfjklwgazzztjcl.supabase.co/rest/v1
+@key = sb_publishable_Ogyld01ST0Gu8zlPBjLmow_9FYtNamo
+@patogenicaGAA = 4027
+@vusGAA = 1025528
+@patogenicaBRCA2 = 9317
+
+### 1. Genes de Pompe (200, ["GAA"])
+POST {{base}}/rpc/genes_por_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE"}
+
+### 2. Patología inexistente (400)
+POST {{base}}/rpc/genes_por_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "XYZ"}
+
+### 3. Genes de hallazgos secundarios (200, 84 filas)
+GET {{base}}/genes_hallazgos_secundarios?select=gen,condicion
+apikey: {{key}}
+Prefer: count=exact
+
+### 4. Primera página de variantes de GAA (200, Content-Range con el total)
+GET {{base}}/variantes?gen=eq.GAA&select=clinvar_id,nombre,clasificacion&order=nombre&limit=50&offset=0
+apikey: {{key}}
+Prefer: count=exact
+
+### 5. Buscar una variante de GAA por texto (200)
+GET {{base}}/variantes?gen=eq.GAA&nombre=ilike.*32-13T*&select=clinvar_id,nombre,clasificacion
+apikey: {{key}}
+
+### 6. Pompe con una variante patogénica de GAA (200, true)
+POST {{base}}/rpc/confirma_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["{{patogenicaGAA}}"]}
+
+### 7. Pompe con una variante de significado incierto (200, false)
+POST {{base}}/rpc/confirma_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["{{vusGAA}}"]}
+
+### 8. Variante inexistente (400)
+POST {{base}}/rpc/confirma_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["no-existe"]}
+
+### 9. Hallazgos secundarios (200, solo la de BRCA2)
+POST {{base}}/rpc/hallazgos_secundarios
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_variantes": ["{{patogenicaBRCA2}}", "{{vusGAA}}"]}
+
+### 10. Hallazgos secundarios excluyendo Pompe (200, la de GAA no aparece)
+POST {{base}}/rpc/hallazgos_secundarios
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_variantes": ["{{patogenicaBRCA2}}", "{{patogenicaGAA}}"], "p_excluir_patologia": "POMPE"}
+
+### 11. Intento de escritura (401 o 403, sin permiso)
+POST {{base}}/variante
+apikey: {{key}}
+Content-Type: application/json
+
+{"clinvar_id": "x", "gen_simbolo": "GAA", "nombre": "x", "clasificacion_clinvar": "x", "clasificacion": "vus", "es_patogenica": false}
+
+### 12. Sin clave (401)
+GET {{base}}/patologia
