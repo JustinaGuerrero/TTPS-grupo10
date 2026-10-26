@@ -1,9 +1,5 @@
 # Contrato: Apigen v0
 
-Módulo 5 del TP integrador de TTPS 2026, desarrollado por el grupo 10. Es la "API de bioinformática": dice qué genes estudiar para cada patología, cuáles son los genes de hallazgos secundarios y qué variantes conocidas tiene cada gen.
-
-> **Versión 0.** Puede cambiar hasta la presentación del 3/11. Cualquier cambio se avisa por Discord.
-
 Todos los endpoints son de **solo lectura**. Ningún grupo puede escribir ni borrar datos.
 
 ## Conexión
