@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apigen · demo</title>
+<style>
+  :root {
+    --fondo: #f4f6f9; --panel: #ffffff; --borde: #d8dee6; --texto: #1f2328; --suave: #5b6570;
+    --azul: #0b3d6e; --azul-claro: #e3edf7;
+    --pat: #b42318; --pat-bg: #fdecea; --prob: #b54708; --prob-bg: #fef0e2;
+    --vus: #6b5d00; --vus-bg: #fdf6d8; --ben: #1d6b3a; --ben-bg: #e5f5ea;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fondo); color: var(--texto); font-size: 15px; }
+  header { background: var(--azul); color: #fff; padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 19px; }
+  header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+  header label { font-size: 13px; }
+  header input { width: 120px; margin-left: 6px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  section { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 16px; min-width: 0; }
+  section.ancha { grid-column: 1 / -1; }
+  h2 { margin: 0 0 4px; font-size: 16px; color: var(--azul); }
+  .ayuda { margin: 0 0 12px; color: var(--suave); font-size: 13px; }
+  input, select, button { font: inherit; padding: 7px 9px; border: 1px solid var(--borde); border-radius: 6px; }
+  input, select { background: #fff; color: var(--texto); }
+  button { background: var(--azul); color: #fff; border-color: var(--azul); cursor: pointer; }
+  button.sec { background: #fff; color: var(--azul); }
+  button:disabled { opacity: .5; cursor: default; }
+  .fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .fila input { flex: 1; min-width: 120px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+  select { width: 100%; min-width: 0; }
+  th { color: var(--suave); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .patogenica { background: var(--pat-bg); color: var(--pat); }
+  .probablemente_patogenica { background: var(--prob-bg); color: var(--prob); }
+  .vus { background: var(--vus-bg); color: var(--vus); }
+  .benigna { background: var(--ben-bg); color: var(--ben); }
+  .grupo { background: var(--azul-claro); color: var(--azul); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; margin-bottom: 10px; }
+  .chip { background: var(--azul-claro); color: var(--azul); border-radius: 999px; padding: 4px 10px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; border: 0; }
+  .chip.quitar::after { content: "×"; font-weight: 700; }
+  .vacio { color: var(--suave); font-size: 13px; }
+  .error { color: var(--pat); background: var(--pat-bg); border-radius: 6px; padding: 8px 10px; font-size: 14px; margin-top: 8px; }
+  .ok { color: var(--ben); background: var(--ben-bg); border-radius: 6px; padding: 8px 10px; font-size: 14px; margin-top: 8px; }
+  .resultado { border-radius: 8px; padding: 12px 14px; margin-top: 12px; border: 1px solid var(--borde); }
+  .grande { font-size: 22px; font-weight: 700; }
+  .positivo { color: var(--pat); }
+  .negativo { color: var(--ben); }
+  .portador { color: var(--prob); }
+  .nota { margin-top: 6px; color: var(--suave); font-size: 13px; }
+  .reevaluar { margin-top: 8px; color: var(--pat); font-weight: 600; }
+  .pie { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; color: var(--suave); font-size: 13px; }
+  .lista-pat td:first-child { font-weight: 600; white-space: nowrap; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } section.ancha { grid-column: auto; } }
+  @media (max-width: 420px) { header input { width: 100px; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Apigen · demo</h1>
+    <p>Cliente de prueba de la API de bioinformática (módulo 5, grupo 10). Documentación: <a href="/docs" style="color:#fff">/docs</a></p>
+  </div>
+  <label>Grupo <input id="grupo" value="grupo10"></label>
+</header>
+
+<main>
+  <section>
+    <h2>Patologías</h2>
+    <p class="ayuda">Las 6 base y las que cargó el grupo. Tocá una para usarla en el diagnóstico.</p>
+    <table class="lista-pat"><tbody id="patologias"><tr><td class="vacio">Cargando…</td></tr></tbody></table>
+    <div id="patologias-error"></div>
+  </section>
+
+  <section>
+    <h2>Buscar gen</h2>
+    <p class="ayuda">Cualquiera de los ~20.000 genes. Se busca mientras escribís; tocá uno para ver sus variantes.</p>
+    <div class="fila"><input id="buscar-gen" placeholder="Por ejemplo: GA, BRCA, NAG" autocomplete="off"></div>
+    <div class="chips" id="genes"></div>
+  </section>
+
+  <section class="ancha">
+    <h2>Variantes de un gen</h2>
+    <p class="ayuda">Lo que ve el bioinformático en la pantalla P34. Agregá variantes al diagnóstico con +.</p>
+    <div class="fila">
+      <input id="var-gen" placeholder="Gen (GAA)" style="max-width:160px">
+      <input id="var-texto" placeholder="Buscar en el nombre (32-13)">
+      <button id="var-buscar">Buscar</button>
+    </div>
+    <table>
+      <thead><tr><th>Variante</th><th>Proteína</th><th>Clasificación</th><th></th></tr></thead>
+      <tbody id="variantes"><tr><td colspan="4" class="vacio">Elegí un gen.</td></tr></tbody>
+    </table>
+    <div class="pie">
+      <span id="var-total"></span>
+      <span><button class="sec" id="var-ant">Anterior</button> <button class="sec" id="var-sig">Siguiente</button></span>
+    </div>
+    <div id="variantes-error"></div>
+  </section>
+
+  <section>
+    <h2>Confirmar diagnóstico</h2>
+    <p class="ayuda">Como al finalizar un estudio: confirma la patología y busca hallazgos secundarios.</p>
+    <div class="fila"><select id="diag-patologia" style="flex:1"></select></div>
+    <div class="chips" id="diag-variantes"><span class="vacio">Sin variantes todavía.</span></div>
+    <div class="fila">
+      <input id="diag-nueva" placeholder="GAA:c.-32-13T>G o c.-32-13T>G">
+      <button class="sec" id="diag-agregar">Agregar</button>
+    </div>
+    <button id="diag-confirmar">Confirmar diagnóstico</button>
+    <div id="diag-resultado"></div>
+  </section>
+
+  <section>
+    <h2>Alta de patología</h2>
+    <p class="ayuda">La usa el gerente médico. Solo la ve el grupo que la carga.</p>
+    <div class="fila"><input id="alta-codigo" placeholder="Código (MPS3A)"></div>
+    <div class="fila"><input id="alta-nombre" placeholder="Nombre (Mucopolisacaridosis tipo 3A)"></div>
+    <div class="fila"><input id="alta-genes" placeholder="Genes separados por coma (NAGLU)"></div>
+    <div class="fila"><select id="alta-herencia">
+      <option value="autosomica_recesiva">Herencia recesiva</option>
+      <option value="autosomica_dominante">Herencia dominante</option>
+      <option value="ligada_al_x">Ligada al X</option>
+    </select></div>
+    <button id="alta-guardar">Guardar</button>
+    <div id="alta-resultado"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const grupo = () => $("grupo").value.trim() || null;
+const nombres = {patogenica: "Patogénica", probablemente_patogenica: "Prob. patogénica", vus: "VUS", benigna: "Benigna"};
+const badge = (c) => `<span class="badge ${esc(c)}">${esc(nombres[c] || c)}</span>`;
+const herencias = {autosomica_recesiva: "Recesiva", autosomica_dominante: "Dominante", ligada_al_x: "Ligada al X"};
+
+async function api(ruta, opciones = {}) {
+  const r = await fetch(ruta, {headers: {"Content-Type": "application/json"}, ...opciones});
+  const datos = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(datos.detail || `Error ${r.status}`);
+  return datos;
+}
+function mostrarError(id, e) { $(id).innerHTML = e ? `<div class="error">${esc(e.message || e)}</div>` : ""; }
+
+// Patologías
+async function cargarPatologias() {
+  mostrarError("patologias-error");
+  try {
+    const q = grupo() ? `?grupo=${encodeURIComponent(grupo())}` : "";
+    const lista = await api("/api/patologias" + q);
+    $("patologias").innerHTML = lista.map((p) => `
+      <tr data-codigo="${esc(p.codigo)}" style="cursor:pointer">
+        <td>${esc(p.codigo)}</td>
+        <td>${esc(p.nombre)} ${p.de_grupo ? '<span class="badge grupo">del grupo</span>' : ""}
+          <div class="nota">${esc(herencias[p.herencia] || p.herencia)}</div></td>
+        <td><code>${p.genes.map(esc).join(", ")}</code></td>
+      </tr>`).join("");
+    const sel = $("diag-patologia"), actual = sel.value;
+    sel.innerHTML = lista.map((p) => `<option value="${esc(p.codigo)}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join("");
+    if (actual) sel.value = actual;
+  } catch (e) { mostrarError("patologias-error", e); }
+}
+$("patologias").addEventListener("click", (ev) => {
+  const fila = ev.target.closest("tr[data-codigo]");
+  if (fila) $("diag-patologia").value = fila.dataset.codigo;
+});
+$("grupo").addEventListener("change", cargarPatologias);
+
+// Buscar gen
+let espera;
+$("buscar-gen").addEventListener("input", () => {
+  clearTimeout(espera);
+  espera = setTimeout(async () => {
+    const q = $("buscar-gen").value.trim();
+    if (!q) { $("genes").innerHTML = ""; return; }
+    try {
+      const genes = await api(`/api/genes?q=${encodeURIComponent(q)}`);
+      $("genes").innerHTML = genes.length
+        ? genes.map((g) => `<button class="chip" data-gen="${esc(g)}">${esc(g)}</button>`).join("")
+        : '<span class="vacio">Ningún gen empieza así.</span>';
+    } catch (e) { $("genes").innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+  }, 250);
+});
+$("genes").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-gen]");
+  if (!b) return;
+  $("var-gen").value = b.dataset.gen; $("var-texto").value = ""; pagina = 0; cargarVariantes();
+});
+
+// Variantes
+let pagina = 0, total = null;
+const TAM = 25;
+async function cargarVariantes() {
+  const gen = $("var-gen").value.trim();
+  if (!gen) return;
+  mostrarError("variantes-error");
+  try {
+    const q = encodeURIComponent($("var-texto").value.trim());
+    const d = await api(`/api/variantes?gen=${encodeURIComponent(gen)}&q=${q}&pagina=${pagina}&tamano=${TAM}`);
+    total = d.total;
+    $("variantes").innerHTML = d.variantes.length ? d.variantes.map((v) => `
+      <tr>
+        <td><code>${esc(v.id)}</code></td>
+        <td><code>${esc(v.proteina || "")}</code></td>
+        <td>${badge(v.clasificacion)}</td>
+        <td><button class="sec" data-agregar="${esc(v.id)}" title="Agregar al diagnóstico">+</button></td>
+      </tr>`).join("") : '<tr><td colspan="4" class="vacio">Sin variantes cargadas para esta búsqueda.</td></tr>';
+    const desde = total ? pagina * TAM + 1 : 0, hasta = Math.min((pagina + 1) * TAM, total || 0);
+    $("var-total").textContent = total != null ? `${desde}–${hasta} de ${total.toLocaleString("es-AR")}` : "";
+    $("var-ant").disabled = pagina === 0;
+    $("var-sig").disabled = total == null || (pagina + 1) * TAM >= total;
+  } catch (e) { mostrarError("variantes-error", e); }
+}
+$("var-buscar").addEventListener("click", () => { pagina = 0; cargarVariantes(); });
+$("var-texto").addEventListener("keydown", (e) => { if (e.key === "Enter") { pagina = 0; cargarVariantes(); } });
+$("var-gen").addEventListener("keydown", (e) => { if (e.key === "Enter") { pagina = 0; cargarVariantes(); } });
+$("var-ant").addEventListener("click", () => { if (pagina > 0) { pagina--; cargarVariantes(); } });
+$("var-sig").addEventListener("click", () => { pagina++; cargarVariantes(); });
+$("variantes").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-agregar]");
+  if (b) agregarVariante(b.dataset.agregar);
+});
+
+// Diagnóstico
+const elegidas = [];
+function pintarElegidas() {
+  $("diag-variantes").innerHTML = elegidas.length
+    ? elegidas.map((v, i) => `<button class="chip quitar" data-i="${i}" title="Quitar">${esc(v)}</button>`).join("")
+    : '<span class="vacio">Sin variantes todavía.</span>';
+}
+function agregarVariante(v) { v = v.trim(); if (v) { elegidas.push(v); pintarElegidas(); } }
+$("diag-variantes").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-i]");
+  if (b) { elegidas.splice(Number(b.dataset.i), 1); pintarElegidas(); }
+});
+$("diag-agregar").addEventListener("click", () => { agregarVariante($("diag-nueva").value); $("diag-nueva").value = ""; });
+$("diag-nueva").addEventListener("keydown", (e) => { if (e.key === "Enter") $("diag-agregar").click(); });
+$("diag-confirmar").addEventListener("click", async () => {
+  const caja = $("diag-resultado");
+  caja.innerHTML = '<p class="vacio">Consultando…</p>';
+  try {
+    const r = await api("/api/diagnostico", {method: "POST",
+      body: JSON.stringify({patologia: $("diag-patologia").value, variantes: elegidas, grupo: grupo()})});
+    const hall = r.hallazgos_secundarios.length ? `
+      <table><thead><tr><th>Hallazgo secundario</th><th>Condición</th><th>Herencia</th></tr></thead><tbody>
+      ${r.hallazgos_secundarios.map((h) => `<tr><td><code>${esc(h.variante)}</code>${h.copias > 1 ? ` ×${h.copias}` : ""}</td>
+        <td>${esc(h.condicion)}</td><td>${esc(h.herencia)}</td></tr>`).join("")}</tbody></table>`
+      : '<p class="vacio">Sin hallazgos secundarios.</p>';
+    const clase = r.resultado.toLowerCase();
+    caja.innerHTML = `<div class="resultado">
+      <div class="grande ${esc(clase)}">${esc(r.resultado)}</div>
+      <div class="vacio">${esc(r.patologia)} · gen ${esc(r.genes.join(", "))}</div>
+      ${clase === "portador" ? '<div class="nota">Una sola copia del gen afectada en una patología recesiva: no está enfermo, pero puede transmitirla.</div>' : ""}
+      ${r.reevaluar_en_un_anio ? '<div class="reevaluar">Sin diagnóstico por una VUS o probablemente patogénica: reevaluar en un año.</div>' : ""}
+      <div style="margin-top:10px">${hall}</div></div>`;
+  } catch (e) { caja.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+});
+
+// Alta de patología
+$("alta-guardar").addEventListener("click", async () => {
+  const caja = $("alta-resultado");
+  try {
+    const r = await api("/api/patologias", {method: "POST", body: JSON.stringify({
+      grupo: grupo() || "", codigo: $("alta-codigo").value.trim(), nombre: $("alta-nombre").value.trim(),
+      genes: $("alta-genes").value.split(",").map((g) => g.trim()).filter(Boolean),
+      herencia: $("alta-herencia").value})});
+    caja.innerHTML = `<div class="ok">Guardada: ${esc(r.codigo)} · ${esc(r.nombre)} · ${esc(r.genes.join(", "))}</div>`;
+    cargarPatologias();
+  } catch (e) { caja.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+});
+
+cargarPatologias();
+pintarElegidas();
+</script>
+</body>
+</html>

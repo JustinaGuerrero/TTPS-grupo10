@@ -1,78 +1,209 @@
+# Pruebas de Apigen v1. Se corren con REST Client (VS Code) o el cliente HTTP de IntelliJ.
+# Las variables ya están completas con variantes que existen en ClinVar (verificadas el 29/10). 0a a 0d sirven para buscar otras.
+
 @base = https://edmrjmfjklwgazzztjcl.supabase.co/rest/v1
 @key = sb_publishable_Ogyld01ST0Gu8zlPBjLmow_9FYtNamo
-@patogenicaGAA = 4027
-@vusGAA = 1025528
-@patogenicaBRCA2 = 9317
+@grupo = grupo10
+@patogenicaGAA = GAA:c.-32-13T>G
+@patogenicaGAA2 = GAA:c.525del
+@vusGAA = GAA:c.-32-13T>C
+@probPatogenicaGAA = GAA:c.-32-1G>C
+@patogenicaGLA = GLA:c.902G>A
+@patogenicaBRCA2 = BRCA2:c.5946del
+@patogenicaBTD1 = BTD:c.1552C>T
+@patogenicaBTD2 = BTD:c.1097G>A
 
-### 1. Genes de Pompe (200, ["GAA"])
+### 0a. Una probablemente patogénica de GAA (para @probPatogenicaGAA)
+GET {{base}}/variantes?gen=eq.GAA&clasificacion=eq.probablemente_patogenica&select=id&limit=1
+apikey: {{key}}
+
+### 0b. Dos patogénicas de BTD (para @patogenicaBTD1 y @patogenicaBTD2)
+GET {{base}}/variantes?gen=eq.BTD&clasificacion=eq.patogenica&select=id&limit=2
+apikey: {{key}}
+
+### 0c. Una patogénica de GLA (para @patogenicaGLA)
+GET {{base}}/variantes?gen=eq.GLA&clasificacion=eq.patogenica&select=id&limit=1
+apikey: {{key}}
+
+### 0d. Patogénicas de GAA (para revisar @patogenicaGAA y @patogenicaGAA2)
+GET {{base}}/variantes?gen=eq.GAA&clasificacion=eq.patogenica&select=id&limit=5
+apikey: {{key}}
+
+### 1. Buscar genes que empiezan con GA (200)
+GET {{base}}/gen?simbolo=ilike.GA*&select=simbolo&order=simbolo&limit=20
+apikey: {{key}}
+
+### 2. Listar patologías (200, las 6 base con su herencia)
+POST {{base}}/rpc/listar_patologias
+apikey: {{key}}
+Content-Type: application/json
+
+{}
+
+### 3. Genes de Pompe (200, ["GAA"])
 POST {{base}}/rpc/genes_por_patologia
 apikey: {{key}}
 Content-Type: application/json
 
 {"p_patologia": "POMPE"}
 
-### 2. Patología inexistente (400)
+### 4. Patología inexistente (400)
 POST {{base}}/rpc/genes_por_patologia
 apikey: {{key}}
 Content-Type: application/json
 
 {"p_patologia": "XYZ"}
 
-### 3. Genes de hallazgos secundarios (200, 84 filas)
-GET {{base}}/genes_hallazgos_secundarios?select=gen,condicion
+### 5. Genes de hallazgos secundarios (200, 84 filas)
+GET {{base}}/genes_hallazgos_secundarios?select=gen,condicion,herencia
 apikey: {{key}}
 Prefer: count=exact
 
-### 4. Primera página de variantes de GAA (200, Content-Range con el total)
-GET {{base}}/variantes?gen=eq.GAA&select=clinvar_id,nombre,clasificacion&order=nombre&limit=50&offset=0
+### 6. Primera página de variantes de GAA (200, el total en Content-Range)
+GET {{base}}/variantes?gen=eq.GAA&select=id,hgvs_c,proteina,clasificacion&order=hgvs_c&limit=50&offset=0
 apikey: {{key}}
 Prefer: count=exact
 
-### 5. Buscar una variante de GAA por texto (200)
-GET {{base}}/variantes?gen=eq.GAA&nombre=ilike.*32-13T*&select=clinvar_id,nombre,clasificacion
+### 7. Buscar variantes de GAA por texto (200)
+GET {{base}}/variantes?gen=eq.GAA&hgvs_c=ilike.*32-13*&select=id,clasificacion
 apikey: {{key}}
 
-### 6. Pompe con una variante patogénica de GAA (200, true)
+### 8. Pompe con una sola patogénica: es portador (200, "portador")
+POST {{base}}/rpc/resultado_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["{{patogenicaGAA}}"]}
+
+### 9. Pompe con una sola patogénica: no confirma (200, false)
 POST {{base}}/rpc/confirma_diagnostico
 apikey: {{key}}
 Content-Type: application/json
 
 {"p_patologia": "POMPE", "p_variantes": ["{{patogenicaGAA}}"]}
 
-### 7. Pompe con una variante de significado incierto (200, false)
+### 10. Pompe con dos patogénicas distintas, sin gen adelante (200, true)
 POST {{base}}/rpc/confirma_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["c.-32-13T>G", "c.525del"]}
+
+### 11. Pompe homocigota: la misma variante dos veces (200, "positivo")
+POST {{base}}/rpc/resultado_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["{{patogenicaGAA}}", "{{patogenicaGAA}}"]}
+
+### 12. Fabry está ligada al X: alcanza con una (200, "positivo")
+POST {{base}}/rpc/resultado_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "FABRY", "p_variantes": ["{{patogenicaGLA}}"]}
+
+### 13. Pompe con una probablemente patogénica (200, "negativo")
+POST {{base}}/rpc/resultado_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["{{probPatogenicaGAA}}"]}
+
+### 14. Pompe con una VUS (200, "negativo")
+POST {{base}}/rpc/resultado_diagnostico
 apikey: {{key}}
 Content-Type: application/json
 
 {"p_patologia": "POMPE", "p_variantes": ["{{vusGAA}}"]}
 
-### 8. Variante inexistente (400)
+### 15. Formato de variante inválido (400)
 POST {{base}}/rpc/confirma_diagnostico
 apikey: {{key}}
 Content-Type: application/json
 
-{"p_patologia": "POMPE", "p_variantes": ["no-existe"]}
+{"p_patologia": "POMPE", "p_variantes": ["4027"]}
 
-### 9. Hallazgos secundarios (200, solo la de BRCA2)
+### 16. Variante inexistente (400)
+POST {{base}}/rpc/confirma_diagnostico
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "POMPE", "p_variantes": ["GAA:c.99999A>G"]}
+
+### 17. Hallazgos secundarios excluyendo Pompe (200, solo la de BRCA2)
 POST {{base}}/rpc/hallazgos_secundarios
 apikey: {{key}}
 Content-Type: application/json
 
-{"p_variantes": ["{{patogenicaBRCA2}}", "{{vusGAA}}"]}
+{"p_variantes": ["{{patogenicaBRCA2}}", "{{patogenicaGAA}}", "{{vusGAA}}"], "p_excluir_patologias": ["POMPE"]}
 
-### 10. Hallazgos secundarios excluyendo Pompe (200, la de GAA no aparece)
+### 18. Hallazgos secundarios sin gen (400)
 POST {{base}}/rpc/hallazgos_secundarios
 apikey: {{key}}
 Content-Type: application/json
 
-{"p_variantes": ["{{patogenicaBRCA2}}", "{{patogenicaGAA}}"], "p_excluir_patologia": "POMPE"}
+{"p_variantes": ["c.5946del"]}
 
-### 11. Intento de escritura (401 o 403, sin permiso)
+### 19. Gen recesivo con una sola variante: portador, no se informa (200, [])
+POST {{base}}/rpc/hallazgos_secundarios
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_variantes": ["{{patogenicaBTD1}}"]}
+
+### 20. Gen recesivo con dos variantes (200, 2 filas)
+POST {{base}}/rpc/hallazgos_secundarios
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_variantes": ["{{patogenicaBTD1}}", "{{patogenicaBTD2}}"]}
+
+### 21. Gen recesivo homocigota (200, 1 fila, copias 2)
+POST {{base}}/rpc/hallazgos_secundarios
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_variantes": ["{{patogenicaBTD1}}", "{{patogenicaBTD1}}"]}
+
+### 22. Alta de una patología del grupo (200)
+POST {{base}}/rpc/alta_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_grupo_id": "{{grupo}}", "p_codigo": "MPS3A", "p_nombre": "Mucopolisacaridosis tipo 3A", "p_genes": ["NAGLU"], "p_herencia": "autosomica_recesiva"}
+
+### 23. Genes de la patología nueva, desde el mismo grupo (200, ["NAGLU"])
+POST {{base}}/rpc/genes_por_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "MPS3A", "p_grupo_id": "{{grupo}}"}
+
+### 24. La patología nueva no existe para otro grupo (400)
+POST {{base}}/rpc/genes_por_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_patologia": "MPS3A", "p_grupo_id": "otro_grupo"}
+
+### 25. No se puede pisar una patología base (400)
+POST {{base}}/rpc/alta_patologia
+apikey: {{key}}
+Content-Type: application/json
+
+{"p_grupo_id": "{{grupo}}", "p_codigo": "POMPE", "p_nombre": "x", "p_genes": ["GAA"]}
+
+### 26. Intento de escribir directo en una tabla (401 o 403)
 POST {{base}}/variante
 apikey: {{key}}
 Content-Type: application/json
 
-{"clinvar_id": "x", "gen_simbolo": "GAA", "nombre": "x", "clasificacion_clinvar": "x", "clasificacion": "vus", "es_patogenica": false}
+{"clinvar_id": 1, "gen_simbolo": "GAA", "transcripto": "NM_1.1", "hgvs_c": "c.1A>T", "clasificacion_id": 1}
 
-### 12. Sin clave (401)
+### 27. Sin clave (401)
 GET {{base}}/patologia
+
+### 28. Clave enviada como Bearer, sin header apikey (401)
+GET {{base}}/patologia
+Authorization: Bearer {{key}}

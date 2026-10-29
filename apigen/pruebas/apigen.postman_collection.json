@@ -1,0 +1,1199 @@
+{
+  "info": {
+    "_postman_id": "c857cee0-420c-451e-ba02-668b74df850f",
+    "name": "Apigen v1 (grupo 10)",
+    "description": "Pruebas de Apigen. Las variables ya están completas con variantes reales de ClinVar; 0a a 0d sirven para buscar otras.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base",
+      "value": "https://edmrjmfjklwgazzztjcl.supabase.co/rest/v1"
+    },
+    {
+      "key": "key",
+      "value": "sb_publishable_Ogyld01ST0Gu8zlPBjLmow_9FYtNamo"
+    },
+    {
+      "key": "grupo",
+      "value": "grupo10"
+    },
+    {
+      "key": "patogenicaGAA",
+      "value": "GAA:c.-32-13T>G"
+    },
+    {
+      "key": "patogenicaGAA2",
+      "value": "GAA:c.525del"
+    },
+    {
+      "key": "vusGAA",
+      "value": "GAA:c.-32-13T>C"
+    },
+    {
+      "key": "probPatogenicaGAA",
+      "value": "GAA:c.-32-1G>C"
+    },
+    {
+      "key": "patogenicaGLA",
+      "value": "GLA:c.902G>A"
+    },
+    {
+      "key": "patogenicaBRCA2",
+      "value": "BRCA2:c.5946del"
+    },
+    {
+      "key": "patogenicaBTD1",
+      "value": "BTD:c.1552C>T"
+    },
+    {
+      "key": "patogenicaBTD2",
+      "value": "BTD:c.1097G>A"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Preparación",
+      "item": [
+        {
+          "name": "0a. Una probablemente patogénica de GAA (para @probPatogenicaGAA)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.probablemente_patogenica&select=id&limit=1"
+            }
+          }
+        },
+        {
+          "name": "0b. Dos patogénicas de BTD (para @patogenicaBTD1 y @patogenicaBTD2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.BTD&clasificacion=eq.patogenica&select=id&limit=2"
+            }
+          }
+        },
+        {
+          "name": "0c. Una patogénica de GLA (para @patogenicaGLA)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.GLA&clasificacion=eq.patogenica&select=id&limit=1"
+            }
+          }
+        },
+        {
+          "name": "0d. Patogénicas de GAA (para revisar @patogenicaGAA y @patogenicaGAA2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.patogenica&select=id&limit=5"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pruebas",
+      "item": [
+        {
+          "name": "1. Buscar genes que empiezan con GA (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/gen?simbolo=ilike.GA%2A&select=simbolo&order=simbolo&limit=20"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Listar patologías (200, las 6 base con su herencia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/listar_patologias"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Genes de Pompe (200, [\"GAA\"])",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/genes_por_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Patología inexistente (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/genes_por_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"XYZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Genes de hallazgos secundarios (200, 84 filas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "count=exact"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/genes_hallazgos_secundarios?select=gen,condicion,herencia"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 o 206', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 206]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. Primera página de variantes de GAA (200, el total en Content-Range)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "count=exact"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.GAA&select=id,hgvs_c,proteina,clasificacion&order=hgvs_c&limit=50&offset=0"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 o 206', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 206]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Buscar variantes de GAA por texto (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variantes?gen=eq.GAA&hgvs_c=ilike.%2A32-13%2A&select=id,clasificacion"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8. Pompe con una sola patogénica: es portador (200, \"portador\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/resultado_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9. Pompe con una sola patogénica: no confirma (200, false)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/confirma_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10. Pompe con dos patogénicas distintas, sin gen adelante (200, true)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/confirma_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"c.-32-13T>G\",\n    \"c.525del\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11. Pompe homocigota: la misma variante dos veces (200, \"positivo\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/resultado_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\",\n    \"{{patogenicaGAA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12. Fabry está ligada al X: alcanza con una (200, \"positivo\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/resultado_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"FABRY\",\n  \"p_variantes\": [\n    \"{{patogenicaGLA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13. Pompe con una probablemente patogénica (200, \"negativo\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/resultado_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{probPatogenicaGAA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14. Pompe con una VUS (200, \"negativo\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/resultado_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{vusGAA}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15. Formato de variante inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/confirma_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"4027\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16. Variante inexistente (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/confirma_diagnostico"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"GAA:c.99999A>G\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17. Hallazgos secundarios excluyendo Pompe (200, solo la de BRCA2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/hallazgos_secundarios"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBRCA2}}\",\n    \"{{patogenicaGAA}}\",\n    \"{{vusGAA}}\"\n  ],\n  \"p_excluir_patologias\": [\n    \"POMPE\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18. Hallazgos secundarios sin gen (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/hallazgos_secundarios"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_variantes\": [\n    \"c.5946del\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19. Gen recesivo con una sola variante: portador, no se informa (200, [])",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/hallazgos_secundarios"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "20. Gen recesivo con dos variantes (200, 2 filas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/hallazgos_secundarios"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\",\n    \"{{patogenicaBTD2}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21. Gen recesivo homocigota (200, 1 fila, copias 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/hallazgos_secundarios"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\",\n    \"{{patogenicaBTD1}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22. Alta de una patología del grupo (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/alta_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_grupo_id\": \"{{grupo}}\",\n  \"p_codigo\": \"MPS3A\",\n  \"p_nombre\": \"Mucopolisacaridosis tipo 3A\",\n  \"p_genes\": [\n    \"NAGLU\"\n  ],\n  \"p_herencia\": \"autosomica_recesiva\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "23. Genes de la patología nueva, desde el mismo grupo (200, [\"NAGLU\"])",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/genes_por_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"MPS3A\",\n  \"p_grupo_id\": \"{{grupo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24. La patología nueva no existe para otro grupo (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/genes_por_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_patologia\": \"MPS3A\",\n  \"p_grupo_id\": \"otro_grupo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "25. No se puede pisar una patología base (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/rpc/alta_patologia"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_grupo_id\": \"{{grupo}}\",\n  \"p_codigo\": \"POMPE\",\n  \"p_nombre\": \"x\",\n  \"p_genes\": [\n    \"GAA\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26. Intento de escribir directo en una tabla (401 o 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/variante"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clinvar_id\": 1,\n  \"gen_simbolo\": \"GAA\",\n  \"transcripto\": \"NM_1.1\",\n  \"hgvs_c\": \"c.1A>T\",\n  \"clasificacion_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 o 403', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "27. Sin clave (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/patologia"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "28. Clave enviada como Bearer, sin header apikey (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base}}/patologia"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
