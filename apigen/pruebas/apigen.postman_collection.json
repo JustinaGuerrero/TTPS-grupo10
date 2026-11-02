@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "c857cee0-420c-451e-ba02-668b74df850f",
+    "_postman_id": "e9fb129e-0339-4151-be7a-d7d992aed163",
     "name": "Apigen v1 (grupo 10)",
     "description": "Pruebas de Apigen. Las variables ya están completas con variantes reales de ClinVar; 0a a 0d sirven para buscar otras.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -65,9 +65,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.probablemente_patogenica&select=id&limit=1"
-            }
+            "url": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.probablemente_patogenica&select=id&limit=1"
           }
         },
         {
@@ -80,9 +78,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.BTD&clasificacion=eq.patogenica&select=id&limit=2"
-            }
+            "url": "{{base}}/variantes?gen=eq.BTD&clasificacion=eq.patogenica&select=id&limit=2"
           }
         },
         {
@@ -95,9 +91,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.GLA&clasificacion=eq.patogenica&select=id&limit=1"
-            }
+            "url": "{{base}}/variantes?gen=eq.GLA&clasificacion=eq.patogenica&select=id&limit=1"
           }
         },
         {
@@ -110,9 +104,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.patogenica&select=id&limit=5"
-            }
+            "url": "{{base}}/variantes?gen=eq.GAA&clasificacion=eq.patogenica&select=id&limit=5"
           }
         }
       ]
@@ -130,9 +122,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/gen?simbolo=ilike.GA%2A&select=simbolo&order=simbolo&limit=20"
-            }
+            "url": "{{base}}/gen?simbolo=ilike.GA%2A&select=simbolo&order=simbolo&limit=20"
           },
           "event": [
             {
@@ -142,6 +132,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Incluye GAA\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.map(x => x.simbolo)).to.include('GAA');",
                   "});"
                 ]
               }
@@ -162,9 +156,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/listar_patologias"
-            },
+            "url": "{{base}}/rpc/listar_patologias",
             "body": {
               "mode": "raw",
               "raw": "{}",
@@ -183,6 +175,11 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Las 6 base, con herencia\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.filter(x => !x.de_grupo).length).to.eql(6);",
+                  "  d.forEach(x => pm.expect(x).to.have.property('herencia'));",
                   "});"
                 ]
               }
@@ -203,9 +200,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/genes_por_patologia"
-            },
+            "url": "{{base}}/rpc/genes_por_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\"\n}",
@@ -224,6 +219,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve [\\\"GAA\\\"]\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql(['GAA']);",
                   "});"
                 ]
               }
@@ -244,9 +243,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/genes_por_patologia"
-            },
+            "url": "{{base}}/rpc/genes_por_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"XYZ\"\n}",
@@ -265,6 +262,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: Patología inexistente\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('Patología inexistente');",
                   "});"
                 ]
               }
@@ -285,9 +286,7 @@
                 "value": "count=exact"
               }
             ],
-            "url": {
-              "raw": "{{base}}/genes_hallazgos_secundarios?select=gen,condicion,herencia"
-            }
+            "url": "{{base}}/genes_hallazgos_secundarios?select=gen,condicion,herencia"
           },
           "event": [
             {
@@ -297,6 +296,10 @@
                 "exec": [
                   "pm.test('Responde 200 o 206', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200, 206]);",
+                  "});",
+                  "pm.test(\"Son 84 genes\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.length).to.eql(84);",
                   "});"
                 ]
               }
@@ -317,9 +320,7 @@
                 "value": "count=exact"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.GAA&select=id,hgvs_c,proteina,clasificacion&order=hgvs_c&limit=50&offset=0"
-            }
+            "url": "{{base}}/variantes?gen=eq.GAA&select=id,hgvs_c,proteina,clasificacion&order=hgvs_c&limit=50&offset=0"
           },
           "event": [
             {
@@ -329,6 +330,11 @@
                 "exec": [
                   "pm.test('Responde 200 o 206', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200, 206]);",
+                  "});",
+                  "pm.test(\"Trae el total y solo variantes de GAA\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(pm.response.headers.get('Content-Range')).to.match(/\\/\\d+$/);",
+                  "  d.forEach(x => pm.expect(x.id).to.match(/^GAA:/));",
                   "});"
                 ]
               }
@@ -345,9 +351,7 @@
                 "value": "{{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variantes?gen=eq.GAA&hgvs_c=ilike.%2A32-13%2A&select=id,clasificacion"
-            }
+            "url": "{{base}}/variantes?gen=eq.GAA&hgvs_c=ilike.%2A32-13%2A&select=id,clasificacion"
           },
           "event": [
             {
@@ -357,6 +361,11 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Solo variantes con 32-13\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.length).to.be.above(0);",
+                  "  d.forEach(x => pm.expect(x.id).to.include('32-13'));",
                   "});"
                 ]
               }
@@ -377,9 +386,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/resultado_diagnostico"
-            },
+            "url": "{{base}}/rpc/resultado_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\"\n  ]\n}",
@@ -398,6 +405,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve \\\"portador\\\"\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql('portador');",
                   "});"
                 ]
               }
@@ -418,9 +429,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/confirma_diagnostico"
-            },
+            "url": "{{base}}/rpc/confirma_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\"\n  ]\n}",
@@ -439,6 +448,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve false\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql(false);",
                   "});"
                 ]
               }
@@ -459,9 +472,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/confirma_diagnostico"
-            },
+            "url": "{{base}}/rpc/confirma_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"c.-32-13T>G\",\n    \"c.525del\"\n  ]\n}",
@@ -480,6 +491,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve true\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql(true);",
                   "});"
                 ]
               }
@@ -500,9 +515,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/resultado_diagnostico"
-            },
+            "url": "{{base}}/rpc/resultado_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{patogenicaGAA}}\",\n    \"{{patogenicaGAA}}\"\n  ]\n}",
@@ -521,6 +534,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve \\\"positivo\\\"\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql('positivo');",
                   "});"
                 ]
               }
@@ -541,9 +558,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/resultado_diagnostico"
-            },
+            "url": "{{base}}/rpc/resultado_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"FABRY\",\n  \"p_variantes\": [\n    \"{{patogenicaGLA}}\"\n  ]\n}",
@@ -562,6 +577,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve \\\"positivo\\\"\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql('positivo');",
                   "});"
                 ]
               }
@@ -582,9 +601,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/resultado_diagnostico"
-            },
+            "url": "{{base}}/rpc/resultado_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{probPatogenicaGAA}}\"\n  ]\n}",
@@ -603,6 +620,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve \\\"negativo\\\"\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql('negativo');",
                   "});"
                 ]
               }
@@ -623,9 +644,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/resultado_diagnostico"
-            },
+            "url": "{{base}}/rpc/resultado_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"{{vusGAA}}\"\n  ]\n}",
@@ -644,6 +663,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve \\\"negativo\\\"\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql('negativo');",
                   "});"
                 ]
               }
@@ -664,9 +687,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/confirma_diagnostico"
-            },
+            "url": "{{base}}/rpc/confirma_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"4027\"\n  ]\n}",
@@ -685,6 +706,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: Formato de variante inválido\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('Formato de variante inválido');",
                   "});"
                 ]
               }
@@ -705,9 +730,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/confirma_diagnostico"
-            },
+            "url": "{{base}}/rpc/confirma_diagnostico",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"POMPE\",\n  \"p_variantes\": [\n    \"GAA:c.99999A>G\"\n  ]\n}",
@@ -726,6 +749,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: Variante inexistente\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('Variante inexistente');",
                   "});"
                 ]
               }
@@ -746,9 +773,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/hallazgos_secundarios"
-            },
+            "url": "{{base}}/rpc/hallazgos_secundarios",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBRCA2}}\",\n    \"{{patogenicaGAA}}\",\n    \"{{vusGAA}}\"\n  ],\n  \"p_excluir_patologias\": [\n    \"POMPE\"\n  ]\n}",
@@ -767,6 +792,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Solo BRCA2\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.map(x => x.gen)).to.eql(['BRCA2']);",
                   "});"
                 ]
               }
@@ -787,9 +816,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/hallazgos_secundarios"
-            },
+            "url": "{{base}}/rpc/hallazgos_secundarios",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_variantes\": [\n    \"c.5946del\"\n  ]\n}",
@@ -808,6 +835,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: Indicá el gen\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('Indicá el gen');",
                   "});"
                 ]
               }
@@ -828,9 +859,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/hallazgos_secundarios"
-            },
+            "url": "{{base}}/rpc/hallazgos_secundarios",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\"\n  ]\n}",
@@ -849,6 +878,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Lista vacía\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql([]);",
                   "});"
                 ]
               }
@@ -869,9 +902,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/hallazgos_secundarios"
-            },
+            "url": "{{base}}/rpc/hallazgos_secundarios",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\",\n    \"{{patogenicaBTD2}}\"\n  ]\n}",
@@ -890,6 +921,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Dos filas\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.length).to.eql(2);",
                   "});"
                 ]
               }
@@ -910,9 +945,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/hallazgos_secundarios"
-            },
+            "url": "{{base}}/rpc/hallazgos_secundarios",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_variantes\": [\n    \"{{patogenicaBTD1}}\",\n    \"{{patogenicaBTD1}}\"\n  ]\n}",
@@ -931,6 +964,11 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Una fila con 2 copias\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.length).to.eql(1);",
+                  "  pm.expect(d[0].copias).to.eql(2);",
                   "});"
                 ]
               }
@@ -951,9 +989,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/alta_patologia"
-            },
+            "url": "{{base}}/rpc/alta_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_grupo_id\": \"{{grupo}}\",\n  \"p_codigo\": \"MPS3A\",\n  \"p_nombre\": \"Mucopolisacaridosis tipo 3A\",\n  \"p_genes\": [\n    \"NAGLU\"\n  ],\n  \"p_herencia\": \"autosomica_recesiva\"\n}",
@@ -972,6 +1008,11 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Guardó NAGLU, recesiva\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d[0].genes).to.eql(['NAGLU']);",
+                  "  pm.expect(d[0].herencia).to.eql('autosomica_recesiva');",
                   "});"
                 ]
               }
@@ -992,9 +1033,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/genes_por_patologia"
-            },
+            "url": "{{base}}/rpc/genes_por_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"MPS3A\",\n  \"p_grupo_id\": \"{{grupo}}\"\n}",
@@ -1013,6 +1052,10 @@
                 "exec": [
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "pm.test(\"Devuelve [\\\"NAGLU\\\"]\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.eql(['NAGLU']);",
                   "});"
                 ]
               }
@@ -1033,9 +1076,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/genes_por_patologia"
-            },
+            "url": "{{base}}/rpc/genes_por_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_patologia\": \"MPS3A\",\n  \"p_grupo_id\": \"otro_grupo\"\n}",
@@ -1054,6 +1095,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: Patología inexistente\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('Patología inexistente');",
                   "});"
                 ]
               }
@@ -1074,9 +1119,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/rpc/alta_patologia"
-            },
+            "url": "{{base}}/rpc/alta_patologia",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"p_grupo_id\": \"{{grupo}}\",\n  \"p_codigo\": \"POMPE\",\n  \"p_nombre\": \"x\",\n  \"p_genes\": [\n    \"GAA\"\n  ]\n}",
@@ -1095,6 +1138,10 @@
                 "exec": [
                   "pm.test('Responde 400', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([400]);",
+                  "});",
+                  "pm.test(\"Mensaje: patología base\", function () {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d.message).to.include('patología base');",
                   "});"
                 ]
               }
@@ -1115,9 +1162,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base}}/variante"
-            },
+            "url": "{{base}}/variante",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"clinvar_id\": 1,\n  \"gen_simbolo\": \"GAA\",\n  \"transcripto\": \"NM_1.1\",\n  \"hgvs_c\": \"c.1A>T\",\n  \"clasificacion_id\": 1\n}",
@@ -1147,9 +1192,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{base}}/patologia"
-            }
+            "url": "{{base}}/patologia"
           },
           "event": [
             {
@@ -1175,9 +1218,7 @@
                 "value": "Bearer {{key}}"
               }
             ],
-            "url": {
-              "raw": "{{base}}/patologia"
-            }
+            "url": "{{base}}/patologia"
           },
           "event": [
             {
