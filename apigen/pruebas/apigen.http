@@ -33,7 +33,7 @@ apikey: {{key}}
 GET {{base}}/gen?simbolo=ilike.GA*&select=simbolo&order=simbolo&limit=20
 apikey: {{key}}
 
-### 2. Listar patologías (200, las 6 base con su herencia)
+### 2. Listar patologías (200, las 5 base con su herencia)
 POST {{base}}/rpc/listar_patologias
 apikey: {{key}}
 Content-Type: application/json

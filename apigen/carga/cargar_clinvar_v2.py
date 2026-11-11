@@ -9,10 +9,11 @@ Uso, desde apigen/carga:
 Qué carga:
   - En la tabla gen: todos los genes de ClinVar con variantes de un solo gen (unos 20.000).
   - En la tabla variante, para los genes de Apigen, todas las clasificaciones. Son los genes
-    de las 6 patologías base, los 84 de la lista ACMG y los de las patologías que dieron de
+    de las 5 patologías base, los 84 de la lista ACMG y los de las patologías que dieron de
     alta los grupos.
   - Para el resto del genoma, solo patogénicas y probablemente patogénicas, para no pasarse
     de los 500 MB del plan gratuito. Con --con-vus suma las VUS; con --todas carga todo.
+  - Nunca carga los genes de GENES_EXCLUIDOS, ni el gen ni sus variantes.
 
 Si un grupo da de alta una patología con genes nuevos, vuelvan a correr --cargar: suma
 las VUS y benignas de esos genes sin duplicar nada.
@@ -35,6 +36,7 @@ from supabase import create_client
 # NM_000152.5(GAA):c.-32-13T>G (p.Leu12fs)  ->  transcripto, gen, hgvs_c, proteína
 NOMBRE = re.compile(r"^(NM_\d+\.\d+)\(([^)]+)\):(c\.\S+)(?:\s+\((p\.[^)]*)\))?")
 CLASES_RESTO_DEL_GENOMA = {"patogenica", "probablemente_patogenica"}
+GENES_EXCLUIDOS = {"IDS"}  # MPS 2: se sacó de Apigen (pedido del profesor, 10/11)
 BYTES_POR_FILA = 180    # estimado por variante, contando los índices
 LIMITE_MB = 400         # margen dentro de los 500 MB del plan gratuito
 LOTE_GENES = 1000
@@ -55,7 +57,7 @@ def leer_filas(ruta):
             if r["Assembly"] != "GRCh38":
                 continue
             gen = r["GeneSymbol"]
-            if not gen or gen == "-" or ";" in gen:
+            if not gen or gen == "-" or ";" in gen or gen in GENES_EXCLUIDOS:
                 continue
             m = NOMBRE.match(r["Name"])
             if not m:

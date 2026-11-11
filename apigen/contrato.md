@@ -12,7 +12,8 @@ Todos los endpoints son de lectura, salvo `alta_patologia`, que permite que el g
 | "Probablemente patogénica" | Contaba como patogénica | No diagnostica: es una clasificación aparte |
 | Genes recesivos en hallazgos secundarios | Alcanzaba una variante | Hacen falta dos |
 | Genes | 88 | Todos los genes con variantes en ClinVar (unos 20.000), con búsqueda |
-| Patologías | Solo las 6 base | Las 6 base más las que cargue cada grupo |
+| Patologías | Solo las 6 base | Las 5 base más las que cargue cada grupo |
+| Mucopolisacaridosis tipo 2 (`MPS2`) | Era una de las patologías base | Se sacó, junto con el gen IDS y todas sus variantes (pedido del profesor). Ahora da `Patología inexistente` |
 | `hallazgos_secundarios` | `p_excluir_patologia` (texto) | `p_excluir_patologias` (lista) |
 | Diagnóstico de patologías recesivas | Alcanzaba una variante | Con una sola es **portador**: hacen falta las dos copias del gen |
 | Resultado del diagnóstico | Solo `true` o `false` | También `positivo`, `portador` o `negativo` (endpoint nuevo) |
@@ -57,7 +58,6 @@ En los GET, lo que va después del `?` son filtros: cambien `GA*` o `GAA` por lo
 | `POMPE` | Enfermedad de Pompe | GAA | Recesiva | Las dos copias del gen |
 | `GAUCHER` | Enfermedad de Gaucher | GBA1 | Recesiva | Las dos copias del gen |
 | `MPS1` | Mucopolisacaridosis tipo 1 | IDUA | Recesiva | Las dos copias del gen |
-| `MPS2` | Mucopolisacaridosis tipo 2 | IDS | Ligada al X | Una variante patogénica |
 | `ASMD` | Déficit de esfingomielinasa ácida | SMPD1 | Recesiva | Las dos copias del gen |
 
 **Portador.** En una patología recesiva, si hay una sola variante patogénica en el gen, la persona es portadora: no está enferma, pero puede transmitirla a su descendencia. Para confirmar hacen falta las dos copias afectadas: dos variantes patogénicas distintas en el gen, o la misma repetida (homocigota).
@@ -92,7 +92,7 @@ Si un mismo nombre corresponde a dos variantes con clasificaciones distintas, la
 
 ### Grupo
 
-Las patologías que carga un grupo solo las ve ese grupo. Para usarlas, manden `p_grupo_id` con un texto fijo que identifique a su grupo, por ejemplo `"grupo3"`. Es opcional: sin él, solo existen las 6 base.
+Las patologías que carga un grupo solo las ve ese grupo. Para usarlas, manden `p_grupo_id` con un texto fijo que identifique a su grupo, por ejemplo `"grupo3"`. Es opcional: sin él, solo existen las 5 base.
 
 ## Endpoints
 
@@ -114,7 +114,7 @@ Para la búsqueda mientras el médico escribe. `ilike` no distingue mayúsculas 
 {"p_grupo_id": "grupo3"}
 ```
 
-Respuesta 200: las 6 base y las del grupo.
+Respuesta 200: las 5 base y las del grupo.
 
 ```json
 [{"codigo": "ASMD", "nombre": "Déficit de esfingomielinasa ácida (ASMD)", "herencia": "autosomica_recesiva", "genes": ["SMPD1"], "de_grupo": false}, ...]
@@ -163,7 +163,7 @@ Con el header `Prefer: count=exact`, el total viene en `Content-Range` (por ejem
 
 Otros campos disponibles: `gen`, `transcripto`, `clasificacion_clinvar` (el valor original) y `clinvar_id`.
 
-**Qué variantes hay:** de los genes de Apigen (las 6 patologías base, los 84 ACMG y los de las patologías que cargó cada grupo) están todas las clasificaciones. Del resto del genoma, solo las `patogenica` y `probablemente_patogenica`, porque con todas no entra en los 500 MB del plan gratuito. Si un grupo da de alta una patología con genes nuevos, volvemos a cargar y esos genes pasan a tener todas sus variantes.
+**Qué variantes hay:** de los genes de Apigen (las 5 patologías base, los 84 ACMG y los de las patologías que cargó cada grupo) están todas las clasificaciones. Del resto del genoma, solo las `patogenica` y `probablemente_patogenica`, porque con todas no entra en los 500 MB del plan gratuito. Si un grupo da de alta una patología con genes nuevos, volvemos a cargar y esos genes pasan a tener todas sus variantes.
 
 **Paginen siempre:** hay genes con miles de variantes y Supabase devuelve como máximo 1000 filas por pedido. Filtren siempre por `gen`.
 
@@ -178,7 +178,7 @@ Otros campos disponibles: `gen`, `transcripto`, `clasificacion_clinvar` (el valo
 Devuelve `true` si las variantes `patogenica` en un gen de esa patología alcanzan según su herencia:
 
 - **Recesiva** (Pompe, Gaucher, MPS 1, ASMD): hacen falta las dos copias del gen. Dos variantes patogénicas distintas en el mismo gen, o la misma repetida (homocigota). Con una sola es **portador**, y devuelve `false`.
-- **Ligada al X** (Fabry, MPS 2) o **dominante**: alcanza con una.
+- **Ligada al X** (Fabry) o **dominante**: alcanza con una.
 
 Respuesta 200:
 
@@ -279,7 +279,7 @@ Los errores 400 tienen siempre esta forma, y el texto para mostrar está en `mes
 
 - En HFE, ACMG solo informa los homocigotos de `c.845G>A`, y en TTN solo las variantes truncantes. Apigen aplica la regla general de cada gen.
 - En los genes `ligada_x` (GLA, OTC y ABCD1) alcanza con una variante. En mujeres, ACMG pide dos, pero Apigen no conoce el sexo del paciente.
-- Lo mismo en Fabry y MPS 2: una variante confirma, sin importar el sexo.
+- Lo mismo en Fabry: una variante confirma, sin importar el sexo.
 - Del resto del genoma (genes que no son de ninguna patología ni ACMG) no se cargan las VUS ni las benignas. Una VUS de esos genes da `Variante inexistente`.
 - Con dos variantes distintas en un gen recesivo, Apigen asume que están en copias distintas del gen. Confirmarlo requiere estudiar a los padres, y eso queda fuera de Apigen.
 

@@ -143,7 +143,7 @@
           ]
         },
         {
-          "name": "2. Listar patologías (200, las 6 base con su herencia)",
+          "name": "2. Listar patologías (200, las 5 base con su herencia)",
           "request": {
             "method": "POST",
             "header": [
@@ -176,9 +176,9 @@
                   "pm.test('Responde 200', function () {",
                   "  pm.expect(pm.response.code).to.be.oneOf([200]);",
                   "});",
-                  "pm.test(\"Las 6 base, con herencia\", function () {",
+                  "pm.test(\"Las 5 base, con herencia\", function () {",
                   "  const d = pm.response.json();",
-                  "  pm.expect(d.filter(x => !x.de_grupo).length).to.eql(6);",
+                  "  pm.expect(d.filter(x => !x.de_grupo).length).to.eql(5);",
                   "  d.forEach(x => pm.expect(x).to.have.property('herencia'));",
                   "});"
                 ]

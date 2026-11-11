@@ -46,7 +46,7 @@ async def apigen(metodo, ruta, *, json=None, params=None, headers=None):
 
 
 # ---------------------------------------------------------------- patologías
-@app.get("/api/patologias", tags=["Patologías"], summary="Las 6 base y las del grupo")
+@app.get("/api/patologias", tags=["Patologías"], summary="Las 5 base y las del grupo")
 async def patologias(grupo: str | None = None):
     r = await apigen("POST", "/rpc/listar_patologias", json={"p_grupo_id": grupo})
     return r.json()
