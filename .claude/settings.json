@@ -1,0 +1,26 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(poetry install)",
+            "Bash(poetry run pytest *)",
+            "Bash(poetry run flask *)",
+            "Bash(git status)",
+            "Bash(git diff *)",
+            "Bash(git log *)",
+            "Bash(gh issue view *)"
+        ],
+        "ask": [
+            "Bash(poetry add *)",
+            "Bash(git push *)",
+            "Bash(gh pr create *)",
+            "Edit(./sistema/supabase/migrations/**)"
+        ],
+        "deny": [
+            "Read(**/.env)",
+            "Edit(**/.env)",
+            "Bash(cat *.env)",
+            "Bash(npx supabase db *)",
+            "Bash(git push --force *)"
+        ]
+    }
+}
