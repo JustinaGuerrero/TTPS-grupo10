@@ -6,6 +6,7 @@ apigen/ es nuestra API de bioinformática (módulo 5): no se modifica desde el s
 ## Stack
 - Python 3.12 + Poetry · Flask 3, MVC con Jinja2 · SQLAlchemy 2 + Flask-SQLAlchemy-Lite + psycopg 3
 - PostgreSQL en Supabase: el esquema se define SOLO con migraciones en sistema/supabase/migrations
+- El proyecto Supabase del sistema es radpjgwkrzqtkczxcvxz (el del MCP en .mcp.json). Apigen usa otro proyecto: no tocarlo.
 - Bootstrap 5 servido localmente · pytest
 
 ## Comandos (desde sistema/)
