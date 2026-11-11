@@ -3,3 +3,4 @@ node_modules/
 apigen/carga/*.gz
 __pycache__/
 .venv/
+.claude/settings.local.json
