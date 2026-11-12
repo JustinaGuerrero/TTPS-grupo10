@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 
+from src.core import database
 from src.web import errores
 from src.web.config import CONFIGS
 from src.web.controllers import inicio
@@ -20,7 +21,7 @@ def create_app(env: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(CONFIGS[env]())
 
-    # Sesión 3: base de datos (Flask-SQLAlchemy-Lite).
+    database.init_app(app)
     # Sesión 4: Flask-Session y comando `flask seeds`.
     # Sesión 6: Flask-Mail.
 
