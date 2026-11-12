@@ -4,7 +4,7 @@ Nov 12, 2026
 
 # Introducción
 
-El modelo tiene 38 tablas: las 2 de la migración inicial (`roles` y `usuarios`), que se respetan tal cual, y 36 nuevas que salen de los símbolos de [lel.md](lel.md) y de los episodios de [escenarios.md](escenarios.md). Es el esquema de referencia para que las migraciones de cada escenario no choquen entre sí. Este documento no crea migraciones: cada tabla la crea la migración del primer escenario que la necesita (ver [Orden sugerido de las migraciones](#orden-sugerido-de-las-migraciones)).
+El modelo tiene 39 tablas: las 2 de la migración inicial (`roles` y `usuarios`), que se respetan tal cual, y 37 nuevas que salen de los símbolos de [lel.md](lel.md) y de los episodios de [escenarios.md](escenarios.md). Es el esquema de referencia para que las migraciones de cada escenario no choquen entre sí. Este documento no crea migraciones: cada tabla la crea la migración del primer escenario que la necesita (ver [Orden sugerido de las migraciones](#orden-sugerido-de-las-migraciones)).
 
 Convenciones usadas:
 
@@ -12,6 +12,7 @@ Convenciones usadas:
 - Clave primaria `id bigint generated always as identity`, como en `usuarios`. Hay tres excepciones: los perfiles de rol usan `usuario_id` como clave primaria (relación 1:1 con `usuarios`), las tablas intermedias usan una clave compuesta y los catálogos con código natural usan `codigo text`.
 - Las claves foráneas se llaman `<entidad>_id`. Las que apuntan a un usuario llevan el nombre del rol (`medico_tratante_id`, `bioinformatico_id`) o terminan en `_por` cuando registran quién hizo la acción (`emitido_por`). La base no controla el rol del usuario referenciado: lo controla core.
 - Fechas en `timestamptz` con sufijo `_en` (`creado_en`, `tomada_en`). Un `_en` nulo significa que eso todavía no pasó.
+- Toda columna es `not null`, salvo tres casos: los `_en`, `_path` y `_por` de cosas que pasan después de crear la fila, las columnas que la descripción marca como nulas u opcionales, y las del diagrama con cardinalidad `|o`. Las migraciones tienen que respetar esto.
 - Estados y valores cerrados en `text` con un `check (… in (…))`. En Python, el enum de cada estado es la fuente para el código.
 - Importes en USD con `numeric(10,2)`, porcentajes con `numeric(5,2)` y coordenadas con `numeric(9,6)`.
 - Los archivos (PDF, audio, datos crudos, Excel) van a Supabase Storage en un bucket privado. La tabla guarda la ruta en una columna `*_path`.
@@ -22,7 +23,7 @@ Convenciones usadas:
 
 # Diagrama entidad-relación
 
-El diagrama muestra las entidades y sus relaciones; los atributos están en la tabla de cada entidad. Para que se pueda leer, no se dibujan las claves foráneas de auditoría (`*_por`).
+El diagrama muestra las entidades y sus relaciones; los atributos están en la tabla de cada entidad. Para que se pueda leer, no se dibujan las claves foráneas de auditoría (`*_por`), salvo `cupones.generado_por`, que es la relación del gerente médico con sus cupones (E37).
 
 ```mermaid
 erDiagram
@@ -53,20 +54,22 @@ erDiagram
     pacientes ||--o{ familiares : "informa"
     familiares ||--o{ familiar_sintomas : "presenta"
     terminos_snomed ||--o{ familiar_sintomas : "codifica"
-    patologias |o--o{ familiares : "diagnosticada"
+    familiares ||--o{ familiar_patologias : "tiene diagnóstico"
+    patologias ||--o{ familiar_patologias : "diagnosticada en"
     patologias ||--|{ patologia_sintomas : "se valida con"
     terminos_snomed ||--o{ patologia_sintomas : "codifica"
 
     %% Estudio y análisis
-    pacientes ||--o{ estudios : "historial"
+    pacientes ||--o| estudios : "estudio"
     medicos ||--o{ estudios : "da de alta"
     estudios ||--|{ historial_estados : "registra"
+    usuarios |o--o{ historial_estados : "cambia"
+    estudios |o--o{ notificaciones : "origina"
     estudios ||--|{ analisis : "se analiza en"
     usuarios |o--o{ analisis : "toma (bioinformático)"
     analisis ||--o{ analisis_patologias : "evalúa"
     patologias ||--o{ analisis_patologias : "evaluada en"
     analisis ||--|{ analisis_genes : "pide"
-    patologias |o--o{ analisis_genes : "aporta"
     analisis ||--o{ variantes_encontradas : "registra"
 
     %% Presupuesto, pagos y cupones
@@ -89,6 +92,7 @@ erDiagram
     turnos_extraccion ||--o| muestras : "produce"
     estudios ||--o{ muestras : "tiene"
     centros_extraccion |o--o{ mensajes_bot : "envía"
+    estudios |o--o{ mensajes_bot : "informa"
     transportistas ||--o{ ordenes_del_dia : "recorre"
     ordenes_del_dia ||--|{ paradas_orden_del_dia : "visita"
     centros_extraccion ||--o{ paradas_orden_del_dia : "es visitado"
@@ -168,7 +172,7 @@ Perfil 1:1 de los usuarios con rol `transportista`. Hay un transportista por pro
 |---|---|---|---|
 | usuario_id | bigint | PK, FK → usuarios | |
 | provincia_id | bigint | UK, FK → provincias | El único valor permite un transportista por provincia |
-| latitud | numeric(9,6) | | Última ubicación informada durante el recorrido (E25) |
+| latitud | numeric(9,6) | | Última ubicación informada durante el recorrido (E25). Nula hasta el primer informe |
 | longitud | numeric(9,6) | | |
 | ubicacion_en | timestamptz | | Cuándo informó esa ubicación |
 
@@ -374,8 +378,9 @@ Una fila por cada patología que el médico tratante sospecha en el paciente. Ca
 | paciente_id | bigint | FK → pacientes | |
 | parentesco | text | | Padre, madre, hermano… (lista cerrada en la vista) |
 | nombre | text | | |
-| patologia_diagnosticada_id | bigint | FK → patologias | Nula si no tiene diagnóstico. Sirve para validar la sospecha familiar (supuesto O2) |
 | creado_en | timestamptz | | |
+
+Los diagnósticos del familiar van en `familiar_patologias`.
 
 **Escenarios:** E09.
 
@@ -390,6 +395,19 @@ Una fila por cada patología que el médico tratante sospecha en el paciente. Ca
 
 **Escenarios:** E09.
 
+## familiar_patologias
+
+**LEL:** Familiar ("si ya tiene diagnóstico de alguna patología lisosomal").
+
+Patologías lisosomales con las que ya está diagnosticado el familiar. Un familiar puede tener más de una, o ninguna. Es un dato que informa el médico tratante: el diagnóstico pudo hacerse fuera del sistema, así que no apunta a un estudio. Sirve para validar la sospecha familiar (supuesto O2).
+
+| Atributo | Tipo | Clave | Descripción |
+|---|---|---|---|
+| familiar_id | bigint | PK, FK → familiares | |
+| patologia_id | bigint | PK, FK → patologias | |
+
+**Escenarios:** E08, E09.
+
 # 4. Estudio y análisis
 
 ## estudios
@@ -400,10 +418,9 @@ Una fila por cada patología que el médico tratante sospecha en el paciente. Ca
 |---|---|---|---|
 | id | bigint | PK | |
 | codigo | text | UK | Código legible (por ejemplo `EX-2026-00042`). Figura en la orden de extracción, en el mensaje al bot y en el CCB |
-| paciente_id | bigint | FK → pacientes | |
+| paciente_id | bigint | UK, FK → pacientes | Un solo estudio por paciente, porque el ADN no cambia (observación O20) |
 | medico_tratante_id | bigint | FK → medicos | Quien lo dio de alta |
 | estado | text | | Uno de los 16 códigos de la tabla siguiente. Lo cambia solo `cambiar_estado()` |
-| evalua_hallazgos_secundarios | boolean | | |
 | pompe_urgente | boolean | | Se calcula en el alta: diagnóstico presuntivo con Pompe y paciente menor de 4 meses |
 | datos_crudos_path | text | | Archivo del laboratorio de secuenciación (E32). El reanálisis usa el mismo |
 | datos_crudos_cargados_en | timestamptz | | |
@@ -412,6 +429,8 @@ Una fila por cada patología que el médico tratante sospecha en el paciente. Ca
 | actualizado_en | timestamptz | | |
 
 **Índices:** `estado`, para las listas por estado de cada rol.
+
+Cada paciente tiene un solo estudio. Una sospecha nueva se resuelve con un reanálisis del mismo estudio (E12), y una muestra que no sirve, con una nueva extracción dentro del mismo estudio (E27). El historial de estudios (E11) muestra ese estudio con todos sus análisis: el inicial y cada reanálisis, con su resultado.
 
 **Escenarios:** E10–E12, E32, y todos los que cambian el estado.
 
@@ -468,21 +487,29 @@ Cada vuelta de análisis del exoma. El análisis inicial se crea junto con el es
 | estudio_id | bigint | FK → estudios | |
 | numero | smallint | | 1 para el inicial; 2, 3… para los reanálisis |
 | tipo | text | | `inicial` o `reanalisis` |
+| evalua_hallazgos_secundarios | boolean | | Lo indica el médico tratante en el alta (E10 ep. 4) y de nuevo en cada reanálisis |
 | solicitado_por | bigint | FK → usuarios | Médico tratante |
 | solicitado_en | timestamptz | | |
 | disponible_en | timestamptz | | Entrada a En área de bioinformática: carga de los datos crudos o pedido de reanálisis. Ordena la lista de pendientes |
 | bioinformatico_id | bigint | FK → usuarios | Quien lo tomó (E33). Nulo mientras está libre |
 | tomado_en | timestamptz | | |
 | finalizado_en | timestamptz | | |
-| resultado | text | | `positivo`, `portador` o `negativo`. Es el peor de los resultados de `analisis_patologias` |
+| resultado | text | | `positivo`, `portador` o `negativo`. Nulo hasta finalizar. Se calcula como se explica debajo de la tabla |
 | resultado_path | text | | PDF del resultado con la plantilla del laboratorio (E35) |
-| fecha_reevaluacion | date | | Un año después, si solo hay variantes VUS o probablemente patogénicas (pedido del PO, según el contrato de Apigen) |
+| fecha_reevaluacion | date | | Nula salvo que corresponda: un año después, si solo hay variantes VUS o probablemente patogénicas (pedido del PO, según el contrato de Apigen) |
 
 **Restricciones:**
 
 - Único (`estudio_id`, `numero`).
 - Un solo análisis abierto por estudio: índice único sobre `estudio_id` donde `finalizado_en is null`.
 - Para tomar un estudio, core actualiza con `where bioinformatico_id is null`: si dos bioinformáticos lo toman a la vez, solo uno lo logra (E33).
+
+**Resultado del análisis (E35):** es el peor de dos resultados, en el orden positivo, portador, negativo:
+
+- El de cada patología de `analisis_patologias`, que da Apigen (endpoint 7).
+- El de los genes que el médico tratante agregó a mano (`analisis_genes.agregado_a_mano`), en el alta (E10 ep. 3) o en un reanálisis por genes (E12 ep. 3). Apigen no puede evaluarlos porque su endpoint necesita una patología, así que core aplica la regla de E35 ep. 1: `positivo` si hay al menos una variante `patogenica` en esos genes y `negativo` si no. Sin la herencia no se puede decir `portador` (observación O19).
+
+Un reanálisis solo por genes deja `analisis_patologias` vacía, y su resultado sale únicamente de la segunda regla.
 
 **Lista de pendientes (E33):** análisis con `disponible_en` cargado y sin `bioinformatico_id`, ordenados por `estudios.pompe_urgente` descendente y después por `disponible_en`.
 
@@ -492,7 +519,7 @@ Cada vuelta de análisis del exoma. El análisis inicial se crea junto con el es
 
 **LEL:** Diagnóstico presuntivo, Patología lisosomal.
 
-Patologías que evalúa un análisis. En el inicial son una copia del diagnóstico presuntivo del paciente; en un reanálisis, la patología nueva.
+Patologías que evalúa un análisis. En el inicial son una copia del diagnóstico presuntivo del paciente; en un reanálisis, la patología nueva, o ninguna si el reanálisis es solo por genes.
 
 | Atributo | Tipo | Clave | Descripción |
 |---|---|---|---|
@@ -506,15 +533,15 @@ Patologías que evalúa un análisis. En el inicial son una copia del diagnósti
 
 **LEL:** Gen.
 
-Genes que se evalúan en un análisis. El catálogo de genes es de Apigen, así que se guarda solo el símbolo.
+Genes que se evalúan en un análisis: los que devuelve Apigen para las patologías de `analisis_patologias` y los que agrega el médico tratante. El catálogo de genes y la relación patología–gen son de Apigen, así que se guarda solo el símbolo pedido, sin la patología que lo aportó.
 
 | Atributo | Tipo | Clave | Descripción |
 |---|---|---|---|
 | analisis_id | bigint | PK, FK → analisis | |
 | gen_simbolo | text | PK | Por ejemplo `GAA` |
-| patologia_id | bigint | FK → patologias | Patología que aportó el gen. Nula si el médico tratante lo agregó a mano |
+| agregado_a_mano | boolean | | `true` si lo agregó el médico tratante y no lo devolvió Apigen para ninguna patología del análisis (E10 ep. 3, E12 ep. 3) |
 
-Los 84 genes de hallazgos secundarios no se guardan: se piden a Apigen cuando el estudio tiene `evalua_hallazgos_secundarios`. El presupuesto cuenta los genes del análisis inicial.
+Los 84 genes de hallazgos secundarios no se guardan: se piden a Apigen cuando el análisis tiene `evalua_hallazgos_secundarios`. El presupuesto cuenta los genes del análisis inicial.
 
 **Escenarios:** E10, E12, E13, E34.
 
@@ -568,12 +595,14 @@ Pedido de cobertura de un estudio a la obra social del paciente.
 | obra_social_codigo | text | FK → obras_sociales | |
 | porcentaje | numeric(5,2) | | Porcentaje de la API en el momento de elegirla |
 | estado | text | | `pendiente`, `autorizada` o `rechazada` |
-| importe_cubierto_usd | numeric(10,2) | | Total del presupuesto por el porcentaje, al autorizar |
+| importe_cubierto_usd | numeric(10,2) | | Total del presupuesto por el porcentaje. Nulo hasta autorizar |
 | solicitada_en | timestamptz | | |
 | respondida_en | timestamptz | | Última respuesta de la obra social |
 | respondida_por | bigint | FK → usuarios | Administrativo que la registró |
 
-**Escenarios:** E16–E18.
+**Cobertura parcial (supuesto O3):** si la obra social autoriza menos del 100 %, `coberturas.estado` pasa a `autorizada`, pero el estudio sigue en Pendiente de autorización hasta que el paciente paga la diferencia (E14). Recién con ese pago pasa a Habilitado para turno, que es una transición válida del LEL. Mientras tanto, la vista del paciente distingue "falta pagar la diferencia" por `coberturas.estado = 'autorizada'` (observación O18).
+
+**Escenarios:** E14, E16–E18.
 
 ## demandas_reautorizacion
 
@@ -604,7 +633,7 @@ La nueva respuesta de la obra social se guarda en `coberturas` y en `historial_e
 | descuento_usd | numeric(10,2) | | Por defecto 0 |
 | pagado_en | timestamptz | | |
 
-**Restricciones:** único (`estudio_id`, `tipo`): un solo pago de cada tipo, sin cuotas. Con cobertura parcial (supuesto O3) hay un pago de obra social y otro particular por la diferencia. El estudio pasa a Habilitado para turno cuando los pagos y el descuento cubren el total del presupuesto.
+**Restricciones:** único (`estudio_id`, `tipo`): un solo pago de cada tipo, sin cuotas. Con cobertura parcial (supuesto O3) hay un pago de obra social y otro particular por la diferencia, que el paciente hace con el estudio todavía en Pendiente de autorización (ver `coberturas`). El estudio pasa a Habilitado para turno cuando los pagos y el descuento cubren el total del presupuesto.
 
 **Escenarios:** E14, E15, E17.
 
@@ -621,9 +650,9 @@ La nueva respuesta de la obra social se guarda en `coberturas` y en `historial_e
 | estado | text | | `vigente` o `utilizado`. Copia del módulo de cupones, que es el que manda |
 | generado_por | bigint | FK → usuarios | Gerente médico |
 | generado_en | timestamptz | | |
-| medico_tratante_id | bigint | FK → medicos | A quién se lo asignó el gerente médico |
+| medico_tratante_id | bigint | FK → medicos | A quién se lo asignó el gerente médico. Nulo hasta asignarlo |
 | asignado_a_medico_en | timestamptz | | |
-| paciente_id | bigint | FK → pacientes | A quién se lo asignó el médico tratante |
+| paciente_id | bigint | FK → pacientes | A quién se lo asignó el médico tratante. Nulo hasta asignarlo |
 | asignado_a_paciente_en | timestamptz | | |
 | utilizado_en | timestamptz | | |
 
@@ -640,16 +669,24 @@ Un asiento por cada operación económica. Las filas solo se insertan: nunca se 
 | Atributo | Tipo | Clave | Descripción |
 |---|---|---|---|
 | id | bigint | PK | |
-| tipo | text | | `pago_particular`, `cobertura_obra_social`, `descuento_cupon` o `cobro_obra_social` |
+| tipo | text | | `presupuesto_emitido`, `pago_particular`, `cobertura_obra_social`, `descuento_cupon` o `cobro_obra_social` |
 | estudio_id | bigint | FK → estudios | Desde el estudio se llega al paciente |
-| pago_id | bigint | FK → pagos | Pago que originó el asiento. En el descuento, el pago que usó el cupón |
-| obra_social_codigo | text | FK → obras_sociales | Solo en los asientos de cobertura y de cobro |
+| pago_id | bigint | FK → pagos | Pago que originó el asiento. En el descuento, el pago que usó el cupón. Nulo en `presupuesto_emitido` |
+| obra_social_codigo | text | FK → obras_sociales | Solo en los asientos de cobertura y de cobro; nulo en los demás |
 | importe_usd | numeric(10,2) | | Siempre positivo; el tipo indica el sentido |
 | creado_en | timestamptz | | |
 
-Consultas del tablero (E41): la caja es la suma de `pago_particular` y `cobro_obra_social`; la deuda de cada obra social es su `cobertura_obra_social` menos su `cobro_obra_social`. El tipo `cobro_obra_social` queda previsto, pero ningún escenario lo registra todavía (observación O16).
+**Restricciones:** un `check` exige `obra_social_codigo` en `cobertura_obra_social` y `cobro_obra_social` y lo prohíbe en los demás tipos. Otro exige `pago_id` en todos los tipos salvo `presupuesto_emitido` y `cobro_obra_social`. Y `importe_usd > 0`.
 
-**Escenarios:** E14, E17, E41.
+El asiento `presupuesto_emitido` es el cargo: lo que el estudio cuesta. Se registra al emitir el presupuesto (E13), por el total del presupuesto.
+
+Consultas del tablero (E41):
+
+- **Caja:** suma de `pago_particular` y `cobro_obra_social`.
+- **Deuda de cada obra social:** su `cobertura_obra_social` menos su `cobro_obra_social`. El tipo `cobro_obra_social` queda previsto, pero ningún escenario lo registra todavía (observación O16).
+- **Deuda de cada paciente:** por cada estudio, `presupuesto_emitido` menos `pago_particular`, `descuento_cupon` y `cobertura_obra_social`. Es mayor a cero mientras el estudio está Presupuestado o falta pagar la diferencia de una cobertura parcial.
+
+**Escenarios:** E13, E14, E17, E41.
 
 # 6. Turnos, extracción y logística
 
@@ -694,7 +731,7 @@ Cada mensaje que recibe el bot. Permite procesar cada mensaje una sola vez y rev
 | estudio_id | bigint | FK → estudios | Nulo si el código no se reconoció |
 | recibido_en | timestamptz | | |
 | procesado_en | timestamptz | | |
-| error | text | | Motivo, si no se pudo procesar |
+| error | text | | Motivo, si no se pudo procesar. Nulo si se procesó bien |
 
 **Escenarios:** E22.
 
@@ -711,7 +748,7 @@ Un estudio tiene una muestra por cada extracción: una nueva extracción (E27) a
 | turno_id | bigint | UK, FK → turnos_extraccion | Turno en el que se tomó |
 | tomada_en | timestamptz | | Llegada del mensaje al bot (E22) |
 | orden_del_dia_id | bigint | FK → ordenes_del_dia | Orden con la que la retiró el transportista (E24). Sirve para ubicarla en el mapa (E25) |
-| volumen_ml | numeric(4,1) | | Se registra al llegar al laboratorio central (supuesto O4) |
+| volumen_ml | numeric(4,1) | | Se registra al llegar al laboratorio central (supuesto O4). Nulo hasta entonces |
 | volumen_registrado_por | bigint | FK → usuarios | Administrativo |
 | volumen_registrado_en | timestamptz | | |
 | sample_set_id | bigint | FK → sample_sets | Nulo hasta que entra en un sample set |
@@ -766,15 +803,18 @@ Un estudio tiene una muestra por cada extracción: una nueva extracción (E27) a
 | ccb_path | text | | Excel con los pacientes del sample set (E29) |
 | autorizacion_path | text | | PDF de autorización del Ministerio de Salud |
 | autorizado_en | timestamptz | | |
-| retiro_programado_para | timestamptz | | Día y hora hábiles del retiro (E30) |
+| retiro_programado_para | timestamptz | | Día y hora hábiles del retiro (E30). Nulo hasta programarlo |
+| retiro_programado_en | timestamptz | | Cuándo el administrativo programó el retiro |
 | retiro_programado_por | bigint | FK → usuarios | Administrativo |
-| token_retiro | text | UK | Parte secreta y aleatoria de la URL que invoca FedEx (E31) |
+| token_retiro | text | UK | Parte secreta y aleatoria de la URL que invoca FedEx (E31). Nulo hasta programar el retiro |
 | despachado_en | timestamptz | | |
 
 **Restricciones:**
 
 - Un solo sample set en armado: índice único sobre `(true)` donde `estado = 'en_armado'`.
 - Core controla el máximo de 10 muestras y el cierre anticipado por un Pompe urgente.
+
+Los estados del sample set siguen siempre el mismo orden, así que no hace falta un historial aparte: cada estado tiene la fecha en que empezó. En armado empieza en `creado_en`, Cerrado en `cerrado_en`, Pendiente de retiro en `autorizado_en`, Retiro programado en `retiro_programado_en` y Despachado en `despachado_en`. Con esas fechas, el tablero mide cuánto tiempo pasa en cada estado.
 
 El CCB y el PDF de autorización se asocian a cada estudio a través de sus muestras (E29).
 
@@ -839,7 +879,7 @@ Cada tabla la crea completa, según este documento, la migración del primer esc
 | 2 | Columnas nuevas de `usuarios`, `medicos`, `medico_especialidades`, `transportistas`, `dispositivos_confiables`, `codigos_verificacion` | E01, E03, E04 |
 | 3 | `notificaciones` | Sesión 6 de la guía |
 | 4 | `patologias`, `patologia_sintomas` | E36 |
-| 5 | `pacientes`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares`, `familiar_sintomas` | Sesión 5 de la guía, E06 |
+| 5 | `pacientes`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares`, `familiar_sintomas`, `familiar_patologias` | Sesión 5 de la guía, E06 |
 | 6 | `estudios`, `historial_estados`, `analisis`, `analisis_patologias`, `analisis_genes` | Sesión 5 de la guía, E10 |
 | 7 | `cupones`, `presupuestos`, `coberturas`, `demandas_reautorizacion`, `pagos`, `asientos_financieros` | E13–E18, E37 |
 | 8 | `centros_extraccion`, `turnos_extraccion`, `mensajes_bot` | E19–E22 |
@@ -861,4 +901,7 @@ Salen de armar el modelo y siguen la numeración de las observaciones O1–O9. E
 | O14 | **Edad del Pompe urgente.** No se sabe en qué momento se mide la edad de "menor de 4 meses". | Se mide al dar de alta el estudio y la marca no cambia después, para no perder la prioridad a mitad del circuito. |
 | O15 | **Tipo de descuento del cupón.** No se sabe si el descuento es un porcentaje o un monto fijo, y todavía no está el contrato del módulo de cupones en `docs/apis/`. | Porcentaje. Se ajusta con el contrato del módulo. |
 | O16 | **Cobro a la obra social.** Ningún escenario registra la transferencia de la obra social, así que la deuda por obra social nunca bajaría. | El asiento `cobro_obra_social` queda previsto. Falta definir quién lo registra y cuándo. |
-| O17 | **Diagnóstico presuntivo de un segundo estudio.** El diagnóstico presuntivo se carga en el alta del paciente (E06) y los usuarios no pueden modificar sus datos. Si el paciente vuelve con otra sospecha, no está claro dónde se carga. | Un estudio nuevo usa el diagnóstico presuntivo del paciente; una sospecha nueva sobre el mismo exoma va por reanálisis (E12), que la guarda en `analisis_patologias`. |
+| O17 | **Diagnóstico presuntivo de un segundo estudio.** El diagnóstico presuntivo se carga en el alta del paciente (E06) y los usuarios no pueden modificar sus datos. Si el paciente vuelve con otra sospecha, no está claro dónde se carga. | No hay un segundo estudio (O20): una sospecha nueva va por reanálisis del mismo estudio (E12), que la guarda en `analisis_patologias`. |
+| O18 | **Estado con cobertura parcial.** Si la obra social autoriza solo una parte (O3), ninguno de los 16 estados describe "autorizado, falta pagar la diferencia". | El estudio sigue en Pendiente de autorización, con la cobertura `autorizada`, hasta que el paciente paga la diferencia; recién entonces pasa a Habilitado para turno. La alternativa es un estado nuevo, que el cliente tendría que aprobar. |
+| O19 | **Resultado de los genes agregados a mano.** Apigen calcula el resultado por patología, y los genes que agrega el médico tratante (E10 ep. 3, E12 ep. 3) no tienen patología ni herencia conocida. | Core aplica la regla de E35 ep. 1: positivo si hay una variante patogénica en esos genes y negativo si no. Nunca da portador. |
+| O20 | **Un solo estudio por paciente.** El LEL dice que el paciente "puede tener más de un estudio en su historial", y E11 habla de historial de estudios. Pero el ADN no cambia, así que un segundo estudio repetiría la lectura del mismo exoma. | Cada paciente tiene un solo estudio (`estudios.paciente_id` único). Las sospechas nuevas van por reanálisis (E12) y las muestras que no sirven, por nueva extracción (E27), siempre en el mismo estudio. El historial de E11 muestra sus análisis. |
