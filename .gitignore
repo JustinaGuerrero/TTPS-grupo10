@@ -4,3 +4,4 @@ apigen/carga/*.gz
 __pycache__/
 .venv/
 .claude/settings.local.json
+.claude/worktrees/

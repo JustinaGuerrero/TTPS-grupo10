@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+{% block title %}Error del sistema{% endblock %}
+{% block content %}
+  <h1>500 · Error del sistema</h1>
+  <p>Ocurrió un error inesperado. Probá de nuevo en unos minutos.</p>
+  <p><a href="{{ url_for('inicio.index') }}">Volver al inicio</a></p>
+{% endblock %}

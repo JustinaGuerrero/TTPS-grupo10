@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+{% block title %}Acceso denegado{% endblock %}
+{% block content %}
+  <h1>403 · Acceso denegado</h1>
+  <p>Tu rol no tiene permiso para ver esta página.</p>
+  <p><a href="{{ url_for('inicio.index') }}">Volver al inicio</a></p>
+{% endblock %}
