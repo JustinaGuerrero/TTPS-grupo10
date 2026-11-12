@@ -33,7 +33,7 @@ Donde el LEL ya adopta un supuesto, se mantiene; donde solo deja una pregunta, e
 
 | # | Observación | Supuesto adoptado | Origen |
 |---|---|---|---|
-| O1 | **Patologías:** el cliente dice "cinco" pero enumera seis. | Se trabaja con seis: Fabry, Pompe, MPS 1, MPS 2, Gaucher y ASMD. El gerente médico puede dar de alta otras (E36). | LEL |
+| O1 | **Patologías:** el cliente dice "cinco" pero enumera seis. | Se trabaja con seis: Fabry, Pompe, MPS 1, MPS 2, Gaucher y ASMD. El gerente médico puede dar de alta otras (E36). Ver O11: Apigen no tiene MPS 2. | LEL |
 | O2 | **Validación del diagnóstico presuntivo** con sospecha familiar sin síntomas. | La regla (síntoma cardinal o dos secundarios, E08) se aplica solo con tipo de sospecha clínica. Con sospecha familiar se acepta el alta sin validar síntomas, siempre que haya al menos un familiar con diagnóstico confirmado de la patología. | Propuesto, a confirmar |
 | O3 | **Cobertura parcial:** ¿el paciente paga la diferencia antes del turno? | Sí. Con la autorización, el sistema calcula la diferencia; si es mayor a cero, el estudio queda habilitado para turno recién cuando el paciente la paga (mismo flujo de E14). Ambos importes van al registro financiero (E41). | Propuesto, a confirmar |
 | O4 | **Volumen de la muestra:** quién registra los mililitros. | El administrativo, al recibir la muestra en el laboratorio central (E26). | LEL |
@@ -46,3 +46,18 @@ Donde el LEL ya adopta un supuesto, se mantiene; donde solo deja una pregunta, e
 ### Inconsistencia detectada en la conversión
 
 El diagrama del ciclo de vida del estudio en el LEL (`img/ciclo-de-vida-del-estudio.png`) se titula "El estudio avanza por 13 estados", mientras que el texto dice 16 y el diagrama dibuja 16. Se toma como válido **16**.
+
+## Observaciones del modelo de datos
+
+Las 8 observaciones que surgieron al armar [modelo-datos.md](modelo-datos.md) (12/11/2026). Siguen la numeración de las del LEL. Todos los supuestos los propone el equipo y están **pendientes de confirmar** con el cliente.
+
+| # | Observación | Supuesto adoptado | Origen |
+|---|---|---|---|
+| O10 | **Mail único y hermanos menores:** `usuarios.email` es único. Dos hermanos menores que usan el mail del mismo responsable no pueden tener una cuenta cada uno, y en estas patologías hereditarias es un caso frecuente. | Cada paciente tiene su propio mail. La alternativa es que el paciente ingrese con su DNI. | Propuesto, a confirmar |
+| O11 | **MPS 2 en Apigen:** el LEL nombra seis patologías (O1), pero Apigen v1 sacó MPS 2 y el gen IDS por pedido del profesor: la API responde "Patología inexistente". | Se cargan las 5 patologías base de Apigen. MPS 2 no se puede estudiar mientras Apigen no tenga el gen. | Propuesto, a confirmar |
+| O12 | **Clasificaciones y resultados:** el LEL nombra tres clasificaciones (patogénica, benigna y VUS) y dos resultados (positivo y negativo). Apigen agrega la clasificación probablemente patogénica y el resultado portador. | El modelo usa los valores de Apigen. | Propuesto, a confirmar |
+| O13 | **Genes de hallazgos secundarios en el presupuesto:** no se sabe si los genes ACMG cuentan como genes adicionales. | No cuentan: el presupuesto usa solo los genes del análisis inicial. | Propuesto, a confirmar |
+| O14 | **Edad del Pompe urgente:** no se sabe en qué momento se mide la edad de "menor de 4 meses". | Se mide al dar de alta el estudio y la marca no cambia después, para no perder la prioridad a mitad del circuito. | Propuesto, a confirmar |
+| O15 | **Tipo de descuento del cupón:** no se sabe si es un porcentaje o un monto fijo, y todavía no está el contrato del módulo de cupones en `docs/apis/`. | Porcentaje. Se ajusta con el contrato del módulo. | Propuesto, a confirmar |
+| O16 | **Cobro a la obra social:** ningún escenario registra la transferencia de la obra social, así que la deuda por obra social nunca bajaría. | El asiento `cobro_obra_social` queda previsto. Falta definir quién lo registra y cuándo. | Propuesto, a confirmar |
+| O17 | **Diagnóstico presuntivo de un segundo estudio:** se carga en el alta del paciente (E06) y los usuarios no pueden modificar sus datos. Si el paciente vuelve con otra sospecha, no está claro dónde se carga. | Un estudio nuevo usa el diagnóstico presuntivo del paciente; una sospecha nueva sobre el mismo exoma va por reanálisis (E12), que la guarda en `analisis_patologias`. | Propuesto, a confirmar |
