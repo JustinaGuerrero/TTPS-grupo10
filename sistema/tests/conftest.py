@@ -6,6 +6,7 @@ orden todas las migraciones de supabase/migrations. En cada test, lo que se escr
 con db.session, aunque haga commit, se revierte al terminar (ver el fixture `app`).
 """
 
+import itertools
 import os
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import sqlalchemy as sa
 from dotenv import load_dotenv
 
 from src.core.database import db, url_de_conexion
+from src.core.usuarios import crear_usuario as crear_usuario_en_core
 from src.web import create_app
 
 MIGRACIONES = Path(__file__).resolve().parents[1] / "supabase" / "migrations"
@@ -115,3 +117,39 @@ def app(base_de_test):
 @pytest.fixture
 def client(app):
     return app.test_client()
+
+
+# Contraseña de los usuarios que crean los fixtures (no es la de `flask seeds`).
+CONTRASENA_DE_TEST = "contrasena-de-test"
+
+
+@pytest.fixture
+def crear_usuario(app):
+    """Fábrica: `crear_usuario(roles.PACIENTE)` guarda un usuario con ese rol y devuelve su mail.
+
+    La contraseña es CONTRASENA_DE_TEST. Con `activo=False` queda desactivado.
+    """
+    numeros = itertools.count(1)
+
+    def _crear(rol: str, email: str | None = None, activo: bool = True) -> str:
+        email = email or f"{rol}.{next(numeros)}@exoma.test"
+        with app.app_context():
+            usuario = crear_usuario_en_core(email, CONTRASENA_DE_TEST, "Nombre", "De Test", rol)
+            usuario.activo = activo
+            db.session.commit()
+        return email
+
+    return _crear
+
+
+@pytest.fixture
+def login_como(client, crear_usuario):
+    """Fábrica: `login_como(roles.ADMINISTRATIVO)` crea un usuario de ese rol y loguea `client`."""
+
+    def _login(rol: str):
+        email = crear_usuario(rol)
+        respuesta = client.post("/login", data={"email": email, "contrasena": CONTRASENA_DE_TEST})
+        assert respuesta.status_code == 302, f"No se pudo iniciar sesión como {rol}"
+        return client
+
+    return _login

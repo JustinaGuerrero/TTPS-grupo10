@@ -1,9 +1,15 @@
-"""Páginas de error propias (403, 404 y 500)."""
+"""Páginas de error propias (403, 404 y 500, y la del token CSRF inválido)."""
 
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError
 
 
 def registrar(app: Flask) -> None:
+    @app.errorhandler(CSRFError)
+    def formulario_invalido(error):
+        app.logger.warning("Formulario rechazado por CSRF: %s", error.description)
+        return render_template("errores/csrf.html"), 400
+
     @app.errorhandler(403)
     def prohibido(error):
         return render_template("errores/403.html"), 403

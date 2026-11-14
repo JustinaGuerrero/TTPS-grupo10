@@ -14,7 +14,7 @@ Tomadas de [guia-agentes.md](guia-agentes.md) ("Decisiones ya tomadas", "Sprint 
 | S3 | Base de datos | PostgreSQL en Supabase: proyecto propio, separado del de Apigen, en la región São Paulo. Conexión por *Session pooler* en `DATABASE_URL`. |
 | S4 | Esquema | Se define solo con migraciones SQL en `sistema/supabase/migrations` (sin `create_all`), con RLS activado en todas las tablas y sin políticas. Las aplica una persona con `npx supabase db push`. |
 | S5 | Acceso a datos | SQLAlchemy 2 + Flask-SQLAlchemy-Lite (no es Flask-SQLAlchemy) + `psycopg[binary]`. |
-| S6 | Sesión y autenticación | Flask-Session (sesión en el servidor, con `cachelib`) y hash scrypt de Werkzeug. Decoradores `login_required` y `rol_requerido(*roles)`; toda ruta los lleva. |
+| S6 | Sesión y autenticación | Flask-Session (sesión en el servidor, con `cachelib`) y hash scrypt de Werkzeug. Decoradores `login_required` y `rol_requerido(*roles)`; toda ruta los lleva. La sesión vence tras 8 h sin uso y el login regenera su id; si las credenciales no son válidas, el mensaje no dice si el mail existe. Todo POST lleva token CSRF (`CSRFProtect` de `flask-wtf`); solo se eximen las rutas que llaman sistemas externos sin sesión. |
 | S7 | Frontend | Bootstrap 5 servido localmente, `layout.html` responsivo con menú según el rol y mensajes flash. |
 | S8 | Arquitectura | Modelo en `src/core/<modulo>/` (sin Flask ni request), controlador en `src/web/controllers/<modulo>.py` (un blueprint por módulo), vista en `src/web/templates/<modulo>/`. Módulo de referencia: usuarios (E03). |
 | S9 | Estados del estudio | Enum con los 16 estados; el estado cambia solo con `cambiar_estado()` de `src/core/estudios`, que permite solo las transiciones del LEL y guarda cada cambio con fecha y usuario. |

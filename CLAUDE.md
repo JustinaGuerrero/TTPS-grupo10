@@ -13,7 +13,8 @@ apigen/ es nuestra API de bioinformática (módulo 5): no se modifica desde el s
 - Instalar: `poetry install`
 - Correr: `poetry run flask run --debug`
 - Tests: `poetry run pytest -q` (uno solo: `poetry run pytest tests/test_x.py -q`)
-- Datos de prueba: `poetry run flask seeds`
+- Datos de prueba: `poetry run flask seeds` → un usuario por rol (paciente@, medico@, administrativo@,
+  bioinformatico@, transportista@, gerente@ y admin@exoma.test) con la contraseña de SEEDS_CONTRASENA
 - Nueva migración: `npx supabase migration new <nombre>`. La aplica una persona con `npx supabase db push`.
 
 ## Arquitectura (MVC)
@@ -28,6 +29,8 @@ apigen/ es nuestra API de bioinformática (módulo 5): no se modifica desde el s
 - Los escenarios están en docs/escenarios.md (E01–E41): cada episodio es un criterio de aceptación.
 - El estado de un estudio cambia SOLO con cambiar_estado() de src/core/estudios.
 - Toda ruta lleva @login_required y @rol_requerido(...).
+- Todo `<form method="post">` lleva `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`
+  (un fetch, el header X-CSRFToken). Sin token, el POST responde 400.
 
 ## Flujo de trabajo
 - Un issue = una rama (e10-alta-estudio) = una sesión.

@@ -1,6 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}Inicio{% endblock %}
 {% block content %}
-  <h1>Sistema de exoma clínico</h1>
-  <p>Laboratorio central · circuito del exoma clínico para patologías lisosomales.</p>
+  <h1 class="h3">Hola, {{ g.usuario.nombre }}</h1>
+  <p class="text-body-secondary mb-0">
+    Ingresaste como <strong>{{ g.usuario.rol.nombre }}</strong> al sistema de exoma clínico del
+    laboratorio central.
+  </p>
 {% endblock %}

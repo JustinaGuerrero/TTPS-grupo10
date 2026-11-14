@@ -40,5 +40,12 @@ class Usuario(Base):
         sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
     )
 
+    @property
+    def nombre_completo(self) -> str:
+        return f"{self.nombre} {self.apellido}"
+
+    def tiene_rol(self, *codigos: str) -> bool:
+        return self.rol_codigo in codigos
+
     def __repr__(self) -> str:
         return f"<Usuario {self.id} {self.email}>"

@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+{% block title %}Formulario no enviado{% endblock %}
+{% block content %}
+  <h1>400 · No se pudo enviar el formulario</h1>
+  <p>El formulario venció o no se envió desde el sistema. Recargá la página y probá de nuevo.</p>
+  <p><a href="{{ url_for('inicio.index') }}">Volver al inicio</a></p>
+{% endblock %}

@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 import src.core
 from src.core.database import Base, db
-from src.core.usuarios import Rol, Usuario
+from src.core.usuarios import Rol, Usuario, roles
 
 ROLES_DEL_LEL = {
     "paciente",
@@ -66,6 +66,7 @@ def test_la_migracion_carga_los_siete_roles_del_lel(app):
         codigos = set(db.session.scalars(sa.select(Rol.codigo)))
 
     assert codigos == ROLES_DEL_LEL
+    assert set(roles.TODOS) == ROLES_DEL_LEL
 
 
 def test_todas_las_tablas_tienen_rls(app):

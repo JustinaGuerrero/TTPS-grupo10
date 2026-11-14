@@ -1,9 +1,28 @@
-def test_inicio_responde_200_con_el_layout(client):
+from src.core.usuarios import roles
+
+
+def test_inicio_muestra_el_layout_con_bootstrap_local(login_como):
+    client = login_como(roles.ADMINISTRATIVO)
+
     respuesta = client.get("/")
 
     assert respuesta.status_code == 200
-    assert "Sistema de exoma clínico" in respuesta.text
+    assert "Hola, Nombre" in respuesta.text
     assert "· Exoma clínico</title>" in respuesta.text
+    assert 'name="viewport"' in respuesta.text
+    assert "/static/vendor/bootstrap/css/bootstrap.min.css" in respuesta.text
+    assert "/static/vendor/bootstrap/js/bootstrap.bundle.min.js" in respuesta.text
+
+
+def test_bootstrap_se_sirve_localmente_sin_sesion(client):
+    css = client.get("/static/vendor/bootstrap/css/bootstrap.min.css")
+    js = client.get("/static/vendor/bootstrap/js/bootstrap.bundle.min.js")
+
+    assert css.status_code == 200
+    assert b"Bootstrap  v5.3.8" in css.data
+    assert js.status_code == 200
+    css.close()
+    js.close()
 
 
 def test_ruta_inexistente_muestra_pagina_404(client):

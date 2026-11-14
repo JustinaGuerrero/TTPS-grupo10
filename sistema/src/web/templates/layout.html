@@ -4,14 +4,66 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Inicio{% endblock %} · Exoma clínico</title>
-  {# Sesión 4: Bootstrap 5 servido desde static/ #}
+  {# Bootstrap 5.3.8 servido desde static/vendor: la app no depende de un CDN. #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
 </head>
-<body>
-  <header>
-    <a href="{{ url_for('inicio.index') }}">Exoma clínico</a>
-  </header>
-  <main>
+<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+  {% macro item_de_menu(texto, endpoint) %}
+    {% set activo = request.endpoint == endpoint %}
+    <li class="nav-item">
+      <a class="nav-link{% if activo %} active{% endif %}"{% if activo %} aria-current="page"{% endif %}
+         href="{{ url_for(endpoint) }}">{{ texto }}</a>
+    </li>
+  {% endmacro %}
+
+  <nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="{{ url_for('inicio.index') }}">Exoma clínico</a>
+      {% if g.usuario %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#menu-principal" aria-controls="menu-principal"
+                aria-expanded="false" aria-label="Abrir el menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <ul class="navbar-nav me-auto">
+            {{ item_de_menu("Inicio", "inicio.index") }}
+            {% for item in menu %}
+              {{ item_de_menu(item.texto, item.endpoint) }}
+            {% endfor %}
+          </ul>
+          <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 py-2 py-lg-0">
+            <span class="navbar-text text-white">
+              {{ g.usuario.nombre_completo }}
+              <span class="badge text-bg-light ms-1">{{ g.usuario.rol.nombre }}</span>
+            </span>
+            <form method="post" action="{{ url_for('autenticacion.cerrar_sesion') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main class="container py-4 flex-grow-1">
+    {# Categorías de flash: exito, error, aviso e info. #}
+    {% set clase_de_alerta = {"exito": "success", "error": "danger", "aviso": "warning"} %}
+    {% for categoria, mensaje in get_flashed_messages(with_categories=true) %}
+      <div class="alert alert-{{ clase_de_alerta.get(categoria, 'info') }} alert-dismissible fade show" role="alert">
+        {{ mensaje }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+
     {% block content %}{% endblock %}
   </main>
+
+  <footer class="py-3 text-center text-body-secondary small">
+    Laboratorio central · Sistema de exoma clínico
+  </footer>
+
+  <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>
