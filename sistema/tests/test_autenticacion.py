@@ -238,6 +238,31 @@ def test_logout_solo_acepta_post(login_como):
     assert client.get("/logout").status_code == 405
 
 
+# --- Caché del navegador (botón Atrás) ---
+
+
+def test_ninguna_pagina_queda_guardada_en_el_navegador(login_como, ruta_solo_administrativos):
+    client = login_como(roles.PACIENTE)
+
+    respuestas = [
+        client.get("/"),
+        client.get("/solo-administrativos"),  # 403
+        client.get("/no-existe"),  # 404
+        client.post("/logout"),  # Redirección
+        client.get("/login"),
+    ]
+
+    for respuesta in respuestas:
+        assert respuesta.headers.get("Cache-Control") == "no-store", respuesta.request.path
+
+
+def test_los_archivos_estaticos_si_se_guardan_en_el_navegador(client):
+    respuesta = client.get("/static/vendor/bootstrap/css/bootstrap.min.css")
+
+    assert "no-store" not in respuesta.headers.get("Cache-Control", "")
+    respuesta.close()
+
+
 # --- Menú según el rol ---
 
 

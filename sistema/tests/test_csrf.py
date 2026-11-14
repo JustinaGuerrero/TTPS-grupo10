@@ -35,14 +35,31 @@ def _login_con_token(client, email):
     return _login(client, email, csrf_token=_token(client.get("/login").text))
 
 
-def test_login_sin_token_se_rechaza(client, crear_usuario, csrf_activo):
+def test_login_sin_token_no_inicia_sesion_y_vuelve_al_login(client, crear_usuario, csrf_activo):
     email = crear_usuario(roles.ADMINISTRATIVO)
 
     respuesta = _login(client, email)
 
-    assert respuesta.status_code == 400
-    assert MENSAJE_DE_RECHAZO in respuesta.text
+    assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/login"
+    assert "La página de ingreso venció. Ingresá de nuevo." in client.get("/login").text
     assert client.get("/").status_code == 302  # No inició sesión.
+
+
+def test_volver_atras_al_login_e_ingresar_con_otra_cuenta(client, crear_usuario, csrf_activo):
+    paciente = crear_usuario(roles.PACIENTE)
+    medico = crear_usuario(roles.MEDICO_TRATANTE)
+    login_guardado = client.get("/login").text  # La copia que mostraría el botón Atrás.
+    _login(client, paciente, csrf_token=_token(login_guardado))
+
+    respuesta = _login(client, medico, csrf_token=_token(login_guardado))
+
+    assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/"
+    inicio = client.get("/").text
+    assert "Ya iniciaste sesión como Nombre De Test. Para entrar con otra cuenta" in inicio
+    assert "Paciente" in inicio  # Sigue la sesión del paciente: no cambió de cuenta.
+    assert "Médico tratante" not in inicio
 
 
 def test_login_y_logout_con_token_funcionan(client, crear_usuario, csrf_activo):
@@ -65,17 +82,19 @@ def test_otro_sitio_no_puede_cerrar_la_sesion(client, crear_usuario, csrf_activo
     respuesta = client.post("/logout")
 
     assert respuesta.status_code == 400
+    assert MENSAJE_DE_RECHAZO in respuesta.text
     assert client.get("/").status_code == 200  # La sesión sigue abierta.
 
 
-def test_el_token_de_otra_sesion_se_rechaza(app, client, crear_usuario, csrf_activo):
+def test_el_token_de_otra_sesion_no_inicia_sesion(app, client, crear_usuario, csrf_activo):
     email = crear_usuario(roles.ADMINISTRATIVO)
     token_ajeno = _token(app.test_client().get("/login").text)
     client.get("/login")
 
     respuesta = _login(client, email, csrf_token=token_ajeno)
 
-    assert respuesta.status_code == 400
+    assert respuesta.headers["Location"] == "/login"
+    assert client.get("/").status_code == 302
 
 
 def test_el_token_tambien_se_acepta_en_el_header(client, crear_usuario, csrf_activo):

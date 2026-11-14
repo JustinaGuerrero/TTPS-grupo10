@@ -16,7 +16,18 @@ En las vistas y plantillas, el usuario logueado está en `g.usuario` (None si no
 from functools import wraps
 from urllib.parse import urlsplit
 
-from flask import Flask, abort, current_app, flash, g, redirect, request, session, url_for
+from flask import (
+    Flask,
+    Response,
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    request,
+    session,
+    url_for,
+)
 
 from src.core.usuarios import Usuario, buscar_por_id, roles
 
@@ -25,6 +36,18 @@ CLAVE_DE_SESION = "usuario_id"
 
 def init_app(app: Flask) -> None:
     app.before_request(cargar_usuario_actual)
+    app.after_request(no_guardar_en_el_navegador)
+
+
+def no_guardar_en_el_navegador(respuesta: Response) -> Response:
+    """Ninguna página queda guardada en el navegador; los archivos estáticos sí.
+
+    Así, con el botón Atrás el navegador vuelve a pedir la página: después de cerrar sesión no
+    se ven datos de pacientes, y después de entrar no aparece el login con un token vencido.
+    """
+    if request.endpoint != "static":
+        respuesta.headers["Cache-Control"] = "no-store"
+    return respuesta
 
 
 def cargar_usuario_actual() -> None:
