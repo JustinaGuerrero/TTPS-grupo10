@@ -8,6 +8,9 @@ Uso en core: `db.session` es la sesión del contexto de app actual y se cierra s
 al terminar el request.
 """
 
+from enum import StrEnum
+
+import sqlalchemy as sa
 from flask import Flask
 from flask_sqlalchemy_lite import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -15,6 +18,21 @@ from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     """Clase base de todos los modelos."""
+
+
+def enum_de_texto(enum: type[StrEnum]) -> sa.Enum:
+    """Tipo de columna para un estado o valor cerrado guardado como text (ver modelo-datos.md).
+
+    Guarda el valor del miembro ('creado'), no su nombre ('CREADO'), y devuelve el miembro del
+    enum. No crea un check propio: los valores válidos los controla el check de la migración.
+    """
+    return sa.Enum(
+        enum,
+        native_enum=False,
+        create_constraint=False,
+        validate_strings=True,
+        values_callable=lambda miembros: [miembro.value for miembro in miembros],
+    )
 
 
 # pool_pre_ping descarta las conexiones que el pooler de Supabase cerró por inactividad.

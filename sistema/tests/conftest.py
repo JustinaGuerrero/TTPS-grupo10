@@ -8,6 +8,8 @@ con db.session, aunque haga commit, se revierte al terminar (ver el fixture `app
 
 import itertools
 import os
+from collections import deque
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,10 @@ import sqlalchemy as sa
 from dotenv import load_dotenv
 
 from src.core.database import db, url_de_conexion
+from src.core.estudios import TRANSICIONES, EstadoEstudio, Estudio, cambiar_estado
+from src.core.estudios import crear_estudio as crear_estudio_en_core
+from src.core.pacientes import Paciente, TipoSospecha
+from src.core.usuarios import Usuario, crear_perfil_medico, roles
 from src.core.usuarios import crear_usuario as crear_usuario_en_core
 from src.web import create_app
 
@@ -138,6 +144,107 @@ def crear_usuario(app):
             usuario.activo = activo
             db.session.commit()
         return email
+
+    return _crear
+
+
+@pytest.fixture
+def usuario_rapido():
+    """Fábrica: `usuario_rapido(roles.ADMINISTRATIVO)` agrega a db.session un usuario y lo devuelve.
+
+    Usa un hash ficticio para no calcular scrypt: el usuario no puede iniciar sesión. Para los
+    tests que necesitan usuarios como datos y no como login. Llamarla dentro de un app_context.
+    """
+    numeros = itertools.count(1)
+
+    def _crear(rol: str) -> Usuario:
+        numero = next(numeros)
+        usuario = Usuario(
+            email=f"rapido.{rol}.{numero}@exoma.test",
+            hash_contrasena="hash-ficticio",
+            nombre="Nombre",
+            apellido=f"De Test {numero}",
+            rol_codigo=rol,
+        )
+        db.session.add(usuario)
+        return usuario
+
+    return _crear
+
+
+@pytest.fixture
+def crear_paciente(usuario_rapido):
+    """Fábrica: `crear_paciente()` agrega un paciente, con su usuario y su médico tratante.
+
+    Llamarla dentro de un app_context; no hace commit.
+    """
+    numeros = itertools.count(1)
+
+    def _crear() -> Paciente:
+        numero = next(numeros)
+        medico = usuario_rapido(roles.MEDICO_TRATANTE)
+        paciente = Paciente(
+            usuario=usuario_rapido(roles.PACIENTE),
+            dni=f"9{numero:07d}",
+            fecha_nacimiento=date(2000, 1, 1),
+            tipo_sospecha=TipoSospecha.CLINICA,
+            resumen_historia_clinica="Resumen de historia clínica de prueba.",
+            medico_tratante=crear_perfil_medico(medico, f"MP-TEST-{numero:04d}"),
+        )
+        db.session.add(paciente)
+        db.session.flush()
+        return paciente
+
+    return _crear
+
+
+def camino_desde_creado(destino: EstadoEstudio) -> list[EstadoEstudio]:
+    """Estados que recorre un estudio desde Creado hasta `destino`, por el camino más corto."""
+    anteriores: dict[EstadoEstudio, EstadoEstudio | None] = {EstadoEstudio.CREADO: None}
+    pendientes = deque([EstadoEstudio.CREADO])
+    while pendientes:
+        actual = pendientes.popleft()
+        for siguiente in TRANSICIONES[actual]:
+            if siguiente not in anteriores:
+                anteriores[siguiente] = actual
+                pendientes.append(siguiente)
+    if destino not in anteriores:
+        raise ValueError(f"No se llega a {destino} desde Creado")
+    camino = []
+    estado: EstadoEstudio | None = destino
+    while estado is not None:
+        camino.append(estado)
+        estado = anteriores[estado]
+    return camino[::-1]
+
+
+@pytest.fixture
+def crear_estudio(crear_paciente):
+    """Fábrica: `crear_estudio(estado=...)` guarda un estudio y lo devuelve en ese estado.
+
+    Lo da de alta en Creado con crear_estudio() de core y lo lleva al estado pedido por el
+    camino más corto, siempre con cambiar_estado() y usuario None. Hace commit. Llamarla dentro
+    de un app_context.
+    """
+
+    def _crear(
+        estado: EstadoEstudio | str = EstadoEstudio.CREADO,
+        genes: tuple[str, ...] = ("GAA",),
+        genes_agregados_a_mano: tuple[str, ...] = (),
+        evalua_hallazgos_secundarios: bool = False,
+    ) -> Estudio:
+        paciente = crear_paciente()
+        estudio = crear_estudio_en_core(
+            paciente,
+            paciente.medico_tratante.usuario,
+            genes=genes,
+            evalua_hallazgos_secundarios=evalua_hallazgos_secundarios,
+            genes_agregados_a_mano=genes_agregados_a_mano,
+        )
+        for siguiente in camino_desde_creado(EstadoEstudio(estado))[1:]:
+            cambiar_estado(estudio, siguiente, None)
+        db.session.commit()
+        return estudio
 
     return _crear
 

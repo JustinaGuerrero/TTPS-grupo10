@@ -10,7 +10,8 @@ from sqlalchemy.orm import joinedload
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from src.core.database import db
-from src.core.usuarios.modelos import Usuario
+from src.core.usuarios import roles
+from src.core.usuarios.modelos import Medico, Usuario
 
 
 def hashear_contrasena(contrasena: str) -> str:
@@ -48,6 +49,18 @@ def crear_usuario(
     )
     db.session.add(usuario)
     return usuario
+
+
+def crear_perfil_medico(usuario: Usuario, matricula: str) -> Medico:
+    """Crea el perfil con la matrícula de un médico tratante o gerente médico. No hace commit.
+
+    Lanza ValueError si el usuario tiene otro rol: la base no controla el rol del usuario.
+    """
+    if not usuario.tiene_rol(roles.MEDICO_TRATANTE, roles.GERENTE_MEDICO):
+        raise ValueError("Solo un médico tratante o un gerente médico tiene matrícula.")
+    medico = Medico(usuario=usuario, matricula=matricula.strip())
+    db.session.add(medico)
+    return medico
 
 
 def validar_credenciales(email: str, contrasena: str) -> Usuario | None:

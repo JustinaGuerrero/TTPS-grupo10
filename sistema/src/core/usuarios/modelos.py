@@ -30,6 +30,7 @@ class Usuario(Base):
     hash_contrasena: Mapped[str]
     nombre: Mapped[str]
     apellido: Mapped[str]
+    telefono: Mapped[str | None]
     rol_codigo: Mapped[str] = mapped_column(sa.ForeignKey("roles.codigo"))
     rol: Mapped[Rol] = relationship()
     activo: Mapped[bool] = mapped_column(server_default=sa.true())
@@ -49,3 +50,22 @@ class Usuario(Base):
 
     def __repr__(self) -> str:
         return f"<Usuario {self.id} {self.email}>"
+
+
+class Medico(Base):
+    """Perfil 1:1 de un usuario con rol médico tratante o gerente médico (E01): su matrícula.
+
+    Pacientes y estudios apuntan a este perfil, cuya clave es el id del usuario.
+    """
+
+    __tablename__ = "medicos"
+
+    usuario_id: Mapped[int] = mapped_column(sa.ForeignKey("usuarios.id"), primary_key=True)
+    usuario: Mapped[Usuario] = relationship()
+    matricula: Mapped[str] = mapped_column(unique=True)
+    creado_en: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"<Medico {self.usuario_id} {self.matricula}>"

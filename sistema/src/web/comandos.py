@@ -9,7 +9,7 @@ from src.core import seeds
 def registrar(app: Flask) -> None:
     @app.cli.command("seeds")
     def cargar_seeds():
-        """Carga los datos de prueba: un usuario por cada uno de los 7 roles del LEL."""
+        """Carga un usuario de prueba por rol del LEL y los perfiles de médico y de paciente."""
         contrasena = current_app.config.get("SEEDS_CONTRASENA")
         if not contrasena:
             raise click.ClickException(

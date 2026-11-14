@@ -3,10 +3,22 @@
 import sqlalchemy as sa
 
 from src.core.database import db
+from src.core.pacientes import Paciente
 from src.core.seeds import USUARIOS_DE_PRUEBA
-from src.core.usuarios import Rol, Usuario, roles
+from src.core.usuarios import Medico, Rol, Usuario, roles
 
 UNO_POR_ROL = {rol: 1 for rol in roles.TODOS}
+
+
+def _perfiles(app) -> tuple[set[str], list[tuple[str, str]]]:
+    """Mails con perfil de médico y (mail del paciente, mail de su médico tratante)."""
+    with app.app_context():
+        medicos = set(db.session.scalars(sa.select(Usuario.email).join(Medico)))
+        pacientes = [
+            (paciente.usuario.email, paciente.medico_tratante.usuario.email)
+            for paciente in db.session.scalars(sa.select(Paciente))
+        ]
+    return medicos, pacientes
 
 
 def _lineas_que_empiezan_con(salida: str, estado: str) -> int:
@@ -36,6 +48,18 @@ def test_seeds_se_puede_correr_dos_veces(app):
     assert segunda.exit_code == 0, segunda.output
     assert _lineas_que_empiezan_con(segunda.output, "ya existía") == 7
     assert _usuarios_por_rol(app) == UNO_POR_ROL
+    medicos, pacientes = _perfiles(app)
+    assert len(medicos) == 2
+    assert len(pacientes) == 1
+
+
+def test_seeds_crea_los_perfiles_de_medico_y_de_paciente(app):
+    app.test_cli_runner().invoke(args=["seeds"])
+
+    medicos, pacientes = _perfiles(app)
+
+    assert medicos == {"medico@exoma.test", "gerente@exoma.test"}
+    assert pacientes == [("paciente@exoma.test", "medico@exoma.test")]
 
 
 def test_cada_usuario_de_prueba_inicia_sesion_y_ve_su_rol(app):
