@@ -22,12 +22,14 @@ completo de ClinVar ni de la lista ACMG.
 
 `genes_por_patologia_MPS2.error.json` simula la patología que Apigen sacó en la v1.
 
-## Módulo de cupones (`cupones/`)
+## API de cupones (`cupones/`)
 
-Contrato provisorio en `docs/apis/cupones.md`.
+Contrato en `docs/apis/cupones.md`.
 
 | Función | Archivo | Si no hay archivo |
 | --- | --- | --- |
-| `generar(descuento, n)` | `generar.json` (10 cupones con PDF) | Error: no hay respuesta simulada |
-| `consultar("X")` | `consultar_X.json` (`VENCIDO01` está utilizado) | `consultar.json`: vigente |
-| `vencer("X")` | `vencer_X.json` (`CAIDO001` da error 503) | `vencer.json` |
+| `generar(g, descuento, n)` | `generar.json` (10 cupones) | Error: no hay respuesta simulada |
+| `asignar_a_medico(g, m, "X")` | `asignar_a_medico_X.json` | `asignar_a_medico.json`: `true` |
+| `asignar_a_paciente(m, p, "X")` | `asignar_a_paciente_X.json` (`YACANJE1`: 409) | `asignar_a_paciente.json`: `true` |
+| `consultar("X")` | `cupones_X.json` | `cupones.json`: listado con los códigos de prueba (`VENCIDO01` usado, `EXPIRADO1` vencido) |
+| `canjear(p, "X")` | `canjear_X.json` (`CAIDO001`: 503) | `canjear.json`: `true` |
