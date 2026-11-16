@@ -5,6 +5,7 @@
 - servicios.py crear usuarios, buscarlos, listar los activos de un rol y validar credenciales (E04).
 - alta.py      E03: validar los datos, dar de alta y mandar las credenciales por mail.
 - busqueda.py  E03: grilla con búsqueda, filtro, orden y paginación del lado del servidor.
+- registro.py  E01 y E02: auto registro y especialidades SNOMED.
 
 Ninguna función hace commit: lo decide el controlador.
 """
@@ -28,7 +29,16 @@ from src.core.usuarios.busqueda import (
     BusquedaDeUsuarios,
     buscar_usuarios,
 )
+from src.core.usuarios.especialidades import MedicoEspecialidad
 from src.core.usuarios.modelos import Medico, Rol, Transportista, Usuario
+from src.core.usuarios.registro import (
+    ROLES_DE_REGISTRO,
+    DatosDeRegistro,
+    guardar_especialidades,
+    registrar_usuario,
+    roles_de_registro,
+    validar_registro,
+)
 from src.core.usuarios.servicios import (
     buscar_por_email,
     buscar_por_id,
@@ -43,12 +53,15 @@ from src.core.usuarios.servicios import (
 __all__ = [
     "COLUMNAS_DE_ORDEN",
     "LARGO_MAXIMO",
+    "ROLES_DE_REGISTRO",
     "USUARIOS_POR_PAGINA",
     "Alta",
     "BusquedaDeUsuarios",
     "DatosDeAlta",
+    "DatosDeRegistro",
     "ErrorDeValidacion",
     "Medico",
+    "MedicoEspecialidad",
     "Rol",
     "Transportista",
     "Usuario",
@@ -60,12 +73,16 @@ __all__ = [
     "dar_de_alta_usuario",
     "enviar_credenciales",
     "generar_contrasena_provisoria",
+    "guardar_especialidades",
     "hashear_contrasena",
     "listar_activos_por_rol",
     "listar_roles",
     "provincias_con_transportista",
+    "registrar_usuario",
     "roles",
     "roles_de_alta",
+    "roles_de_registro",
     "validar_alta",
     "validar_credenciales",
+    "validar_registro",
 ]
