@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block title %}Historial de cambios{% endblock %}
+
+{# Los valores se guardan como texto; un valor vacío es que no había (alta) o que ya no hay (baja). #}
+{% macro valor(texto, es_estado=False) %}
+  {% if texto is none %}
+    <span class="text-body-secondary">—</span>
+  {% elif es_estado %}
+    {{ texto | replace("_", " ") | capitalize }}
+  {% else %}
+    {{ texto }}
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">Historial de cambios</h1>
+      <p class="text-body-secondary mb-0">{{ titulo }}</p>
+    </div>
+    {% if g.usuario.rol_codigo == "administrador_general" %}
+      <a class="btn btn-outline-secondary" href="{{ url_for('auditoria.lista', entidad=entidad.value) }}">
+        Ver todos los cambios
+      </a>
+    {% endif %}
+  </div>
+
+  {% if not cambios %}
+    <div class="text-body-secondary py-4" id="sin-cambios">Todavía no hay cambios registrados.</div>
+  {% else %}
+    <p class="text-body-secondary">
+      {{ cambios | length }} cambio{{ "s" if cambios | length != 1 }}, del más nuevo al más viejo.
+    </p>
+    <ol class="list-unstyled" id="linea-de-tiempo">
+      {% for cambio in cambios %}
+        <li class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-1 mb-2">
+              <div>
+                <span class="badge text-bg-{{ 'info' if cambio.accion.value == 'estado' else 'secondary' }}">
+                  {{ cambio.accion.nombre }}
+                </span>
+                <strong class="ms-1">{{ cambio.campo | replace("_", " ") | capitalize }}</strong>
+              </div>
+              <div class="text-body-secondary small text-nowrap">
+                {{ cambio.creado_en | fecha_hora }} · {{ cambio.quien }}
+              </div>
+            </div>
+            <div class="row g-2 small">
+              <div class="col-12 col-md-6">
+                <div class="text-body-secondary">Valor anterior</div>
+                <div class="text-break">{{ valor(cambio.valor_anterior, cambio.accion.value == "estado") }}</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="text-body-secondary">Valor nuevo</div>
+                <div class="text-break">{{ valor(cambio.valor_nuevo, cambio.accion.value == "estado") }}</div>
+              </div>
+            </div>
+            {% if cambio.detalle %}
+              <div class="small mt-2 text-break"><span class="text-body-secondary">Detalle:</span> {{ cambio.detalle }}</div>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+{% endblock %}
