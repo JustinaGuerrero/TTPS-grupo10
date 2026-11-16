@@ -12,6 +12,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 import sqlalchemy as sa
 
 from src.core.cupones.modelos import Cupon, EstadoCupon
+from src.core.cupones.pdf import pdf_del_cupon
 from src.core.database import db
 from src.core.notificaciones import notificar
 from src.core.pacientes.modelos import Paciente
@@ -19,8 +20,12 @@ from src.core.usuarios import roles
 from src.core.usuarios.modelos import Medico, Usuario
 from src.integraciones import cupones as modulo_de_cupones
 from src.integraciones import storage
+from src.integraciones.base import ErrorDeIntegracion
 
 MAXIMO_DE_CUPONES_POR_PEDIDO = 100
+SOLO_UN_GERENTE = "El módulo de cupones admite un solo gerente por grupo y ya hay otro."
+PACIENTE_CON_CUPON = "Ese paciente ya recibió un cupón: el módulo permite uno por paciente."
+CUPON_DESCONOCIDO = "El módulo de cupones no reconoce ese cupón para tu usuario."
 CENTAVOS = Decimal("0.01")
 
 
@@ -63,7 +68,10 @@ def generar_cupones(
     porcentaje = _validar_porcentaje(porcentaje)
     cantidad = _validar_cantidad(cantidad)
 
-    generados = modulo_de_cupones.generar(porcentaje, cantidad)
+    try:
+        generados = modulo_de_cupones.generar(gerente.id, porcentaje, cantidad)
+    except ErrorDeIntegracion as error:
+        raise _error_de_cupon(error, {403: SOLO_UN_GERENTE}) from None
     codigos = [generado.codigo for generado in generados]
     repetidos = db.session.scalars(sa.select(Cupon.codigo).where(Cupon.codigo.in_(codigos))).all()
     if repetidos or len(set(codigos)) != len(codigos):
@@ -72,10 +80,15 @@ def generar_cupones(
     ahora = datetime.now(UTC)
     cupones = []
     for generado in generados:
-        ruta = storage.subir(f"cupones/{generado.codigo}.pdf", generado.pdf, reemplazar=True)
+        try:
+            modulo_de_cupones.asignar_a_medico(gerente.id, medico.id, generado.codigo)
+        except ErrorDeIntegracion as error:
+            raise _error_de_cupon(error, {403: SOLO_UN_GERENTE}) from None
+        pdf = pdf_del_cupon(generado.codigo, generado.porcentaje)
+        ruta = storage.subir(f"cupones/{generado.codigo}.pdf", pdf, reemplazar=True)
         cupon = Cupon(
             codigo=generado.codigo,
-            descuento_porcentaje=porcentaje,
+            descuento_porcentaje=generado.porcentaje,
             pdf_path=ruta,
             estado=EstadoCupon.VIGENTE,
             generado_por=gerente.id,
@@ -88,7 +101,7 @@ def generar_cupones(
     notificar(
         medico,
         "Cupones de descuento recibidos",
-        f"Recibiste {cantidad} cupón(es) de descuento del {porcentaje}%. "
+        f"Recibiste {cantidad} cupón(es) de descuento del {cupones[0].descuento_porcentaje}%. "
         "Podés asignarlos a tus pacientes.",
         "/cupones/mios",
     )
@@ -148,6 +161,11 @@ def asignar_a_paciente(medico: Usuario, cupon_id: int, paciente_id: int) -> Cupo
     if paciente is None or paciente.medico_tratante_id != medico.id:
         raise ErrorDeCupon("Ese paciente no es tuyo.")
 
+    try:
+        modulo_de_cupones.asignar_a_paciente(medico.id, paciente.id, cupon.codigo)
+    except ErrorDeIntegracion as error:
+        raise _error_de_cupon(error, {404: CUPON_DESCONOCIDO, 409: PACIENTE_CON_CUPON}) from None
+
     cupon.paciente_id = paciente.id
     cupon.asignado_a_paciente_en = datetime.now(UTC)
     db.session.flush()
@@ -191,10 +209,16 @@ def resolver_cupon(usuario: Usuario, codigo: str) -> Cupon:
         raise ErrorDeCupon("Ese cupón no existe o no está asignado a tu cuenta.")
     if cupon.estado != EstadoCupon.VIGENTE:
         raise ErrorDeCupon(f"El cupón {cupon.codigo} ya fue utilizado.")
-    if not modulo_de_cupones.consultar(cupon.codigo).vigente:
-        raise ErrorDeCupon(
-            f"El módulo de cupones informa que el cupón {cupon.codigo} ya no está vigente."
-        )
+    en_modulo = modulo_de_cupones.consultar(cupon.codigo, medico_id=cupon.medico_tratante_id)
+    if en_modulo is None:
+        raise ErrorDeCupon(f"El módulo de cupones no encuentra el cupón {cupon.codigo}.")
+    if en_modulo.estado == "usado":
+        raise ErrorDeCupon(f"El cupón {cupon.codigo} ya fue utilizado.")
+    if en_modulo.vencido:
+        vencimiento = en_modulo.fecha_vencimiento
+        raise ErrorDeCupon(f"El cupón {cupon.codigo} venció el {vencimiento:%d/%m/%Y}.")
+    if en_modulo.estado != "paciente":
+        raise ErrorDeCupon(f"El módulo informa que el cupón {cupon.codigo} no está asignado.")
     return cupon
 
 
@@ -209,7 +233,7 @@ def consumir_cupon(cupon: Cupon) -> None:
     Va dentro de la transacción del pago, antes del commit: si el módulo falla lanza
     ErrorDeIntegracion y el controlador hace rollback, así que no queda ningún pago.
     """
-    modulo_de_cupones.vencer(cupon.codigo)
+    modulo_de_cupones.canjear(cupon.paciente_id, cupon.codigo)
     cupon.estado = EstadoCupon.UTILIZADO
     cupon.utilizado_en = datetime.now(UTC)
     db.session.flush()
@@ -237,6 +261,16 @@ def codigo_desde_pdf(contenido: bytes) -> str:
         if encontrado:
             return encontrado
     raise ErrorDeCupon("No se encontró el código del cupón en el PDF. Escribilo a mano.")
+
+
+def _error_de_cupon(error: ErrorDeIntegracion, mensajes: dict[int, str]) -> Exception:
+    """Un rechazo del módulo que el usuario puede corregir pasa a ErrorDeCupon; una caída sigue
+    siendo ErrorDeIntegracion."""
+    if error.status in mensajes:
+        return ErrorDeCupon(mensajes[error.status])
+    if error.status in (400, 404, 409):
+        return ErrorDeCupon(error.mensaje)
+    return error
 
 
 # --- validaciones -------------------------------------------------------------------------------
