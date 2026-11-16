@@ -1,6 +1,6 @@
 """Menú del layout según el rol del usuario logueado.
 
-"Inicio" lo muestra el layout a todos. Cada módulo nuevo agrega acá la entrada de su pantalla
+"Inicio" y "Mis avisos" los muestra el layout a todos. Cada módulo nuevo agrega acá la entrada de su pantalla
 principal en los roles que la usan, con el endpoint de su blueprint. Por ejemplo, E03:
 
     roles.ADMINISTRADOR_GENERAL: [ItemDeMenu("Usuarios", "usuarios.listar")],
@@ -8,8 +8,10 @@ principal en los roles que la usan, con el endpoint de su blueprint. Por ejemplo
 
 from typing import NamedTuple
 
-from flask import Flask, g
+from flask import Flask, current_app, g
+from sqlalchemy.exc import SQLAlchemyError
 
+from src.core.notificaciones import contar_sin_leer
 from src.core.usuarios import Usuario, roles
 
 
@@ -38,4 +40,20 @@ def items_del_menu(usuario: Usuario | None) -> list[ItemDeMenu]:
 def init_app(app: Flask) -> None:
     @app.context_processor
     def inyectar_menu():
-        return {"menu": items_del_menu(g.get("usuario"))}
+        usuario = g.get("usuario")
+        return {"menu": items_del_menu(usuario), "avisos_sin_leer": _avisos_sin_leer(usuario)}
+
+
+def _avisos_sin_leer(usuario: Usuario | None) -> int:
+    """Cantidad para el badge de "Mis avisos", que el layout muestra a todos (E39).
+
+    Si la base falla (por ejemplo, al mostrar la página de error 500 de una consulta que falló),
+    no muestra el número en vez de romper la página de error.
+    """
+    if usuario is None:
+        return 0
+    try:
+        return contar_sin_leer(usuario)
+    except SQLAlchemyError:
+        current_app.logger.exception("No se pudo contar los avisos sin leer")
+        return 0

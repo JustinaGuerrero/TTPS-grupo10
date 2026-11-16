@@ -1,0 +1,8 @@
+[
+  {"id": "GAA:c.-32-13T>G", "hgvs_c": "c.-32-13T>G", "proteina": null, "clasificacion": "patogenica"},
+  {"id": "GAA:c.1935C>A", "hgvs_c": "c.1935C>A", "proteina": "p.Asp645Glu", "clasificacion": "patogenica"},
+  {"id": "GAA:c.2560C>T", "hgvs_c": "c.2560C>T", "proteina": "p.Arg854Ter", "clasificacion": "patogenica"},
+  {"id": "GAA:c.525del", "hgvs_c": "c.525del", "proteina": "p.Glu176fs", "clasificacion": "patogenica"},
+  {"id": "GAA:c.1726G>A", "hgvs_c": "c.1726G>A", "proteina": "p.Gly576Ser", "clasificacion": "benigna"},
+  {"id": "GAA:c.2065G>A", "hgvs_c": "c.2065G>A", "proteina": "p.Glu689Lys", "clasificacion": "benigna"}
+]

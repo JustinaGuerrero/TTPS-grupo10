@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}Mis avisos{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Mis avisos</h1>
+
+  {% if pagina.total == 0 %}
+    <p class="text-body-secondary">No tenés avisos.</p>
+  {% else %}
+    <div class="list-group mb-3">
+      {% for aviso in pagina.avisos %}
+        <form method="post" action="{{ url_for('avisos.abrir', aviso_id=aviso.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+                  class="list-group-item list-group-item-action{% if not aviso.leido %} list-group-item-primary{% endif %}">
+            <div class="d-flex w-100 justify-content-between gap-2">
+              <span class="{% if not aviso.leido %}fw-semibold{% endif %}">
+                {{ aviso.asunto }}
+                {% if not aviso.leido %}<span class="badge text-bg-primary ms-1">Nuevo</span>{% endif %}
+              </span>
+              <small class="text-body-secondary text-nowrap">
+                {{ aviso.creada_en | fecha_hora }}
+              </small>
+            </div>
+            <p class="mb-0 small">{{ aviso.mensaje }}</p>
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+
+    {% if pagina.hay_anterior or pagina.hay_siguiente %}
+      <nav aria-label="Páginas de avisos">
+        <ul class="pagination">
+          <li class="page-item{% if not pagina.hay_anterior %} disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('avisos.listar', pagina=pagina.pagina - 1) }}">Anteriores</a>
+          </li>
+          <li class="page-item{% if not pagina.hay_siguiente %} disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('avisos.listar', pagina=pagina.pagina + 1) }}">Siguientes</a>
+          </li>
+        </ul>
+      </nav>
+    {% endif %}
+  {% endif %}
+{% endblock %}

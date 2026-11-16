@@ -8,10 +8,11 @@ from flask import Flask
 from flask_session import Session
 
 from src.core import database
+from src.integraciones import mail
 from src.web import comandos, errores
 from src.web.config import CONFIGS
-from src.web.controllers import autenticacion, inicio
-from src.web.helpers import auth, menu
+from src.web.controllers import autenticacion, avisos, inicio
+from src.web.helpers import auth, formato, menu
 from src.web.helpers.csrf import csrf
 
 
@@ -31,11 +32,13 @@ def create_app(env: str | None = None) -> Flask:
     # Después de auth: si el token falla, la página de error ya conoce al usuario logueado.
     csrf.init_app(app)
     menu.init_app(app)
+    formato.init_app(app)
     comandos.registrar(app)
-    # Sesión 6: Flask-Mail.
+    mail.init_app(app)
 
     app.register_blueprint(autenticacion.bp)
     app.register_blueprint(inicio.bp)
+    app.register_blueprint(avisos.bp)
     errores.registrar(app)
 
     return app

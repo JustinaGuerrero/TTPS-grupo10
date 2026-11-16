@@ -33,7 +33,18 @@
             {% endfor %}
           </ul>
           <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 py-2 py-lg-0">
-            <span class="navbar-text text-white">
+            {% set en_avisos = request.endpoint == "avisos.listar" %}
+            <a class="nav-link text-white{% if en_avisos %} fw-semibold{% endif %}"
+               {% if en_avisos %}aria-current="page"{% endif %}
+               href="{{ url_for('avisos.listar') }}">
+              Mis avisos
+              {% if avisos_sin_leer %}
+                <span class="badge rounded-pill text-bg-warning ms-1" id="avisos-sin-leer">
+                  {{ avisos_sin_leer }}<span class="visually-hidden"> sin leer</span>
+                </span>
+              {% endif %}
+            </a>
+            <span class="navbar-text text-white ms-lg-2">
               {{ g.usuario.nombre_completo }}
               <span class="badge text-bg-light ms-1">{{ g.usuario.rol.nombre }}</span>
             </span>
