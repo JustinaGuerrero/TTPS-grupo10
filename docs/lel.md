@@ -4,7 +4,7 @@ Oct 7, 2026 · @Someone
 
 # Introducción
 
-El LEL tiene 109 símbolos (15 sujetos, 41 objetos, 30 verbos y 23 estados) tomados de la entrevista de relevamiento del laboratorio de genética y descritos según el modelo de Leite.
+El LEL tiene 110 símbolos (15 sujetos, 42 objetos, 30 verbos y 23 estados) tomados de la entrevista de relevamiento del laboratorio de genética y descritos según el modelo de Leite.
 
 | Clasificación | La Noción responde | El Impacto responde |
 |---|---|---|
@@ -370,6 +370,17 @@ Convenciones usadas:
 
 1. El sistema registra cada pago en el registro financiero.
 2. El sistema registra la deuda pendiente de cada obra social.
+
+## Registro de cambios
+
+**Noción:** Historial de los cambios de los datos de un paciente, un estudio y un sample set: cada cambio guarda la fecha y la hora, el usuario (o el sistema), el campo, el valor anterior y el valor nuevo. No se edita ni se borra. Los cambios de estado del estudio se muestran en el mismo historial, desde los Estados del estudio.
+
+**Impactos:**
+
+1. El sistema registra cada cambio de un paciente, un estudio o un sample set en el registro de cambios.
+2. El médico tratante consulta el historial de cambios de sus pacientes y de sus estudios.
+3. El administrativo consulta el historial de cambios de un estudio y de un sample set.
+4. El administrador general consulta y filtra el registro de cambios de todas las entidades.
 
 ## Cupón de descuento
 
