@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}Patologías{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Patologías</h1>
+    <a class="btn btn-primary" href="{{ url_for('patologias.nueva') }}">Dar de alta patología</a>
+  </div>
+
+  {% if not filas %}
+    <div class="text-body-secondary py-4" id="sin-resultados">Todavía no hay patologías.</div>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <caption class="px-3">{{ filas | length }} patología{{ "s" if filas | length != 1 }}</caption>
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col" class="d-none d-md-table-cell">Código</th>
+              <th scope="col">Síntoma cardinal</th>
+              <th scope="col" class="d-none d-lg-table-cell">Síntomas secundarios</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in filas %}
+              <tr>
+                <td>{{ fila.patologia.nombre }}</td>
+                <td class="d-none d-md-table-cell text-nowrap">{{ fila.patologia.codigo_apigen }}</td>
+                <td>{{ fila.cardinal[0][1] if fila.cardinal else "—" }}</td>
+                <td class="d-none d-lg-table-cell">
+                  {{ fila.secundarios | map(attribute=1) | join(", ") or "—" }}
+                </td>
+                <td>
+                  {% if fila.patologia.activa %}
+                    <span class="badge text-bg-success">Activa</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Inactiva</span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{{ url_for('patologias.editar', patologia_id=fila.patologia.id) }}">
+                    Modificar síntomas
+                    <span class="visually-hidden">de {{ fila.patologia.nombre }}</span>
+                  </a>
+                  <form method="post"
+                        action="{{ url_for('patologias.cambiar_activa', patologia_id=fila.patologia.id) }}"
+                        class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                      {{ "Desactivar" if fila.patologia.activa else "Activar" }}
+                      <span class="visually-hidden">{{ fila.patologia.nombre }}</span>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% from "snomed/_buscador.html" import buscador %}
+
+{% block title %}{{ "Modificar síntomas" if patologia else "Dar de alta patología" }}{% endblock %}
+
+{% block content %}
+  {% set editando = patologia is not none %}
+  <h1 class="h3 mb-3">
+    {{ "Modificar síntomas de " ~ patologia.nombre if editando else "Dar de alta patología" }}
+  </h1>
+
+  <form method="post" novalidate
+        action="{{ url_for('patologias.modificar', patologia_id=patologia.id) if editando
+                   else url_for('patologias.crear') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-8">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input type="text" class="form-control" id="nombre" name="nombre" maxlength="100"
+                 value="{{ datos.nombre }}" {{ "disabled" if editando else "required" }}>
+        </div>
+        <div class="col-12 col-md-4">
+          <label for="codigo_apigen" class="form-label">Código</label>
+          <input type="text" class="form-control" id="codigo_apigen" name="codigo_apigen"
+                 maxlength="30" value="{{ datos.codigo_apigen }}"
+                 aria-describedby="ayuda-codigo" {{ "disabled" if editando else "required" }}>
+          {% if not editando %}
+            <div class="form-text" id="ayuda-codigo">Mayúsculas, números o _. Por ejemplo, FABRY.</div>
+          {% endif %}
+        </div>
+
+        {% if not editando %}
+          <div class="col-12 col-md-4">
+            <label for="herencia" class="form-label">Herencia</label>
+            <select class="form-select" id="herencia" name="herencia">
+              {% for h in herencias %}
+                <option value="{{ h.value }}" {% if h.value == datos.herencia %}selected{% endif %}>
+                  {{ h.value | replace("_", " ") | capitalize }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-8">
+            <label for="genes" class="form-label">Genes</label>
+            <textarea class="form-control" id="genes" name="genes" rows="2"
+                      aria-describedby="ayuda-genes">{{ datos.genes }}</textarea>
+            <div class="form-text" id="ayuda-genes">Separados por coma. Por ejemplo, GLA, GAA.</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        {{ buscador("buscar-cardinal", "cardinal", "Síntoma cardinal", datos.cardinal,
+                    url_busqueda, multiple=False,
+                    ayuda="Buscá y elegí un solo síntoma. Al elegir otro, reemplaza al anterior.") }}
+        {{ buscador("buscar-secundarios", "secundarios", "Síntomas secundarios", datos.secundarios,
+                    url_busqueda, multiple=True,
+                    ayuda="Podés elegir todos los que quieras. El cardinal no se repite acá.") }}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ "Guardar cambios" if editando else "Dar de alta" }}</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('patologias.listar') }}">Cancelar</a>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/buscador_snomed.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{#
+  Buscador de términos SNOMED (E07). Cada término elegido viaja como un input oculto
+  name=<nombre> con valor "codigo|termino". El JS (js/buscador_snomed.js) busca y agrega.
+  multiple=False: elegir otro reemplaza al anterior.
+#}
+{% macro buscador(id, nombre, titulo, seleccionados, url, multiple=False, ayuda="") %}
+  <div class="mb-4" data-buscador data-url="{{ url }}" data-nombre="{{ nombre }}"
+       data-multiple="{{ 'true' if multiple else 'false' }}">
+    <label for="{{ id }}" class="form-label">{{ titulo }}</label>
+    <input type="search" class="form-control" id="{{ id }}" autocomplete="off" maxlength="100"
+           placeholder="Escribí parte del síntoma" aria-describedby="{{ id }}-ayuda">
+    {% if ayuda %}<div class="form-text" id="{{ id }}-ayuda">{{ ayuda }}</div>{% endif %}
+    <div class="list-group mt-1" data-resultados></div>
+    <div class="visually-hidden" role="status" aria-live="polite" data-estado></div>
+    <ul class="list-unstyled d-flex flex-wrap gap-2 mt-2 mb-0" data-elegidos>
+      {% for codigo, termino in seleccionados %}
+        <li class="badge text-bg-primary fs-6 fw-normal d-inline-flex align-items-center gap-2"
+            data-codigo="{{ codigo }}">
+          {{ termino }}
+          <input type="hidden" name="{{ nombre }}" value="{{ codigo }}|{{ termino }}">
+          <button type="button" class="btn-close btn-close-white" data-quitar
+                  aria-label="Quitar {{ termino }}"></button>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endmacro %}
