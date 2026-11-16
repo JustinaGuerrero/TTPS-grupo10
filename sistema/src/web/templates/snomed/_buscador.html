@@ -8,7 +8,7 @@
        data-multiple="{{ 'true' if multiple else 'false' }}">
     <label for="{{ id }}" class="form-label">{{ titulo }}</label>
     <input type="search" class="form-control" id="{{ id }}" autocomplete="off" maxlength="100"
-           placeholder="Escribí parte del síntoma" aria-describedby="{{ id }}-ayuda">
+           placeholder="Escribí para buscar en SNOMED" aria-describedby="{{ id }}-ayuda">
     {% if ayuda %}<div class="form-text" id="{{ id }}-ayuda">{{ ayuda }}</div>{% endif %}
     <div class="list-group mt-1" data-resultados></div>
     <div class="visually-hidden" role="status" aria-live="polite" data-estado></div>
