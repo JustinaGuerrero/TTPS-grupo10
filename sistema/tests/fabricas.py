@@ -240,3 +240,41 @@ def crear_registro_de_cambio():
         return registro
 
     return _crear
+
+
+@pytest.fixture
+def crear_cupon(usuario_rapido):
+    """Fábrica: `crear_cupon(medico)` agrega un cupón vigente del médico, sin paciente.
+
+    `codigo` fija el código (en los mocks, VENCIDO01 está utilizado en el módulo y CAIDO001 falla
+    al vencerse); `paciente` lo deja asignado a ese paciente. Inserta la fila sin pasar por el
+    módulo de cupones y no hace commit. Llamarla dentro de un app_context.
+    """
+    from src.core.cupones import Cupon, EstadoCupon
+
+    numeros = itertools.count(1)
+
+    def _crear(
+        medico: Usuario,
+        codigo: str | None = None,
+        porcentaje: int = 20,
+        paciente: Paciente | None = None,
+        estado: EstadoCupon = EstadoCupon.VIGENTE,
+    ) -> Cupon:
+        numero = next(numeros)
+        gerente = usuario_rapido(roles.GERENTE_MEDICO)
+        db.session.flush()
+        cupon = Cupon(
+            codigo=codigo or f"TEST{numero:04d}",
+            descuento_porcentaje=porcentaje,
+            pdf_path=f"cupones/test{numero}.pdf",
+            estado=estado,
+            generado_por=gerente.id,
+            medico_tratante_id=medico.id,
+            paciente_id=paciente.id if paciente is not None else None,
+        )
+        db.session.add(cupon)
+        db.session.flush()
+        return cupon
+
+    return _crear

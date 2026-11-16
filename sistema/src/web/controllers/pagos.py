@@ -7,6 +7,7 @@ commit y renderiza. Un paciente solo ve y paga su propio estudio: el de otro res
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
+from src.core.cupones import ErrorDeCupon, calcular_descuento, codigo_desde_pdf, resolver_cupon
 from src.core.database import db
 from src.core.estudios import TransicionInvalida
 from src.core.pagos import (
@@ -22,9 +23,12 @@ from src.core.pagos import (
     presupuesto_de,
 )
 from src.core.usuarios import roles
+from src.integraciones.base import ErrorDeIntegracion
 from src.web.helpers.auth import login_required, rol_requerido
 
 bp = Blueprint("pagos", __name__)
+
+TAMANO_MAXIMO_DEL_PDF = 2 * 1024 * 1024
 
 
 # --- administrativo (E13) --------------------------------------------------------------------
@@ -113,18 +117,50 @@ def pagar(estudio_id: int):
 def confirmar_pago(estudio_id: int):
     """E14.4 a E14.6: pago simulado por el importe final; habilita el turno."""
     estudio = _estudio_propio_o_404(estudio_id)
+    codigo = request.form.get("cupon_codigo", "").strip() or None
     try:
-        pagar_particular(estudio, g.usuario, request.form.get("importe", ""))
-    except (ErrorDePago, TransicionInvalida) as error:
+        pagar_particular(estudio, g.usuario, request.form.get("importe", ""), codigo)
+    except (ErrorDePago, TransicionInvalida, ErrorDeIntegracion) as error:
+        # Si el módulo de cupones falla al vencer el cupón, no se registra el pago (E15.6).
         db.session.rollback()
-        flash(str(error), "error")
+        flash(error.mensaje if isinstance(error, ErrorDeIntegracion) else str(error), "error")
         presupuesto = presupuesto_de(estudio)
         if presupuesto is None:
             return redirect(url_for("pagos.presupuesto", estudio_id=estudio.id)), 400
-        return _formulario_de_pago(estudio, presupuesto), 400
+        estado = 503 if isinstance(error, ErrorDeIntegracion) else 400
+        return _formulario_de_pago(estudio, presupuesto), estado
     db.session.commit()
     flash("Pagaste tu estudio. Ya podés sacar tu turno de extracción.", "exito")
     return redirect(url_for("pagos.presupuesto", estudio_id=estudio.id))
+
+
+@bp.post("/estudios/<int:estudio_id>/pago/cupon")
+@login_required
+@rol_requerido(roles.PACIENTE)
+def aplicar_cupon(estudio_id: int):
+    """E15.1 a E15.5: el paciente sube el PDF del cupón o escribe su código y ve el descuento."""
+    estudio = _estudio_propio_o_404(estudio_id)
+    presupuesto = presupuesto_de(estudio)
+    if presupuesto is None:
+        flash("Tu estudio todavía no tiene presupuesto.", "aviso")
+        return redirect(url_for("pagos.presupuesto", estudio_id=estudio.id))
+    try:
+        codigo = request.form.get("codigo", "").strip()
+        archivo = request.files.get("pdf")
+        if not codigo and archivo and archivo.filename:
+            codigo = codigo_desde_pdf(
+                archivo.read(TAMANO_MAXIMO_DEL_PDF + 1)[:TAMANO_MAXIMO_DEL_PDF]
+            )
+        cupon = resolver_cupon(g.usuario, codigo)
+    except ErrorDeCupon as error:
+        # E15.3 y E15.4: el cupón no está vigente o no sirve; se informa el rechazo.
+        flash(str(error), "error")
+        return _formulario_de_pago(estudio, presupuesto), 400
+    except ErrorDeIntegracion as error:
+        flash(error.mensaje, "error")
+        return _formulario_de_pago(estudio, presupuesto), 503
+    flash(f"Cupón aplicado: {cupon.descuento_porcentaje}% de descuento.", "exito")
+    return _formulario_de_pago(estudio, presupuesto, cupon)
 
 
 # --- helpers ---------------------------------------------------------------------------------
@@ -138,10 +174,16 @@ def _estudio_propio_o_404(estudio_id: int):
     return estudio
 
 
-def _formulario_de_pago(estudio, presupuesto):
+def _formulario_de_pago(estudio, presupuesto, cupon=None):
+    final = importe_final(presupuesto)
+    descuento = calcular_descuento(presupuesto.total_usd, cupon) if cupon else None
+    if descuento is not None:
+        final = presupuesto.total_usd - descuento
     return render_template(
         "pagos/pagar.html",
         estudio=estudio,
         presupuesto=presupuesto,
-        importe_final=importe_final(presupuesto),
+        importe_final=final,
+        cupon=cupon,
+        descuento=descuento,
     )

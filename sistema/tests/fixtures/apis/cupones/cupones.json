@@ -1,0 +1,238 @@
+{
+ "items": [
+  {
+   "id": "00000000-0000-4000-8000-469519762278",
+   "codigo": "CUP73920001",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-216396075774",
+   "codigo": "CUP73920002",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-125954231641",
+   "codigo": "CUP73920003",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-507995905642",
+   "codigo": "CUP73920004",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-272031647537",
+   "codigo": "CUP73920005",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-115248128116",
+   "codigo": "CUP73920006",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-058565815893",
+   "codigo": "CUP73920007",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-040298847122",
+   "codigo": "CUP73920008",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-404336847478",
+   "codigo": "CUP73920009",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-567363818065",
+   "codigo": "CUP73920010",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-665396865550",
+   "codigo": "TEST0001",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-981300174795",
+   "codigo": "TEST0002",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-021285803825",
+   "codigo": "TEST0003",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-750426234292",
+   "codigo": "TEST0004",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-057681801010",
+   "codigo": "TEST0005",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-801145764202",
+   "codigo": "ABC12345",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-995493299489",
+   "codigo": "PDF00001",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-191395758469",
+   "codigo": "CAIDO001",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-020510224025",
+   "codigo": "VENCIDO01",
+   "estado": "usado",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": "2026-11-01T10:00:00Z"
+  },
+  {
+   "id": "00000000-0000-4000-8000-592006998320",
+   "codigo": "EXPIRADO1",
+   "estado": "paciente",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": "P-1",
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2020-01-01",
+   "fecha_uso": null
+  },
+  {
+   "id": "00000000-0000-4000-8000-853733276792",
+   "codigo": "SINPACIE1",
+   "estado": "medico",
+   "gerente_id": "G-1",
+   "medico_id": "M-1",
+   "paciente_id": null,
+   "porcentaje_descuento": 20,
+   "fecha_vencimiento": "2099-12-31",
+   "fecha_uso": null
+  }
+ ],
+ "total": 21,
+ "limit": 100,
+ "offset": 0
+}
