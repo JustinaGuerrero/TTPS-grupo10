@@ -19,6 +19,9 @@ from src.core.demo import camino_desde_creado
 from src.core.estudios import EstadoEstudio, Estudio, cambiar_estado
 from src.core.estudios import crear_estudio as crear_estudio_en_core
 from src.core.pacientes import Paciente, TipoSospecha
+from src.core.patologias import Patologia
+from src.core.patologias import crear_patologia as crear_patologia_en_core
+from src.core.snomed import SINTOMA, guardar_termino
 from src.core.usuarios import Usuario, crear_perfil_medico, roles
 from src.core.usuarios import crear_usuario as crear_usuario_en_core
 
@@ -122,5 +125,41 @@ def crear_estudio(crear_paciente):
             cambiar_estado(estudio, siguiente, None)
         db.session.commit()
         return estudio
+
+    return _crear
+
+
+@pytest.fixture
+def crear_patologia(usuario_rapido):
+    """Fábrica: `crear_patologia()` guarda una patología con su cardinal y la devuelve.
+
+    `cardinal` y cada secundario son (código SNOMED, texto). Los términos se guardan antes con
+    guardar_termino. No llama a Apigen (alta_en_apigen=False). Hace commit. Llamarla dentro de
+    un app_context.
+    """
+    numeros = itertools.count(1)
+
+    def _crear(
+        nombre: str | None = None,
+        cardinal: tuple[str, str] = ("S-CARDINAL", "Síntoma cardinal de prueba"),
+        secundarios: tuple[tuple[str, str], ...] = (),
+        activa: bool = True,
+    ) -> Patologia:
+        numero = next(numeros)
+        gerente = usuario_rapido(roles.GERENTE_MEDICO)
+        db.session.flush()
+        for codigo, termino in (cardinal, *secundarios):
+            guardar_termino(codigo, termino, SINTOMA)
+        patologia = crear_patologia_en_core(
+            nombre or f"Patología de prueba {numero}",
+            f"PAT_{numero}",
+            [cardinal[0]],
+            [codigo for codigo, _ in secundarios],
+            gerente,
+            alta_en_apigen=False,
+        )
+        patologia.activa = activa
+        db.session.commit()
+        return patologia
 
     return _crear
