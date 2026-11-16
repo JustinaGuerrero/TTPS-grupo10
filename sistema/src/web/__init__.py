@@ -11,7 +11,15 @@ from src.core import database
 from src.integraciones import mail
 from src.web import comandos, errores
 from src.web.config import CONFIGS
-from src.web.controllers import autenticacion, avisos, inicio, patologias, snomed, usuarios
+from src.web.controllers import (
+    autenticacion,
+    avisos,
+    inicio,
+    pagos,
+    patologias,
+    snomed,
+    usuarios,
+)
 from src.web.helpers import auth, formato, menu
 from src.web.helpers.csrf import csrf
 
@@ -43,6 +51,7 @@ def create_app(env: str | None = None) -> Flask:
 
     app.register_blueprint(patologias.bp)
     app.register_blueprint(snomed.bp)
+    app.register_blueprint(pagos.bp)
     errores.registrar(app)
 
     return app
