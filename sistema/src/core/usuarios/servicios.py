@@ -11,7 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from src.core.database import db
 from src.core.usuarios import roles
-from src.core.usuarios.modelos import Medico, Usuario
+from src.core.usuarios.modelos import Medico, Rol, Usuario
 
 
 def hashear_contrasena(contrasena: str) -> str:
@@ -30,6 +30,23 @@ def buscar_por_id(usuario_id: int) -> Usuario | None:
     return db.session.get(Usuario, usuario_id, options=[joinedload(Usuario.rol)])
 
 
+def listar_roles() -> list[Rol]:
+    """Los 7 roles, por nombre: para los filtros por rol."""
+    return list(db.session.scalars(sa.select(Rol).order_by(Rol.nombre)))
+
+
+def listar_activos_por_rol(rol_codigo: str) -> list[Usuario]:
+    """Usuarios activos con ese rol, por apellido y nombre: para avisarles a todos (notificar)."""
+    if rol_codigo not in roles.TODOS:
+        raise ValueError(f"Rol desconocido: {rol_codigo!r}")
+    consulta = (
+        sa.select(Usuario)
+        .where(Usuario.rol_codigo == rol_codigo, Usuario.activo)
+        .order_by(Usuario.apellido, Usuario.nombre, Usuario.id)
+    )
+    return list(db.session.scalars(consulta))
+
+
 def buscar_por_email(email: str) -> Usuario | None:
     """Busca sin distinguir mayúsculas, igual que el índice usuarios_email_unico."""
     consulta = sa.select(Usuario).where(sa.func.lower(Usuario.email) == email.strip().lower())
@@ -37,14 +54,23 @@ def buscar_por_email(email: str) -> Usuario | None:
 
 
 def crear_usuario(
-    email: str, contrasena: str, nombre: str, apellido: str, rol_codigo: str
+    email: str,
+    contrasena: str,
+    nombre: str,
+    apellido: str,
+    rol_codigo: str,
+    telefono: str | None = None,
 ) -> Usuario:
-    """Crea el usuario con la contraseña hasheada. No hace commit: lo decide quien llama."""
+    """Crea el usuario con la contraseña hasheada. No hace commit: lo decide quien llama.
+
+    No valida los datos: el alta desde una pantalla pasa antes por validar_alta() (alta.py).
+    """
     usuario = Usuario(
         email=email.strip(),
         hash_contrasena=hashear_contrasena(contrasena),
         nombre=nombre,
         apellido=apellido,
+        telefono=telefono,
         rol_codigo=rol_codigo,
     )
     db.session.add(usuario)

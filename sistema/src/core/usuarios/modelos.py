@@ -1,11 +1,13 @@
-"""Modelos de roles y usuarios. Mapean las tablas de la migración inicial."""
+"""Modelos de roles, usuarios y sus perfiles. Mapean las tablas de las migraciones."""
 
 from datetime import datetime
+from decimal import Decimal
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database import Base
+from src.core.provincias.modelos import Provincia
 
 
 class Rol(Base):
@@ -69,3 +71,26 @@ class Medico(Base):
 
     def __repr__(self) -> str:
         return f"<Medico {self.usuario_id} {self.matricula}>"
+
+
+class Transportista(Base):
+    """Perfil 1:1 de un usuario con rol transportista (E03): su provincia, una por transportista.
+
+    La ubicación la informa durante el recorrido (E25); es nula hasta el primer informe.
+    """
+
+    __tablename__ = "transportistas"
+
+    usuario_id: Mapped[int] = mapped_column(sa.ForeignKey("usuarios.id"), primary_key=True)
+    usuario: Mapped[Usuario] = relationship()
+    provincia_id: Mapped[int] = mapped_column(sa.ForeignKey("provincias.id"), unique=True)
+    provincia: Mapped[Provincia] = relationship()
+    latitud: Mapped[Decimal | None] = mapped_column(sa.Numeric(9, 6))
+    longitud: Mapped[Decimal | None] = mapped_column(sa.Numeric(9, 6))
+    ubicacion_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    creado_en: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"<Transportista {self.usuario_id} provincia {self.provincia_id}>"

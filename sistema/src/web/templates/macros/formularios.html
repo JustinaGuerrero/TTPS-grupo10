@@ -1,0 +1,44 @@
+{#
+  Campos de formulario con Bootstrap y los errores de validación del servidor.
+
+    {% from "macros/formularios.html" import campo, error_de %}
+    {{ campo("email", "Mail", datos.email, errores, tipo="email", maxlength=254) }}
+
+  `errores` es el dict de campo a mensaje que devuelve core (por ejemplo, ErrorDeValidacion).
+  Si el campo tiene error, se marca en rojo y el mensaje queda debajo, ligado al campo con
+  aria-describedby. El mismo lugar lo usa static/js/formularios.js para los errores que detecta
+  el navegador antes de enviar.
+
+  Un campo que solo se pide en algunos casos (por ejemplo, según el rol) va con
+  requerido=false y requerido_si_se_ve=true, dentro de un bloque con data-segun: el script le
+  pone `required` solo cuando se muestra. Sin JavaScript se ve siempre y lo valida el servidor.
+#}
+
+{% macro error_de(nombre, errores) %}
+  <div class="invalid-feedback" id="{{ nombre }}-error">{{ errores.get(nombre, "") }}</div>
+{% endmacro %}
+
+{% macro atributos_de_error(nombre, errores, ayuda=none) %}
+  {%- set descripciones = [nombre ~ "-error"] + ([nombre ~ "-ayuda"] if ayuda else []) -%}
+  aria-describedby="{{ descripciones | join(' ') }}"
+  {%- if nombre in errores %} aria-invalid="true"{% endif %}
+{%- endmacro %}
+
+{% macro campo(nombre, etiqueta, valor, errores, tipo="text", requerido=true,
+               requerido_si_se_ve=false, maxlength=none, autocomplete=none, inputmode=none,
+               pattern=none, ayuda=none) %}
+  <label for="{{ nombre }}" class="form-label">
+    {{ etiqueta }}{% if requerido or requerido_si_se_ve %} <span class="text-danger" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <input type="{{ tipo }}" class="form-control{% if nombre in errores %} is-invalid{% endif %}"
+         id="{{ nombre }}" name="{{ nombre }}" value="{{ valor or '' }}"
+         {% if requerido %}required{% endif %}
+         {% if requerido_si_se_ve %}data-requerido{% endif %}
+         {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+         {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+         {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+         {% if pattern %}pattern="{{ pattern }}"{% endif %}
+         {{ atributos_de_error(nombre, errores, ayuda) }}>
+  {% if ayuda %}<div class="form-text" id="{{ nombre }}-ayuda">{{ ayuda }}</div>{% endif %}
+  {{ error_de(nombre, errores) }}
+{% endmacro %}

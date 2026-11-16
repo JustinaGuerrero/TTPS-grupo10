@@ -1,97 +1,59 @@
-"""Fixtures compartidos.
+"""Fixtures compartidos: la base de test, la app, el cliente y el login por rol.
 
 Los tests corren contra DATABASE_URL_TEST, nunca contra la base compartida de Supabase.
 Al empezar la corrida, `base_de_test` borra el esquema public de esa base y aplica en
-orden todas las migraciones de supabase/migrations. En cada test, lo que se escribe
-con db.session, aunque haga commit, se revierte al terminar (ver el fixture `app`).
+orden todas las migraciones de supabase/migrations (src/core/migraciones.py). En cada test,
+lo que se escribe con db.session, aunque haga commit, se revierte al terminar (ver `app`).
+
+Las fábricas de datos (crear_usuario, usuario_rapido, crear_paciente, crear_estudio…) están en
+fabricas.py, que se carga con pytest_plugins.
 """
 
-import itertools
 import os
-from collections import deque
-from datetime import date
-from pathlib import Path
 
 import pytest
 import sqlalchemy as sa
 from dotenv import load_dotenv
 
-from src.core.database import db, url_de_conexion
-from src.core.estudios import TRANSICIONES, EstadoEstudio, Estudio, cambiar_estado
-from src.core.estudios import crear_estudio as crear_estudio_en_core
-from src.core.pacientes import Paciente, TipoSospecha
-from src.core.usuarios import Usuario, crear_perfil_medico, roles
-from src.core.usuarios import crear_usuario as crear_usuario_en_core
+from src.core import migraciones
+from src.core.database import db
 from src.web import create_app
 
-MIGRACIONES = Path(__file__).resolve().parents[1] / "supabase" / "migrations"
+pytest_plugins = ["fabricas"]
+
+# Contraseña de los usuarios que crea la fábrica crear_usuario (no es la de `flask seeds`).
+# Los tests la importan de acá: `from conftest import CONTRASENA_DE_TEST`.
+CONTRASENA_DE_TEST = "contrasena-de-test"
 
 
-def _url_de_test() -> sa.URL:
+def _url_de_test() -> str:
     load_dotenv()
-    valor = os.getenv("DATABASE_URL_TEST")
-    if not valor:
+    url = os.getenv("DATABASE_URL_TEST")
+    if not url:
         pytest.exit("Falta DATABASE_URL_TEST en sistema/.env (ver .env.example).", returncode=1)
-
-    url = sa.make_url(url_de_conexion(valor))
-    compartida = os.getenv("DATABASE_URL")
-    es_la_compartida = bool(compartida) and sa.make_url(url_de_conexion(compartida)) == url
-    if "supabase" in (url.host or "") or es_la_compartida:
+    motivo = migraciones.motivo_para_no_borrar(url, os.getenv("DATABASE_URL"))
+    if motivo:
         pytest.exit(
-            "DATABASE_URL_TEST apunta a la base compartida y los tests borran su esquema public. "
-            "Usá una base local.",
+            f"DATABASE_URL_TEST no sirve para los tests ({motivo}): los tests borran su esquema "
+            "public. Usá una base local.",
             returncode=1,
         )
     return url
 
 
-def _crear_base_si_falta(url: sa.URL) -> None:
-    """Crea la base de test (por ejemplo exoma_test) para que nadie tenga que correr createdb."""
-    motor = sa.create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
-    try:
-        with motor.connect() as conexion:
-            existe = conexion.scalar(
-                sa.text("select 1 from pg_database where datname = :nombre"),
-                {"nombre": url.database},
-            )
-            if not existe:
-                nombre = conexion.dialect.identifier_preparer.quote(url.database)
-                conexion.exec_driver_sql(f"create database {nombre}")
-    except sa.exc.OperationalError as error:
-        pytest.exit(
-            f"No se pudo conectar a la base de test "
-            f"({url.render_as_string(hide_password=True)}): {error.orig}",
-            returncode=1,
-        )
-    finally:
-        motor.dispose()
-
-
-def _aplicar_migraciones(url: sa.URL) -> None:
-    """Deja el esquema public vacío y aplica las migraciones en el orden de `db push`."""
-    motor = sa.create_engine(url)
-    try:
-        with motor.begin() as conexion:
-            conexion.exec_driver_sql("drop schema if exists public cascade")
-            conexion.exec_driver_sql("create schema public")
-            for archivo in sorted(MIGRACIONES.glob("*.sql")):
-                try:
-                    # Sin parámetros, psycopg acepta varios statements y no interpreta los %.
-                    conexion.exec_driver_sql(
-                        archivo.read_text(encoding="utf-8"),
-                        execution_options={"no_parameters": True},
-                    )
-                except sa.exc.DBAPIError as error:
-                    pytest.exit(f"Falla la migración {archivo.name}: {error.orig}", returncode=1)
-    finally:
-        motor.dispose()
-
-
 @pytest.fixture(scope="session")
 def base_de_test():
     url = _url_de_test()
-    _crear_base_si_falta(url)
-    _aplicar_migraciones(url)
+    try:
+        # Así nadie tiene que correr createdb para la base de test (por ejemplo exoma_test).
+        migraciones.crear_base_si_falta(url)
+    except sa.exc.OperationalError as error:
+        sin_clave = sa.make_url(url).render_as_string(hide_password=True)
+        pytest.exit(f"No se pudo conectar a la base de test ({sin_clave}): {error.orig}", 1)
+    try:
+        migraciones.aplicar_migraciones(url)
+    except migraciones.MigracionFallida as error:
+        pytest.exit(str(error), returncode=1)
 
 
 @pytest.fixture
@@ -123,130 +85,6 @@ def app(base_de_test):
 @pytest.fixture
 def client(app):
     return app.test_client()
-
-
-# Contraseña de los usuarios que crean los fixtures (no es la de `flask seeds`).
-CONTRASENA_DE_TEST = "contrasena-de-test"
-
-
-@pytest.fixture
-def crear_usuario(app):
-    """Fábrica: `crear_usuario(roles.PACIENTE)` guarda un usuario con ese rol y devuelve su mail.
-
-    La contraseña es CONTRASENA_DE_TEST. Con `activo=False` queda desactivado.
-    """
-    numeros = itertools.count(1)
-
-    def _crear(rol: str, email: str | None = None, activo: bool = True) -> str:
-        email = email or f"{rol}.{next(numeros)}@exoma.test"
-        with app.app_context():
-            usuario = crear_usuario_en_core(email, CONTRASENA_DE_TEST, "Nombre", "De Test", rol)
-            usuario.activo = activo
-            db.session.commit()
-        return email
-
-    return _crear
-
-
-@pytest.fixture
-def usuario_rapido():
-    """Fábrica: `usuario_rapido(roles.ADMINISTRATIVO)` agrega a db.session un usuario y lo devuelve.
-
-    Usa un hash ficticio para no calcular scrypt: el usuario no puede iniciar sesión. Para los
-    tests que necesitan usuarios como datos y no como login. Llamarla dentro de un app_context.
-    """
-    numeros = itertools.count(1)
-
-    def _crear(rol: str) -> Usuario:
-        numero = next(numeros)
-        usuario = Usuario(
-            email=f"rapido.{rol}.{numero}@exoma.test",
-            hash_contrasena="hash-ficticio",
-            nombre="Nombre",
-            apellido=f"De Test {numero}",
-            rol_codigo=rol,
-        )
-        db.session.add(usuario)
-        return usuario
-
-    return _crear
-
-
-@pytest.fixture
-def crear_paciente(usuario_rapido):
-    """Fábrica: `crear_paciente()` agrega un paciente, con su usuario y su médico tratante.
-
-    Llamarla dentro de un app_context; no hace commit.
-    """
-    numeros = itertools.count(1)
-
-    def _crear() -> Paciente:
-        numero = next(numeros)
-        medico = usuario_rapido(roles.MEDICO_TRATANTE)
-        paciente = Paciente(
-            usuario=usuario_rapido(roles.PACIENTE),
-            dni=f"9{numero:07d}",
-            fecha_nacimiento=date(2000, 1, 1),
-            tipo_sospecha=TipoSospecha.CLINICA,
-            resumen_historia_clinica="Resumen de historia clínica de prueba.",
-            medico_tratante=crear_perfil_medico(medico, f"MP-TEST-{numero:04d}"),
-        )
-        db.session.add(paciente)
-        db.session.flush()
-        return paciente
-
-    return _crear
-
-
-def camino_desde_creado(destino: EstadoEstudio) -> list[EstadoEstudio]:
-    """Estados que recorre un estudio desde Creado hasta `destino`, por el camino más corto."""
-    anteriores: dict[EstadoEstudio, EstadoEstudio | None] = {EstadoEstudio.CREADO: None}
-    pendientes = deque([EstadoEstudio.CREADO])
-    while pendientes:
-        actual = pendientes.popleft()
-        for siguiente in TRANSICIONES[actual]:
-            if siguiente not in anteriores:
-                anteriores[siguiente] = actual
-                pendientes.append(siguiente)
-    if destino not in anteriores:
-        raise ValueError(f"No se llega a {destino} desde Creado")
-    camino = []
-    estado: EstadoEstudio | None = destino
-    while estado is not None:
-        camino.append(estado)
-        estado = anteriores[estado]
-    return camino[::-1]
-
-
-@pytest.fixture
-def crear_estudio(crear_paciente):
-    """Fábrica: `crear_estudio(estado=...)` guarda un estudio y lo devuelve en ese estado.
-
-    Lo da de alta en Creado con crear_estudio() de core y lo lleva al estado pedido por el
-    camino más corto, siempre con cambiar_estado() y usuario None. Hace commit. Llamarla dentro
-    de un app_context.
-    """
-
-    def _crear(
-        estado: EstadoEstudio | str = EstadoEstudio.CREADO,
-        genes: tuple[str, ...] = ("GAA",),
-        genes_agregados_a_mano: tuple[str, ...] = (),
-        evalua_hallazgos_secundarios: bool = False,
-    ) -> Estudio:
-        paciente = crear_paciente()
-        estudio = crear_estudio_en_core(
-            paciente,
-            paciente.medico_tratante.usuario,
-            genes=genes,
-            evalua_hallazgos_secundarios=evalua_hallazgos_secundarios,
-            genes_agregados_a_mano=genes_agregados_a_mano,
-        )
-        for siguiente in camino_desde_creado(EstadoEstudio(estado))[1:]:
-            cambiar_estado(estudio, siguiente, None)
-        db.session.commit()
-        return estudio
-
-    return _crear
 
 
 @pytest.fixture

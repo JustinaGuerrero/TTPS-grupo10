@@ -34,6 +34,10 @@ pythonpath = ["."]
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint.isort]
+# La carpeta supabase/ (migraciones) no es el paquete supabase de PyPI.
+known-third-party = ["supabase"]
+
 [dependency-groups]
 dev = [
     "pytest (>=9.2.0,<10.0.0)",

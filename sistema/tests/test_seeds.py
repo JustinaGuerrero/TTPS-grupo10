@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from src.core.database import db
 from src.core.pacientes import Paciente
 from src.core.seeds import USUARIOS_DE_PRUEBA
-from src.core.usuarios import Medico, Rol, Usuario, roles
+from src.core.usuarios import Medico, Rol, Transportista, Usuario, roles
 
 UNO_POR_ROL = {rol: 1 for rol in roles.TODOS}
 
@@ -60,6 +60,20 @@ def test_seeds_crea_los_perfiles_de_medico_y_de_paciente(app):
 
     assert medicos == {"medico@exoma.test", "gerente@exoma.test"}
     assert pacientes == [("paciente@exoma.test", "medico@exoma.test")]
+
+
+def test_seeds_le_da_provincia_al_transportista(app):
+    runner = app.test_cli_runner()
+    runner.invoke(args=["seeds"])
+    runner.invoke(args=["seeds"])
+
+    with app.app_context():
+        transportistas = [
+            (transportista.usuario.email, transportista.provincia.nombre)
+            for transportista in db.session.scalars(sa.select(Transportista))
+        ]
+
+    assert transportistas == [("transportista@exoma.test", "Buenos Aires")]
 
 
 def test_cada_usuario_de_prueba_inicia_sesion_y_ve_su_rol(app):

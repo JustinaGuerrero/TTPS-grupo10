@@ -1,0 +1,39 @@
+{#
+  Links de página para una Pagina de core (src/core/paginacion.py).
+
+    {% from "macros/paginacion.html" import paginacion %}
+    {{ paginacion(pagina, "usuarios.listar", busqueda.parametros(), "Páginas de usuarios") }}
+
+  `parametros` son los demás parámetros de la URL (búsqueda, filtros, orden): cada link los
+  conserva y solo cambia `pagina`. Con una sola página no muestra nada.
+#}
+{% macro paginacion(pagina, endpoint, parametros={}, etiqueta="Páginas") %}
+  {% if pagina.cantidad_de_paginas > 1 %}
+    <nav aria-label="{{ etiqueta }}">
+      <ul class="pagination flex-wrap mb-0">
+        {{ _link(pagina.numero - 1, endpoint, parametros, "«", not pagina.hay_anterior, "Página anterior") }}
+        {% for numero in pagina.numeros_visibles %}
+          {% if numero is none %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% elif numero == pagina.numero %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ numero }}</span></li>
+          {% else %}
+            {{ _link(numero, endpoint, parametros, numero, false, "Página " ~ numero) }}
+          {% endif %}
+        {% endfor %}
+        {{ _link(pagina.numero + 1, endpoint, parametros, "»", not pagina.hay_siguiente, "Página siguiente") }}
+      </ul>
+    </nav>
+  {% endif %}
+{% endmacro %}
+
+{% macro _link(numero, endpoint, parametros, texto, deshabilitado, descripcion) %}
+  {% if deshabilitado %}
+    <li class="page-item disabled"><span class="page-link" aria-hidden="true">{{ texto }}</span></li>
+  {% else %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for(endpoint, **dict(parametros, pagina=numero)) }}"
+         aria-label="{{ descripcion }}">{{ texto }}</a>
+    </li>
+  {% endif %}
+{% endmacro %}

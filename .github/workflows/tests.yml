@@ -1,0 +1,69 @@
+name: Tests
+
+# Corre los tests del sistema en cada PR (a development y a main) y después de cada merge.
+on:
+  pull_request:
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+
+# Un PR con push nuevo cancela la corrida anterior del mismo PR.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: sistema
+
+    # La base de test: un PostgreSQL de la misma versión que Supabase (config.toml, major_version).
+    # Los tests borran su esquema public y aplican supabase/migrations en orden (tests/conftest.py).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: exoma_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: testing
+      # Credenciales del contenedor de arriba: solo existen dentro de esta corrida.
+      DATABASE_URL_TEST: postgresql+psycopg://postgres:postgres@localhost:5432/exoma_test
+      USE_MOCKS: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Poetry
+        run: pipx install poetry==2.5.1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: poetry
+          cache-dependency-path: sistema/poetry.lock
+
+      - name: Instalar dependencias
+        run: poetry install --no-interaction
+
+      - name: Ruff
+        run: poetry run ruff check src tests
+
+      - name: Pytest
+        run: poetry run pytest -q

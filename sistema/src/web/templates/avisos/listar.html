@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% from "macros/paginacion.html" import paginacion %}
+
+{% block title %}Mis avisos{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Mis avisos</h1>
+
+  {% if pagina.total == 0 %}
+    <p class="text-body-secondary">No tenés avisos.</p>
+  {% else %}
+    <div class="list-group mb-3">
+      {% for aviso in pagina.items %}
+        <form method="post" action="{{ url_for('avisos.abrir', aviso_id=aviso.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+                  class="list-group-item list-group-item-action{% if not aviso.leido %} list-group-item-primary{% endif %}">
+            <div class="d-flex w-100 justify-content-between gap-2">
+              <span class="{% if not aviso.leido %}fw-semibold{% endif %}">
+                {{ aviso.asunto }}
+                {% if not aviso.leido %}<span class="badge text-bg-primary ms-1">Nuevo</span>{% endif %}
+              </span>
+              <small class="text-body-secondary text-nowrap">
+                {{ aviso.creada_en | fecha_hora }}
+              </small>
+            </div>
+            <p class="mb-0 small">{{ aviso.mensaje }}</p>
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+
+    {{ paginacion(pagina, "avisos.listar", etiqueta="Páginas de avisos") }}
+  {% endif %}
+{% endblock %}

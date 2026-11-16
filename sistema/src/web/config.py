@@ -13,6 +13,9 @@ from cachelib import SimpleCache
 # Solo en desarrollo y tests; en producción hay que definirla.
 CONTRASENA_DE_SEEDS_POR_DEFECTO = "prueba1234"
 
+# Remitente de los mails en desarrollo y tests cuando MAIL_DEFAULT_SENDER está vacío.
+REMITENTE_DE_PRUEBA = "Exoma clínico <no-responder@exoma.test>"
+
 
 def _bool(nombre: str, por_defecto: bool = False) -> bool:
     valor = os.getenv(nombre)
@@ -48,11 +51,17 @@ class Config:
         self.MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
         self.MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
         self.MAIL_SUPPRESS_SEND = False
+        # Dirección pública del sistema, para los links absolutos de los mails.
+        self.URL_BASE = (os.getenv("URL_BASE") or "http://localhost:5000").rstrip("/")
 
         self.SUPABASE_URL = os.getenv("SUPABASE_URL")
         self.SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+        self.SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET") or "documentos"
+        # Carpeta de los archivos de storage con USE_MOCKS=1. Vacía: instance/storage.
+        self.STORAGE_CARPETA_MOCK = os.getenv("STORAGE_CARPETA_MOCK")
         self.APIGEN_URL = os.getenv("APIGEN_URL")
         self.APIGEN_KEY = os.getenv("APIGEN_KEY")
+        self.APIGEN_GRUPO_ID = os.getenv("APIGEN_GRUPO_ID") or "grupo10"
         self.USE_MOCKS = _bool("USE_MOCKS")
         self.SEEDS_CONTRASENA = os.getenv("SEEDS_CONTRASENA")
 
@@ -62,8 +71,12 @@ class DevelopmentConfig(Config):
 
     def __init__(self) -> None:
         super().__init__()
-        # En desarrollo los mails no salen: se muestran por consola (sesión 6).
+        # Con DATABASE_URL_LOCAL, flask run usa la base local que arma `flask migrar-local`: se
+        # prueban las migraciones nuevas sin tocar el Supabase compartido.
+        self.DATABASE_URL = os.getenv("DATABASE_URL_LOCAL") or self.DATABASE_URL
+        # En desarrollo los mails no salen: se muestran por consola (src/integraciones/mail.py).
         self.MAIL_SUPPRESS_SEND = True
+        self.MAIL_DEFAULT_SENDER = self.MAIL_DEFAULT_SENDER or REMITENTE_DE_PRUEBA
         if not self.SECRET_KEY:
             self.SECRET_KEY = "dev-no-usar-en-produccion"
         self.SEEDS_CONTRASENA = self.SEEDS_CONTRASENA or CONTRASENA_DE_SEEDS_POR_DEFECTO
@@ -80,6 +93,8 @@ class TestingConfig(Config):
         self.DATABASE_URL = os.getenv("DATABASE_URL_TEST")
         self.SECRET_KEY = "clave-de-tests"
         self.MAIL_SUPPRESS_SEND = True
+        self.MAIL_DEFAULT_SENDER = REMITENTE_DE_PRUEBA
+        self.URL_BASE = "http://exoma.test"
         self.USE_MOCKS = True
         # Sesiones en memoria: cada app de test empieza sin sesiones y no deja archivos.
         self.SESSION_CACHELIB = SimpleCache()

@@ -8,8 +8,17 @@ from datetime import date
 import sqlalchemy as sa
 
 from src.core.database import db
+from src.core.estudios import Estudio, crear_estudio
 from src.core.pacientes import Paciente, TipoSospecha
-from src.core.usuarios import Medico, buscar_por_email, crear_perfil_medico, crear_usuario, roles
+from src.core.provincias import Provincia
+from src.core.usuarios import (
+    Medico,
+    Transportista,
+    buscar_por_email,
+    crear_perfil_medico,
+    crear_usuario,
+    roles,
+)
 
 # Un usuario de prueba por cada rol del LEL. ".test" es un dominio reservado: ningún mail llega.
 USUARIOS_DE_PRUEBA = (
@@ -29,7 +38,12 @@ MATRICULAS_DE_PRUEBA = {
     "gerente@exoma.test": "MP-TEST-0002",
 }
 
-# Ficha del paciente de prueba (E06), dada de alta por medico@exoma.test.
+# Perfil de transportista (provincia) de los usuarios de prueba que lo necesitan (E03).
+PROVINCIAS_DE_PRUEBA = {
+    "transportista@exoma.test": "Buenos Aires",
+}
+
+# Ficha del paciente de prueba (E06), dada de alta por medico@exoma.test, con su estudio.
 PACIENTE_DE_PRUEBA = {
     "email": "paciente@exoma.test",
     "medico_tratante": "medico@exoma.test",
@@ -39,9 +53,12 @@ PACIENTE_DE_PRUEBA = {
     "resumen_historia_clinica": "Paciente inventado para probar el sistema.",
 }
 
+# Genes del estudio del paciente de prueba, que queda en Creado. Para otros estados: `flask demo`.
+GENES_DEL_ESTUDIO_DE_PRUEBA = ("GAA",)
+
 
 def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
-    """Crea los usuarios de prueba que falten, con sus perfiles de médico y de paciente.
+    """Crea los usuarios de prueba que falten, con sus perfiles de médico, transportista y paciente.
 
     Devuelve (email, rol, creado) por cada usuario.
     """
@@ -57,6 +74,8 @@ def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
         usuario = buscar_por_email(email)
         if db.session.get(Medico, usuario.id) is None:
             crear_perfil_medico(usuario, matricula)
+    for email, provincia in PROVINCIAS_DE_PRUEBA.items():
+        _cargar_transportista_de_prueba(email, provincia)
     _cargar_paciente_de_prueba()
 
     db.session.commit()
@@ -66,7 +85,31 @@ def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
 def _cargar_paciente_de_prueba() -> None:
     datos = dict(PACIENTE_DE_PRUEBA)
     usuario = buscar_por_email(datos.pop("email"))
-    existe = db.session.scalar(sa.select(Paciente.id).where(Paciente.usuario_id == usuario.id))
-    if existe is None:
-        medico = buscar_por_email(datos.pop("medico_tratante"))
-        db.session.add(Paciente(usuario=usuario, medico_tratante_id=medico.id, **datos))
+    medico = buscar_por_email(datos.pop("medico_tratante"))
+    paciente = db.session.scalars(
+        sa.select(Paciente).where(Paciente.usuario_id == usuario.id)
+    ).one_or_none()
+    if paciente is None:
+        paciente = Paciente(usuario=usuario, medico_tratante_id=medico.id, **datos)
+        db.session.add(paciente)
+        db.session.flush()
+    tiene_estudio = db.session.scalar(
+        sa.select(Estudio.id).where(Estudio.paciente_id == paciente.id)
+    )
+    if tiene_estudio is None:
+        crear_estudio(
+            paciente,
+            medico,
+            genes=GENES_DEL_ESTUDIO_DE_PRUEBA,
+            evalua_hallazgos_secundarios=False,
+        )
+
+
+def _cargar_transportista_de_prueba(email: str, nombre_de_provincia: str) -> None:
+    usuario = buscar_por_email(email)
+    if db.session.get(Transportista, usuario.id) is not None:
+        return
+    provincia = db.session.scalars(
+        sa.select(Provincia).where(Provincia.nombre == nombre_de_provincia)
+    ).one()
+    db.session.add(Transportista(usuario=usuario, provincia=provincia))

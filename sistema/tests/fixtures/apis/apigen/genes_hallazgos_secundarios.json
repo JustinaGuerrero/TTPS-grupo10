@@ -1,0 +1,10 @@
+[
+  {"gen": "ATP7B", "condicion": "Enfermedad de Wilson", "herencia": "recesiva"},
+  {"gen": "BRCA1", "condicion": "Cáncer de mama y ovario hereditario", "herencia": "dominante"},
+  {"gen": "BRCA2", "condicion": "Cáncer de mama y ovario hereditario", "herencia": "dominante"},
+  {"gen": "GLA", "condicion": "Enfermedad de Fabry", "herencia": "ligada_x"},
+  {"gen": "HFE", "condicion": "Hemocromatosis hereditaria", "herencia": "recesiva"},
+  {"gen": "LDLR", "condicion": "Hipercolesterolemia familiar", "herencia": "dominante"},
+  {"gen": "MLH1", "condicion": "Síndrome de Lynch", "herencia": "dominante"},
+  {"gen": "OTC", "condicion": "Déficit de ornitina transcarbamilasa", "herencia": "ligada_x"}
+]
