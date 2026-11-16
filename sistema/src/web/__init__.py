@@ -15,6 +15,7 @@ from src.web.controllers import (
     autenticacion,
     avisos,
     inicio,
+    pagos,
     patologias,
     registro,
     snomed,
@@ -52,6 +53,7 @@ def create_app(env: str | None = None) -> Flask:
 
     app.register_blueprint(patologias.bp)
     app.register_blueprint(snomed.bp)
+    app.register_blueprint(pagos.bp)
     errores.registrar(app)
 
     return app
