@@ -21,3 +21,13 @@ completo de ClinVar ni de la lista ACMG.
 | `resultado_diagnostico("POMPE", …)` | `resultado_diagnostico_POMPE.json` (no mira las variantes) | `resultado_diagnostico.json`: `"negativo"` |
 
 `genes_por_patologia_MPS2.error.json` simula la patología que Apigen sacó en la v1.
+
+## Módulo de cupones (`cupones/`)
+
+Contrato provisorio en `docs/apis/cupones.md`.
+
+| Función | Archivo | Si no hay archivo |
+| --- | --- | --- |
+| `generar(descuento, n)` | `generar.json` (10 cupones con PDF) | Error: no hay respuesta simulada |
+| `consultar("X")` | `consultar_X.json` (`VENCIDO01` está utilizado) | `consultar.json`: vigente |
+| `vencer("X")` | `vencer_X.json` (`CAIDO001` da error 503) | `vencer.json` |
