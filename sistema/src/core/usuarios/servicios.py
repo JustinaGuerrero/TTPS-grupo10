@@ -35,6 +35,18 @@ def listar_roles() -> list[Rol]:
     return list(db.session.scalars(sa.select(Rol).order_by(Rol.nombre)))
 
 
+def listar_activos_por_rol(rol_codigo: str) -> list[Usuario]:
+    """Usuarios activos con ese rol, por apellido y nombre: para avisarles a todos (notificar)."""
+    if rol_codigo not in roles.TODOS:
+        raise ValueError(f"Rol desconocido: {rol_codigo!r}")
+    consulta = (
+        sa.select(Usuario)
+        .where(Usuario.rol_codigo == rol_codigo, Usuario.activo)
+        .order_by(Usuario.apellido, Usuario.nombre, Usuario.id)
+    )
+    return list(db.session.scalars(consulta))
+
+
 def buscar_por_email(email: str) -> Usuario | None:
     """Busca sin distinguir mayúsculas, igual que el índice usuarios_email_unico."""
     consulta = sa.select(Usuario).where(sa.func.lower(Usuario.email) == email.strip().lower())

@@ -6,6 +6,8 @@
   <title>{% block title %}Inicio{% endblock %} · Exoma clínico</title>
   {# Bootstrap 5.3.8 servido desde static/vendor: la app no depende de un CDN. #}
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+  {# Estilos o metadatos propios de cada página: ninguna pantalla tiene que editar el layout. #}
+  {% block head %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100 bg-body-tertiary">
   {% macro item_de_menu(texto, endpoint) %}

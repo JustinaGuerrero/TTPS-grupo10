@@ -56,8 +56,12 @@ class Config:
 
         self.SUPABASE_URL = os.getenv("SUPABASE_URL")
         self.SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+        self.SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET") or "documentos"
+        # Carpeta de los archivos de storage con USE_MOCKS=1. Vacía: instance/storage.
+        self.STORAGE_CARPETA_MOCK = os.getenv("STORAGE_CARPETA_MOCK")
         self.APIGEN_URL = os.getenv("APIGEN_URL")
         self.APIGEN_KEY = os.getenv("APIGEN_KEY")
+        self.APIGEN_GRUPO_ID = os.getenv("APIGEN_GRUPO_ID") or "grupo10"
         self.USE_MOCKS = _bool("USE_MOCKS")
         self.SEEDS_CONTRASENA = os.getenv("SEEDS_CONTRASENA")
 
@@ -67,6 +71,9 @@ class DevelopmentConfig(Config):
 
     def __init__(self) -> None:
         super().__init__()
+        # Con DATABASE_URL_LOCAL, flask run usa la base local que arma `flask migrar-local`: se
+        # prueban las migraciones nuevas sin tocar el Supabase compartido.
+        self.DATABASE_URL = os.getenv("DATABASE_URL_LOCAL") or self.DATABASE_URL
         # En desarrollo los mails no salen: se muestran por consola (src/integraciones/mail.py).
         self.MAIL_SUPPRESS_SEND = True
         self.MAIL_DEFAULT_SENDER = self.MAIL_DEFAULT_SENDER or REMITENTE_DE_PRUEBA

@@ -113,6 +113,16 @@ def test_genes_de_patologia_arma_el_pedido_del_contrato():
     assert falsa.cuerpo == {"p_patologia": "POMPE", "p_grupo_id": "grupo10"}
 
 
+def test_el_grupo_sale_de_apigen_grupo_id(app):
+    app.config["APIGEN_GRUPO_ID"] = "grupo99"
+    falsa = ApigenFalsa(httpx.Response(200, json=["GAA"]))
+
+    with app.app_context():
+        apigen.genes_de_patologia("POMPE", cliente=falsa.cliente())
+
+    assert falsa.cuerpo["p_grupo_id"] == "grupo99"
+
+
 def test_genes_de_patologia_muestra_el_error_de_apigen():
     cuerpo = {
         "code": "P0001",

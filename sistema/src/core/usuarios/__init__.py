@@ -2,7 +2,7 @@
 
 - modelos.py   modelos SQLAlchemy (Rol, Usuario y los perfiles Medico y Transportista).
 - roles.py     códigos de los roles, para no escribirlos a mano.
-- servicios.py crear usuarios y validar credenciales de acceso (E04).
+- servicios.py crear usuarios, buscarlos, listar los activos de un rol y validar credenciales (E04).
 - alta.py      E03: validar los datos, dar de alta y mandar las credenciales por mail.
 - busqueda.py  E03: grilla con búsqueda, filtro, orden y paginación del lado del servidor.
 
@@ -35,6 +35,7 @@ from src.core.usuarios.servicios import (
     crear_perfil_medico,
     crear_usuario,
     hashear_contrasena,
+    listar_activos_por_rol,
     listar_roles,
     validar_credenciales,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "enviar_credenciales",
     "generar_contrasena_provisoria",
     "hashear_contrasena",
+    "listar_activos_por_rol",
     "listar_roles",
     "provincias_con_transportista",
     "roles",

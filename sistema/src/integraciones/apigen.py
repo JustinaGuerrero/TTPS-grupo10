@@ -12,21 +12,22 @@ Apigen no responde, rechaza el pedido o devuelve algo fuera del contrato. Con US
 responden con los archivos de tests/fixtures/apis/apigen/.
 
 Cada función acepta `cliente=` para los tests; si no se pasa, se arma con APIGEN_URL,
-APIGEN_KEY y USE_MOCKS de la configuración de la app.
+APIGEN_KEY y USE_MOCKS de la configuración de la app. Los endpoints que lo piden reciben
+APIGEN_GRUPO_ID como p_grupo_id.
 """
 
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 
-from flask import current_app
+from flask import current_app, has_app_context
 
 from src.integraciones.base import ClienteApi
 
 NOMBRE = "Apigen"
-# Identificador fijo de nuestro grupo: Apigen solo nos muestra las patologías que cargamos
-# nosotros (E36) si lo mandamos. Sin él, solo existen las 5 base.
-GRUPO_ID = "grupo10"
+# Identificador de nuestro grupo (APIGEN_GRUPO_ID): Apigen solo nos muestra las patologías que
+# cargamos nosotros (E36) si lo mandamos. Sin él, solo existen las 5 base.
+GRUPO_ID_POR_DEFECTO = "grupo10"
 # Supabase devuelve como máximo 1000 filas por pedido.
 LIMITE_MAXIMO_DE_VARIANTES = 1000
 
@@ -94,7 +95,7 @@ def genes_de_patologia(patologia: str, *, cliente: ClienteApi | None = None) -> 
     codigo = _codigo(patologia)
     respuesta = cliente.post(
         "rpc/genes_por_patologia",
-        json={"p_patologia": codigo, "p_grupo_id": GRUPO_ID},
+        json={"p_patologia": codigo, "p_grupo_id": grupo_id()},
         mock=f"genes_por_patologia_{codigo}",
     )
     genes = respuesta.datos
@@ -200,13 +201,20 @@ def resultado_diagnostico(
     lista = [variante.strip() for variante in variantes if variante and variante.strip()]
     respuesta = cliente.post(
         "rpc/resultado_diagnostico",
-        json={"p_patologia": codigo, "p_variantes": lista, "p_grupo_id": GRUPO_ID},
+        json={"p_patologia": codigo, "p_variantes": lista, "p_grupo_id": grupo_id()},
         mock=[f"resultado_diagnostico_{codigo}", "resultado_diagnostico"],
     )
     try:
         return ResultadoDiagnostico(respuesta.datos)
     except (ValueError, TypeError):
         raise cliente.formato_inesperado() from None
+
+
+def grupo_id() -> str:
+    """El p_grupo_id que se manda a Apigen: APIGEN_GRUPO_ID, o grupo10 fuera de una app."""
+    if has_app_context():
+        return current_app.config.get("APIGEN_GRUPO_ID") or GRUPO_ID_POR_DEFECTO
+    return GRUPO_ID_POR_DEFECTO
 
 
 def _codigo(patologia: str) -> str:
