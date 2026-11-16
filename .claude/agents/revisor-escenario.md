@@ -12,6 +12,7 @@ Revisá solo esto y citá archivo y línea:
   Cualquier otra ruta sin los decoradores es un error.
 - ¿Cada formulario POST lleva el campo csrf_token? ¿Alguna ruta usa @csrf.exempt sin validar a quien llama?
 - ¿Los estados cambian solo con cambiar_estado()?
+- ¿Toda función de core que cambia datos de un paciente, un estudio (aparte del estado) o un sample set llama a auditoria.registrar() en la misma transacción? registrar() no hace commit, y no se auditan usuarios, pagos ni cupones.
 - ¿Las llamadas a APIs externas tienen timeout, manejo de error y mock?
 - ¿Toca una pieza compartida de la que el issue no es dueño (docs/guia-issues.md, "Piezas compartidas")?
 - ¿Hay claves, datos reales o SQL armado concatenando strings?

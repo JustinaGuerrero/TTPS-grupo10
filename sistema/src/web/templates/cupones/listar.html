@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}Cupones{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cupones generados</h1>
+    <a class="btn btn-primary" href="{{ url_for('cupones.generar_form') }}">Generar cupones</a>
+  </div>
+
+  {% if not cupones %}
+    <p class="text-body-secondary" id="sin-resultados">Todavía no generaste cupones.</p>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col" class="text-end">Descuento</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Médico tratante</th>
+              <th scope="col">Generado</th>
+              <th scope="col"><span class="visually-hidden">PDF</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cupon in cupones %}
+              <tr>
+                <td class="text-nowrap">{{ cupon.codigo }}</td>
+                <td class="text-end">{{ cupon.descuento_porcentaje }}%</td>
+                <td>{{ cupon.estado.value|capitalize }}</td>
+                <td>{{ cupon.medico_tratante.usuario.apellido }}, {{ cupon.medico_tratante.usuario.nombre }}</td>
+                <td>{{ cupon.generado_en | fecha_hora }}</td>
+                <td class="text-end"><a href="{{ url_for('cupones.pdf', cupon_id=cupon.id) }}">PDF</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

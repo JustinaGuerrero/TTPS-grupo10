@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block title %}Mi presupuesto{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Mi presupuesto</h1>
+
+  {% if presupuesto is none %}
+    <p class="text-body-secondary" id="sin-presupuesto">
+      Tu estudio {{ estudio.codigo }} todavía no tiene presupuesto. Te avisamos cuando esté.
+    </p>
+  {% else %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3">Estudio</dt>
+          <dd class="col-sm-9">{{ estudio.codigo }}</dd>
+          <dt class="col-sm-3">Genes a analizar</dt>
+          <dd class="col-sm-9">{{ presupuesto.cantidad_genes }}</dd>
+          <dt class="col-sm-3">Importe</dt>
+          <dd class="col-sm-9 fw-semibold" id="importe-total">{{ presupuesto.total_usd }} USD</dd>
+          <dt class="col-sm-3">Emitido</dt>
+          <dd class="col-sm-9">{{ presupuesto.emitido_en | fecha_hora }}</dd>
+          <dt class="col-sm-3">Estado del estudio</dt>
+          <dd class="col-sm-9 mb-0">{{ estudio.estado.nombre }}</dd>
+        </dl>
+      </div>
+    </div>
+    <p class="small text-body-secondary">
+      Incluye la extracción. El precio es fijo: 500 USD hasta 5 genes y 30 USD por cada gen adicional.
+    </p>
+
+    {% if estudio.estado.value == "presupuestado" %}
+      <a class="btn btn-primary" href="{{ url_for('pagos.pagar', estudio_id=estudio.id) }}">
+        Pagar de forma particular
+      </a>
+    {% else %}
+      <p class="text-body-secondary mb-0">Este estudio ya no está pendiente de pago.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

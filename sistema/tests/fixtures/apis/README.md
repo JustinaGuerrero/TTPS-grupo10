@@ -32,3 +32,14 @@ Contrato en `docs/apis/chatbot.md`. Respuesta fija: no depende de la pregunta.
 
 Para simular el chatbot apagado, crear `respuesta.error.json` con `{"status": 503, "message": "..."}`.
 Los tests de los demás errores (401, 429, 500, timeout) usan un `httpx.MockTransport`.
+## API de cupones (`cupones/`)
+
+Contrato en `docs/apis/cupones.md`.
+
+| Función | Archivo | Si no hay archivo |
+| --- | --- | --- |
+| `generar(g, descuento, n)` | `generar.json` (10 cupones) | Error: no hay respuesta simulada |
+| `asignar_a_medico(g, m, "X")` | `asignar_a_medico_X.json` | `asignar_a_medico.json`: `true` |
+| `asignar_a_paciente(m, p, "X")` | `asignar_a_paciente_X.json` (`YACANJE1`: 409) | `asignar_a_paciente.json`: `true` |
+| `consultar("X")` | `cupones_X.json` | `cupones.json`: listado con los códigos de prueba (`VENCIDO01` usado, `EXPIRADO1` vencido) |
+| `canjear(p, "X")` | `canjear_X.json` (`CAIDO001`: 503) | `canjear.json`: `true` |

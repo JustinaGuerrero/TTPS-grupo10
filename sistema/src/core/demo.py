@@ -21,7 +21,9 @@ import sqlalchemy as sa
 
 from src.core.database import db
 from src.core.estudios import TRANSICIONES, EstadoEstudio, Estudio, cambiar_estado, crear_estudio
+from src.core.finanzas import Pago, TipoAsiento, TipoPago, registrar_asiento
 from src.core.pacientes import Paciente, TipoSospecha
+from src.core.pagos import Presupuesto, calcular_importe, cantidad_de_genes
 from src.core.usuarios import Medico, buscar_por_email, crear_usuario, roles
 
 MEDICO_DE_DEMO = "medico@exoma.test"
@@ -30,6 +32,38 @@ GENES_DE_DEMO = ("GAA",)
 # Estado → función que crea, antes de que el estudio pase a ese estado, las filas que necesita.
 # Recibe el estudio todavía en el estado anterior. Solo se AGREGAN líneas (guia-issues.md).
 DATOS_POR_ESTADO: dict[EstadoEstudio, Callable[[Estudio], None]] = {}
+
+
+def crear_presupuesto_de_demo(estudio: Estudio) -> None:
+    """Presupuesto y asiento del estudio, emitidos por administrativo@exoma.test (E13)."""
+    administrativo = buscar_por_email("administrativo@exoma.test")
+    if administrativo is None:
+        raise DemoImposible("Falta administrativo@exoma.test: corré `flask seeds`.")
+    cantidad = cantidad_de_genes(estudio)
+    presupuesto = Presupuesto(
+        estudio_id=estudio.id,
+        cantidad_genes=cantidad,
+        total_usd=calcular_importe(cantidad),
+        emitido_por=administrativo.id,
+    )
+    db.session.add(presupuesto)
+    db.session.flush()
+    registrar_asiento(TipoAsiento.PRESUPUESTO_EMITIDO, estudio, presupuesto.total_usd)
+
+
+def crear_pago_de_demo(estudio: Estudio) -> None:
+    """Pago particular y asiento del estudio Presupuestado (E14)."""
+    total = db.session.scalar(
+        sa.select(Presupuesto.total_usd).where(Presupuesto.estudio_id == estudio.id)
+    )
+    pago = Pago(estudio_id=estudio.id, tipo=TipoPago.PARTICULAR, importe_usd=total)
+    db.session.add(pago)
+    db.session.flush()
+    registrar_asiento(TipoAsiento.PAGO_PARTICULAR, estudio, total, pago=pago)
+
+
+DATOS_POR_ESTADO[EstadoEstudio.PRESUPUESTADO] = crear_presupuesto_de_demo
+DATOS_POR_ESTADO[EstadoEstudio.HABILITADO_TURNO] = crear_pago_de_demo
 
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {

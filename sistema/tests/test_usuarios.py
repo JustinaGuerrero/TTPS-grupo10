@@ -18,6 +18,7 @@ from src.core.usuarios import (
     DatosDeAlta,
     ErrorDeValidacion,
     Medico,
+    MedicoEspecialidad,
     Transportista,
     Usuario,
     alta,
@@ -120,12 +121,18 @@ def test_administrativo_y_bioinformatico_se_dan_de_alta_con_sus_datos(app, admin
 
 @pytest.mark.parametrize("rol", [roles.MEDICO_TRATANTE, roles.GERENTE_MEDICO])
 def test_medico_tratante_y_gerente_medico_se_dan_de_alta_con_matricula(app, admin, rol):
-    respuesta = _alta(admin, rol_codigo=rol, matricula="  MP-12345  ")
+    respuesta = _alta(
+        admin,
+        rol_codigo=rol,
+        matricula="  MP-12345  ",
+        especialidad=["394580004|Genética clínica"],
+    )
 
     assert respuesta.status_code == 302
     usuario = _usuario(app, DATOS_VALIDOS["email"])
     with app.app_context():
         assert db.session.get(Medico, usuario.id).matricula == "MP-12345"
+        assert db.session.get(MedicoEspecialidad, (usuario.id, "394580004")) is not None
 
 
 @pytest.mark.parametrize("rol", [roles.MEDICO_TRATANTE, roles.GERENTE_MEDICO])
@@ -137,8 +144,21 @@ def test_medico_sin_matricula_no_se_da_de_alta(app, admin, rol):
     assert _usuario(app, DATOS_VALIDOS["email"]) is None
 
 
+def test_medico_sin_especialidades_no_se_da_de_alta(app, admin):
+    respuesta = _alta(admin, rol_codigo=roles.MEDICO_TRATANTE, matricula="MP-1")
+
+    assert respuesta.status_code == 400
+    assert "Elegí al menos una especialidad." in respuesta.text
+    assert _usuario(app, DATOS_VALIDOS["email"]) is None
+
+
 def test_la_matricula_no_se_repite(app, admin):
-    _alta(admin, rol_codigo=roles.MEDICO_TRATANTE, matricula="MP-1")
+    _alta(
+        admin,
+        rol_codigo=roles.MEDICO_TRATANTE,
+        matricula="MP-1",
+        especialidad=["394580004|Genética clínica"],
+    )
 
     respuesta = _alta(
         admin, rol_codigo=roles.GERENTE_MEDICO, matricula="MP-1", email="otro@exoma.test"

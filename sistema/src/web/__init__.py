@@ -12,6 +12,18 @@ from src.integraciones import mail
 from src.web import comandos, errores
 from src.web.config import CONFIGS
 from src.web.controllers import autenticacion, avisos, chatbot, historial, inicio, usuarios
+from src.web.controllers import (
+    auditoria,
+    autenticacion,
+    avisos,
+    cupones,
+    inicio,
+    pagos,
+    patologias,
+    registro,
+    snomed,
+    usuarios,
+)
 from src.web.helpers import auth, formato, menu
 from src.web.helpers.csrf import csrf
 
@@ -37,11 +49,18 @@ def create_app(env: str | None = None) -> Flask:
     mail.init_app(app)
 
     app.register_blueprint(autenticacion.bp)
+    app.register_blueprint(registro.bp)
     app.register_blueprint(inicio.bp)
     app.register_blueprint(avisos.bp)
     app.register_blueprint(usuarios.bp)
     app.register_blueprint(historial.bp)
     app.register_blueprint(chatbot.bp)
+
+    app.register_blueprint(patologias.bp)
+    app.register_blueprint(snomed.bp)
+    app.register_blueprint(pagos.bp)
+    app.register_blueprint(auditoria.bp)
+    app.register_blueprint(cupones.bp)
     errores.registrar(app)
 
     return app

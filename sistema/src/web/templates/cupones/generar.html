@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}Generar cupones{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Generar cupones</h1>
+
+  <div class="card shadow-sm" style="max-width: 32rem;">
+    <div class="card-body">
+      <form method="post" action="{{ url_for('cupones.generar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label for="porcentaje" class="form-label">Descuento (%)</label>
+          <input type="number" class="form-control" id="porcentaje" name="porcentaje"
+                 min="1" max="100" step="0.01" required value="{{ datos.porcentaje }}">
+        </div>
+        <div class="mb-3">
+          <label for="cantidad" class="form-label">Cantidad de cupones</label>
+          <input type="number" class="form-control" id="cantidad" name="cantidad"
+                 min="1" max="100" step="1" required value="{{ datos.cantidad }}">
+        </div>
+        <div class="mb-3">
+          <label for="medico_id" class="form-label">Médico tratante</label>
+          <select class="form-select" id="medico_id" name="medico_id" required>
+            <option value="">Elegí un médico</option>
+            {% for medico in medicos %}
+              <option value="{{ medico.id }}" {{ "selected" if datos.medico_id == medico.id|string }}>
+                {{ medico.apellido }}, {{ medico.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Generar</button>
+        <a class="btn btn-link" href="{{ url_for('cupones.listar') }}">Volver</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

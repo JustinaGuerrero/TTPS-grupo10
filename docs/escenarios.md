@@ -4,7 +4,7 @@ Oct 8, 2026 · @Someone
 
 # Introducción
 
-El documento reúne 41 escenarios que cubren los requerimientos relevados en la entrevista, escritos con el modelo de escenarios de Leite y el vocabulario del LEL del sistema.
+El documento reúne 43 escenarios que cubren los requerimientos relevados en la entrevista, escritos con el modelo de escenarios de Leite y el vocabulario del LEL del sistema.
 
 Convenciones usadas:
 
@@ -59,6 +59,7 @@ Convenciones usadas:
 | E39 | Notificar | Sistema |
 | E40 | Consultar chatbot | Paciente |
 | E41 | Registrar operación financiera | Sistema |
+| E43 | Registrar cambios | Sistema |
 
 # 1. Acceso y usuarios
 
@@ -957,3 +958,23 @@ Convenciones usadas:
 2. El sistema registra el descuento aplicado con cada cupón de descuento.
 3. El sistema registra el importe que cubre la obra social al autorizarse la cobertura.
 4. El sistema conserva los registros para consultar la caja y la deuda por obra social y por paciente.
+
+## E43 · Registrar cambios
+
+**Título:** Registrar cambios.
+
+**Objetivo:** Saber qué cambió, quién lo cambió y cuándo en los datos de un paciente, de un estudio y de un sample set.
+
+**Contexto:** Ante cada alta, modificación o baja de un dato de un paciente, un estudio o un sample set, por ejemplo agregar un familiar o corregir la fecha de nacimiento.
+- **Restricción:** el registro no se edita ni se borra. No incluye contraseñas ni códigos de verificación.
+- **Restricción:** el cambio de estado del estudio no se duplica: ya queda en su historial de estados y se muestra junto con los demás cambios.
+
+**Actores:** Sistema, Médico tratante, Administrativo, Administrador general.
+
+**Recursos:** Registro de cambios, Paciente, Estudio, Sample set.
+
+**Episodios:**
+
+1. El sistema registra cada cambio de un dato de un paciente, un estudio o un sample set con la fecha y la hora, el usuario (o "sistema" si fue una tarea automática), el campo, el valor anterior y el valor nuevo.
+2. El usuario autorizado selecciona un paciente, un estudio o un sample set y consulta su historial de cambios, del más nuevo al más viejo.
+3. El administrador general consulta la lista de todos los cambios y la filtra por entidad, usuario y rango de fechas.

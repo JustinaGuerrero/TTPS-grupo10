@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block title %}Pagar estudio{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Pagar estudio</h1>
+
+  <div class="card shadow-sm mb-3" style="max-width: 32rem;">
+    <div class="card-body">
+      <p class="mb-1">Estudio {{ estudio.codigo }}</p>
+      {% if cupon %}
+        <p class="mb-0 text-body-secondary" id="importe-presupuesto">Presupuesto: {{ presupuesto.total_usd }} USD</p>
+        <p class="mb-1 text-success" id="descuento-cupon">
+          Cupón {{ cupon.codigo }} ({{ cupon.descuento_porcentaje }}%): −{{ descuento }} USD
+        </p>
+      {% endif %}
+      <p class="h4" id="importe-final">{{ importe_final }} USD</p>
+      <p class="small text-body-secondary">
+        Pago único, sin cuotas. Por ahora el pago es simulado: no se cobra nada real.
+      </p>
+      <form method="post" action="{{ url_for('pagos.confirmar_pago', estudio_id=estudio.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="importe" value="{{ importe_final }}">
+        {% if cupon %}<input type="hidden" name="cupon_codigo" value="{{ cupon.codigo }}">{% endif %}
+        <button type="submit" class="btn btn-primary">Confirmar pago de {{ importe_final }} USD</button>
+        <a class="btn btn-link" href="{{ url_for('pagos.presupuesto', estudio_id=estudio.id) }}">Volver</a>
+      </form>
+    </div>
+  </div>
+
+  {% if not cupon %}
+    <div class="card shadow-sm" style="max-width: 32rem;">
+      <div class="card-body">
+        <h2 class="h5">¿Tenés un cupón de descuento?</h2>
+        <p class="small text-body-secondary">
+          Escribí el código o subí el PDF del cupón. El descuento se calcula sobre el total del presupuesto.
+        </p>
+        <form method="post" enctype="multipart/form-data"
+              action="{{ url_for('pagos.aplicar_cupon', estudio_id=estudio.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="codigo" class="form-label">Código del cupón</label>
+            <input type="text" class="form-control" id="codigo" name="codigo" maxlength="64" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label for="pdf" class="form-label">o PDF del cupón</label>
+            <input type="file" class="form-control" id="pdf" name="pdf" accept="application/pdf">
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Aplicar cupón</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

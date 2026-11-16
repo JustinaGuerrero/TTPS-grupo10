@@ -16,6 +16,7 @@ APIGEN_KEY y USE_MOCKS de la configuración de la app. Los endpoints que lo pide
 APIGEN_GRUPO_ID como p_grupo_id.
 """
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
@@ -43,6 +44,22 @@ class ResultadoDiagnostico(StrEnum):
     POSITIVO = "positivo"
     PORTADOR = "portador"
     NEGATIVO = "negativo"
+
+
+class Herencia(StrEnum):
+    AUTOSOMICA_RECESIVA = "autosomica_recesiva"
+    AUTOSOMICA_DOMINANTE = "autosomica_dominante"
+    LIGADA_AL_X = "ligada_al_x"
+
+
+@dataclass(frozen=True)
+class PatologiaApigen:
+    """Patología tal como la devuelve el alta (endpoint 9)."""
+
+    codigo: str
+    nombre: str
+    herencia: Herencia
+    genes: list[str]
 
 
 @dataclass(frozen=True)
@@ -207,6 +224,82 @@ def resultado_diagnostico(
     try:
         return ResultadoDiagnostico(respuesta.datos)
     except (ValueError, TypeError):
+        raise cliente.formato_inesperado() from None
+
+
+def buscar_genes(texto: str, *, limite: int = 15, cliente: ClienteApi | None = None) -> list[str]:
+    """Símbolos de genes que empiezan con `texto`, para elegirlos al dar de alta una patología.
+
+    Con USE_MOCKS=1 se devuelve buscar_genes.json entero, sin filtrar por `texto`.
+    """
+    cliente = cliente or cliente_por_defecto()
+    if not 1 <= limite <= LIMITE_MAXIMO_DE_VARIANTES:
+        raise ValueError(f"El límite va de 1 a {LIMITE_MAXIMO_DE_VARIANTES}.")
+    # Solo caracteres de un símbolo de gen: evita que el texto cambie el filtro de PostgREST.
+    simbolo = re.sub(r"[^A-Za-z0-9._-]", "", texto or "")
+    if not simbolo:
+        return []
+    respuesta = cliente.get(
+        "gen",
+        params={
+            "simbolo": f"ilike.{simbolo}*",
+            "select": "simbolo",
+            "order": "simbolo",
+            "limit": limite,
+        },
+        mock="buscar_genes",
+    )
+    try:
+        return [fila["simbolo"] for fila in respuesta.datos]
+    except (KeyError, TypeError):
+        raise cliente.formato_inesperado() from None
+
+
+def alta_patologia(
+    codigo: str,
+    nombre: str,
+    genes: Iterable[str],
+    herencia: Herencia | str = Herencia.AUTOSOMICA_RECESIVA,
+    *,
+    cliente: ClienteApi | None = None,
+) -> PatologiaApigen:
+    """Da de alta (o actualiza) una patología propia del grupo en Apigen (E36).
+
+    Si el código ya existe en el grupo, Apigen actualiza nombre, genes y herencia.
+    Con USE_MOCKS=1 se devuelve siempre alta_patologia.json.
+    """
+    cliente = cliente or cliente_por_defecto()
+    codigo = _codigo(codigo)
+    if not re.fullmatch(r"[A-Z0-9_]{2,30}", codigo):
+        raise ValueError("El código va en mayúsculas, números o _, de 2 a 30 caracteres.")
+    nombre = (nombre or "").strip()
+    if not nombre:
+        raise ValueError("Falta el nombre de la patología.")
+    lista_de_genes = [gen.strip().upper() for gen in genes if gen and gen.strip()]
+    if not lista_de_genes:
+        raise ValueError("Falta al menos un gen.")
+    herencia = Herencia(herencia)
+
+    respuesta = cliente.post(
+        "rpc/alta_patologia",
+        json={
+            "p_grupo_id": grupo_id(),
+            "p_codigo": codigo,
+            "p_nombre": nombre,
+            "p_genes": lista_de_genes,
+            "p_herencia": herencia.value,
+        },
+        mock="alta_patologia",
+    )
+    try:
+        fila = respuesta.datos[0]
+        return PatologiaApigen(
+            codigo=fila["codigo"],
+            nombre=fila["nombre"],
+            herencia=Herencia(fila["herencia"]),
+            genes=list(fila["genes"]),
+        )
+    except (KeyError, IndexError, TypeError, ValueError):
         raise cliente.formato_inesperado() from None
 
 

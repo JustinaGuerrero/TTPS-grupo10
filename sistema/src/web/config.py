@@ -65,6 +65,8 @@ class Config:
         self.CHATBOT_URL = os.getenv("CHATBOT_URL")
         self.CHATBOT_APIKEY = os.getenv("CHATBOT_APIKEY")
         self.CHATBOT_TOKEN = os.getenv("CHATBOT_TOKEN")
+        self.CUPONES_URL = os.getenv("CUPONES_URL")
+        self.CUPONES_KEY = os.getenv("CUPONES_KEY")
         self.USE_MOCKS = _bool("USE_MOCKS")
         self.SEEDS_CONTRASENA = os.getenv("SEEDS_CONTRASENA")
 

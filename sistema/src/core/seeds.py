@@ -10,7 +10,9 @@ import sqlalchemy as sa
 from src.core.database import db
 from src.core.estudios import Estudio, crear_estudio
 from src.core.pacientes import Paciente, TipoSospecha
+from src.core.patologias import buscar_por_codigo, crear_patologia
 from src.core.provincias import Provincia
+from src.core.snomed import SINTOMA, guardar_termino
 from src.core.usuarios import (
     Medico,
     Transportista,
@@ -56,10 +58,55 @@ PACIENTE_DE_PRUEBA = {
 # Genes del estudio del paciente de prueba, que queda en Creado. Para otros estados: `flask demo`.
 GENES_DEL_ESTUDIO_DE_PRUEBA = ("GAA",)
 
+# Síntomas SNOMED de los seeds (E36/E07). Son los mismos de tests/fixtures/apis/snomed/, así el
+# buscador en modo mock encuentra lo que usan las patologías. Los códigos son de ejemplo.
+SINTOMAS_DE_PRUEBA = {
+    "Dolor abdominal": "21522001",
+    "Fatiga": "84229001",
+    "Diarrea": "62315008",
+    "Cardiomegalia": "8186001",
+    "Debilidad muscular": "68962001",
+    "Disnea": "267036007",
+    "Esplenomegalia": "16294009",
+    "Hepatomegalia": "80515008",
+    "Fiebre": "386661006",
+}
+
+# Las 5 patologías base de Apigen (apigen/contrato.md), con síntomas inventados.
+# (código de Apigen, nombre, síntoma cardinal, síntomas secundarios)
+PATOLOGIAS_BASE = (
+    ("FABRY", "Enfermedad de Fabry", "Dolor abdominal", ("Fatiga", "Diarrea", "Cardiomegalia")),
+    (
+        "POMPE",
+        "Enfermedad de Pompe",
+        "Debilidad muscular",
+        ("Disnea", "Cardiomegalia", "Fatiga"),
+    ),
+    (
+        "GAUCHER",
+        "Enfermedad de Gaucher",
+        "Esplenomegalia",
+        ("Hepatomegalia", "Fatiga", "Dolor abdominal"),
+    ),
+    (
+        "MPS1",
+        "Mucopolisacaridosis tipo 1",
+        "Cardiomegalia",
+        ("Hepatomegalia", "Disnea", "Debilidad muscular"),
+    ),
+    (
+        "ASMD",
+        "Déficit de esfingomielinasa ácida (ASMD)",
+        "Hepatomegalia",
+        ("Esplenomegalia", "Disnea", "Fiebre"),
+    ),
+)
+
 
 def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
     """Crea los usuarios de prueba que falten, con sus perfiles de médico, transportista y paciente.
 
+    También carga las patologías base (necesita al gerente médico como creador).
     Devuelve (email, rol, creado) por cada usuario.
     """
     resultado = []
@@ -77,9 +124,36 @@ def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
     for email, provincia in PROVINCIAS_DE_PRUEBA.items():
         _cargar_transportista_de_prueba(email, provincia)
     _cargar_paciente_de_prueba()
+    cargar_patologias_base()
 
     db.session.commit()
     return resultado
+
+
+def cargar_patologias_base() -> int:
+    """Crea las 5 patologías base que falten, con sus síntomas. No hace commit.
+
+    Ya existen en Apigen, así que no se dan de alta allá (alta_en_apigen=False). Devuelve
+    cuántas creó.
+    """
+    gerente = buscar_por_email("gerente@exoma.test")
+    for nombre, codigo in SINTOMAS_DE_PRUEBA.items():
+        guardar_termino(codigo, nombre, SINTOMA)
+
+    creadas = 0
+    for codigo, nombre, cardinal, secundarios in PATOLOGIAS_BASE:
+        if buscar_por_codigo(codigo) is not None:
+            continue
+        crear_patologia(
+            nombre,
+            codigo,
+            [SINTOMAS_DE_PRUEBA[cardinal]],
+            [SINTOMAS_DE_PRUEBA[s] for s in secundarios],
+            gerente,
+            alta_en_apigen=False,
+        )
+        creadas += 1
+    return creadas
 
 
 def _cargar_paciente_de_prueba() -> None:
