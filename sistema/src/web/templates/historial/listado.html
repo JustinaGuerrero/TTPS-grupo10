@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% from "macros/paginacion.html" import paginacion %}
+
+{% set es_paciente = g.usuario.tiene_rol("paciente") %}
+{% block title %}{{ "Mi estudio" if es_paciente else "Estudios" }}{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">{{ "Mi estudio" if es_paciente else "Estudios de mis pacientes" }}</h1>
+
+  {% if not es_paciente %}
+    {# GET: la búsqueda queda en la URL, así se puede recargar, volver atrás o compartir. #}
+    <form method="get" action="{{ url_for('historial.listar') }}" class="row g-2 align-items-end mb-3"
+          role="search">
+      <div class="col-8 col-md-6">
+        <label for="texto" class="form-label">Buscar por DNI o nombre del paciente</label>
+        <input type="search" class="form-control" id="texto" name="texto" value="{{ busqueda.texto }}"
+               maxlength="100" placeholder="Por ejemplo, 30123456 o Gómez">
+      </div>
+      <div class="col-4 col-md-2 d-grid">
+        <button type="submit" class="btn btn-outline-primary">Buscar</button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if not estudios %}
+    <div class="text-body-secondary py-4" id="sin-estudios">
+      {% if es_paciente %}
+        Todavía no tenés un estudio. Lo da de alta tu médico tratante.
+      {% elif busqueda.filtrada %}
+        Ningún estudio coincide con la búsqueda.
+        <a href="{{ url_for('historial.listar') }}">Ver todos</a>
+      {% else %}
+        Todavía no tenés estudios de pacientes a cargo.
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          {% if pagina %}
+            <caption class="px-3">
+              {{ pagina.desde }}–{{ pagina.hasta }} de {{ pagina.total }} estudio{{ "s" if pagina.total != 1 }}
+            </caption>
+          {% endif %}
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Estudio</th>
+              {% if not es_paciente %}
+                <th scope="col">Paciente</th>
+                <th scope="col" class="d-none d-md-table-cell">DNI</th>
+              {% endif %}
+              <th scope="col">Estado</th>
+              <th scope="col" class="d-none d-md-table-cell">Última actualización</th>
+              <th scope="col"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for estudio in estudios %}
+              <tr>
+                <td class="text-nowrap">{{ estudio.codigo }}</td>
+                {% if not es_paciente %}
+                  <td>
+                    {{ estudio.paciente.usuario.apellido }}, {{ estudio.paciente.usuario.nombre }}
+                    <div class="d-md-none small text-body-secondary">DNI {{ estudio.paciente.dni }}</div>
+                  </td>
+                  <td class="d-none d-md-table-cell text-nowrap">{{ estudio.paciente.dni }}</td>
+                {% endif %}
+                <td><span class="badge text-bg-primary text-wrap">{{ estudio.estado.nombre }}</span></td>
+                <td class="d-none d-md-table-cell text-nowrap">{{ estudio.actualizado_en | fecha_hora }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{{ url_for('historial.detalle', estudio_id=estudio.id) }}">Ver detalle</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if pagina %}
+      <div class="mt-3">
+        {{ paginacion(pagina, "historial.listar", busqueda.parametros(), "Páginas de estudios") }}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

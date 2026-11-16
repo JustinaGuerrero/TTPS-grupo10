@@ -20,8 +20,13 @@ class ItemDeMenu(NamedTuple):
 
 
 MENU_POR_ROL: dict[str, list[ItemDeMenu]] = {
-    roles.PACIENTE: [],
-    roles.MEDICO_TRATANTE: [],
+    roles.PACIENTE: [
+        ItemDeMenu("Mi estudio", "historial.listar"),
+        ItemDeMenu("Chatbot", "chatbot.conversacion"),
+    ],
+    roles.MEDICO_TRATANTE: [
+        ItemDeMenu("Estudios", "historial.listar"),
+    ],
     roles.ADMINISTRATIVO: [],
     roles.BIOINFORMATICO: [],
     roles.TRANSPORTISTA: [],

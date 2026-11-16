@@ -1,26 +1,48 @@
 # Guía de issues – Sistema de exoma clínico
 
-Nov 13, 2026 · TTPS 2026, grupo 10
+Nov 16, 2026 · @Apolo
 
-Es la "Guía completa" de Proyecto de Software adaptada a trabajar con agentes: qué issues hay, quién hace cada uno, en qué orden y con qué prompt arranca el agente. Las fuentes son [escenarios.md](escenarios.md) (E01–E41), [lel.md](lel.md), [modelo-datos.md](modelo-datos.md), [decisiones.md](decisiones.md), [guia-agentes.md](guia-agentes.md), `CLAUDE.md`, `apigen/contrato.md` y el estado del repo al 13/11.
+TTPS 2026, grupo 10. Actualizada el 16/11 con los nuevos requerimientos del profesor. Es la "Guía completa" de Proyecto de Software adaptada a trabajar con agentes: qué issues hay, quién hace cada uno, en qué orden y con qué prompt arranca el agente. Las fuentes son `escenarios.md` (E01–E41), `lel.md`, `modelo-datos.md`, `decisiones.md`, `guia-agentes.md`, `CLAUDE.md`, `apigen/contrato.md` y el estado del repo al 13/11.
 
 **Cómo leerla.** Las secciones 1 y 2 se leen una vez. La 3 y la 4 son el tablero: qué issue sigue y de quién es. La 5 es lo que cada uno abre antes de empezar su issue: criterios, capas, tests y el prompt para el agente. Las 6 a 8 sirven para cada control y para el coloquio. El script de la sección 9 carga todo en GitHub.
 
-# 1. Diagnóstico y supuestos
+## Cambios del 16/11: nuevos requerimientos del profesor
 
-## Qué está hecho
+Son tres pedidos. Esta sección dice qué cambia y en qué issue; el detalle está en la sección 5, con la marca **[16/11]** en cada línea nueva o modificada. Los issues #2 a #21 ya existen en GitHub, así que los dos issues nuevos son #22 y #23.
 
-Rama `base`, último commit `0200281`. Corresponde a las sesiones 2 a 5 de [guia-agentes.md](guia-agentes.md).
+| Requerimiento | Qué cambia | Issues |
+|---|---|---|
+| 1. Familiograma: si el familiar se hace (o ya se hizo) el estudio, queda vinculado con la tabla de familiares del paciente original, con un identificador, y el médico lo ve | `familiares` suma `dni` (opcional), `paciente_vinculado_id` y `vinculado_en`. El vínculo es automático y en los dos sentidos: al agregar un familiar que ya es paciente y al dar de alta un paciente que figura como familiar de otro. El médico ve en el detalle el código y el estado del estudio del familiar | #10 (E09.7 a E09.9) |
+| 2. Menos de 2 ml: se borra el requerimiento. Si la muestra no alcanza, el laboratorio de Corea se da cuenta y avisa por mail; el administrativo puede devolver el estudio a un estado para retomar | Se quitan el registro de volumen (E26.4 y E26.5), la transición `en_laboratorio_central → requiere_nueva_extraccion` (de 21 a 20 transiciones) y las columnas de volumen de `muestras`. La muestra llega y pasa directo al sample set. Cuando el estudio está En viaje a Corea, el administrativo lo devuelve a Requiere nueva extracción con el motivo que informó el laboratorio | #3, #8, #14, #15, #18 |
+| 3. Registro de modificaciones de las entidades principales (paciente, estudio y sample set), con fecha y hora; por ejemplo agregar un familiar o corregir la fecha de nacimiento | Tabla `auditoria` y `auditoria.registrar()`, que llaman todos los issues que cambian esas entidades. Se muestra como historial por entidad y como lista para el administrador general. Corregir datos del paciente y de sus familiares no existía: es un escenario nuevo | #22 (nuevo, E43), #23 (nuevo, E42); llaman a `registrar` #10, #14, #15, #19, #20 y #21 |
+
+**Cómo se muestra el registro.** Es una sola consulta con dos pantallas. En el detalle del paciente, del estudio y del sample set hay un enlace «Historial de cambios» que abre una línea de tiempo (fecha y hora, quién, qué campo, de qué valor a cuál): sirve para entender qué le pasó a un caso. Además, el administrador general tiene una lista de auditoría con filtros por entidad, usuario y fechas, para controlar. Las dos están en #22.
+
+**Qué se movió de lugar.** Dos issues nuevos, 89 puntos en total (antes 85). #18 baja de 5 a 3 puntos porque pierde el registro de volumen y la nueva extracción por volumen, y ya no depende de #15. #22 va a Integrante 3 (Control 2) y #23 a Integrante 1 (Entrega); la carga queda en 24, 21, 22 y 22 (sección 4).
+
+**Documentos fuente que hay que corregir** (en un PR de docs; hasta entonces, esta guía manda):
+
+- `escenarios.md`: E26 (quitar los episodios 4 y 5), E27 (la precondición ya no es el volumen: la muestra no sirve porque Corea avisó), E09 (agregar los episodios 7 a 9), y los escenarios nuevos E42 y E43.
+- `lel.md`: el impacto de En laboratorio central por volumen menor a 2 ml, las nociones de Muestra y de Solicitar nueva extracción (ya no hay volumen), la noción de Familiar (DNI y vínculo) y un símbolo nuevo, Registro de cambios.
+- `modelo-datos.md`: `muestras` sin `volumen_ml`, `volumen_registrado_por` ni `volumen_registrado_en`; `familiares` con `dni`, `paciente_vinculado_id` y `vinculado_en`; tabla nueva `auditoria`.
+- `decisiones.md`: O4 reemplazada y los supuestos G13 a G18 de la tabla de la sección 1.
+- `sistema/src/core/estudios/estados.py` y su test: quitar la transición (lo hace #3, ver su issue).
+
+## 1. Diagnóstico y supuestos
+
+### Qué está hecho
+
+Rama `base`, último commit `0200281`. Corresponde a las sesiones 2 a 5 de `guia-agentes.md`.
 
 | Pieza | Estado | Dónde |
 |---|---|---|
 | Estructura MVC, Poetry, `create_app()`, configuración por entorno, páginas 403/404/500 y de CSRF | Hecho (sesión 2) | `sistema/src/web/__init__.py`, `config.py`, `errores.py` |
 | Flask-SQLAlchemy-Lite, migración inicial (`roles`, `usuarios`, RLS sin políticas), base de test local que aplica las migraciones y revierte cada test | Hecho (sesión 3) | `src/core/database.py`, `supabase/migrations/20261112041337_inicial.sql`, `tests/conftest.py` |
 | Login y logout con Flask-Session y scrypt, `login_required` y `rol_requerido`, CSRF, `Cache-Control: no-store`, layout con menú por rol, `flask seeds` con un usuario por rol | Hecho (sesión 4) | `src/web/helpers/` (`auth.py`, `csrf.py`, `menu.py`), `controllers/autenticacion.py`, `templates/layout.html`, `src/core/seeds.py` |
-| Sesión 5: modelos de pacientes y estudios, enum de 16 estados con sus 21 transiciones, `crear_estudio()` (código, análisis inicial y primera fila del historial), `cambiar_estado()` y las fixtures `crear_paciente` y `crear_estudio(estado=...)` | Hecho (commit `0200281`) | `src/core/estudios/`, `src/core/pacientes/`, migración `20261114004133_estudios.sql`, `tests/conftest.py` |
+| Sesión 5: modelos de pacientes y estudios, enum de 16 estados con sus 21 transiciones (el 16/11 se quita una: quedan 20), `crear_estudio()` (código, análisis inicial y primera fila del historial), `cambiar_estado()` y las fixtures `crear_paciente` y `crear_estudio(estado=...)` | Hecho (commit `0200281`) | `src/core/estudios/`, `src/core/pacientes/`, migración `20261114004133_estudios.sql`, `tests/conftest.py` |
 | Tests de app, login, base de datos, CSRF, seeds, estados, estudios y pacientes | Hecho | `sistema/tests/` |
 
-## Qué falta
+### Qué falta
 
 | Pieza | Estado al 13/11 | Issue |
 |---|---|---|
@@ -30,13 +52,13 @@ Rama `base`, último commit `0200281`. Corresponde a las sesiones 2 a 5 de [guia
 | Rama `develop` | Falta: hay `main`, `base` y `chore/actualizacion-apigen` | #3 |
 | Contratos de APIs en `docs/apis/` | La carpeta está vacía. Solo existe el contrato de Apigen, en `apigen/contrato.md` | Ver abajo |
 
-El pedido daba la base como hecha. Como faltan las sesiones 6 y 7, la base se cargó como **dos issues de Integrante 1**: #2 (sesiones 2 a 4, hecho) y #3 (sesiones 5 a 7: la 5 ya está, faltan la 6 y la 7; bloquea a todos). Los dos cuentan en su carga.
+El pedido daba la base como hecha. Como faltan las sesiones 6 y 7, la base se cargó como dos issues de Integrante 1: #2 (sesiones 2 a 4, hecho) y #3 (sesiones 5 a 7: la 5 ya está, faltan la 6 y la 7; bloquea a todos). Los dos cuentan en su carga.
 
 ### Lo que la base (#3) tiene que dejar para que nadie se bloquee
 
 Además de lo que piden las sesiones 5 a 7 de la guía de agentes, la base deja estas piezas. Sin ellas, dos issues en paralelo terminarían escribiendo lo mismo.
 
-1. **Ningún otro issue modifica `core/estudios/estados.py` ni `core/estudios/servicios.py`.** La tabla ya tiene las 21 transiciones de los 16 estados del LEL; `crear_estudio()` registra el alta y `cambiar_estado(estudio, nuevo_estado, usuario, motivo)` el resto. Si un issue cree que le falta una transición, es una consulta al grupo, no un cambio.
+1. Ningún otro issue modifica `core/estudios/estados.py` ni `core/estudios/servicios.py`. La tabla ya tiene las 21 transiciones de los 16 estados del LEL (#3 quita una el 16/11, `en_laboratorio_central → requiere_nueva_extraccion`, y quedan 20: G15); `crear_estudio()` registra el alta y `cambiar_estado(estudio, nuevo_estado, usuario, motivo)` el resto. Si un issue cree que le falta una transición, es una consulta al grupo, no un cambio.
 2. `crear_usuario()` acepta `telefono`, y hay una función `listar_activos_por_rol(rol)`, que usan #9 (E02 ep. 4), #11, #13, #15, #17 y #21 para avisar a todos los usuarios de un rol.
 3. Las tablas de E03: `provincias` (24 jurisdicciones como datos fijos) y `transportistas`.
 4. `src/integraciones/storage.py`: subir y bajar archivos de un bucket privado de Supabase Storage, con mock en disco (`instance/storage/`). La usan #5, #10, #12, #14, #15, #17 y #20.
@@ -48,38 +70,38 @@ Además de lo que piden las sesiones 5 a 7 de la guía de agentes, la base deja 
 10. En `CLAUDE.md` y en `revisor-escenario.md`, la lista de rutas sin sesión y cómo se autentica cada una: login y registro (#9) son públicas; `POST /bot/telegram` (#8) valida un secreto en un header; `POST /fedex/retiros/<token>` (#19) se autentica con el token. También la convención de ramas y commits de la sección 2, que reemplaza la de S16, y la firma `notificar(..., estudio=None)` en S11.
 11. `APIGEN_GRUPO_ID` en `.env.example` y en el cliente de Apigen, que lo manda en los endpoints que lo piden, para las patologías propias del grupo.
 
-## Contratos de APIs
+### Contratos de APIs
 
 | API | Contrato | Issue que crea el cliente | Qué hacer mientras falte |
 |---|---|---|---|
 | Apigen (bioinformática, módulo 5) | `apigen/contrato.md` v1 | #3 (endpoints 3, 4, 5 y 7); #4 agrega 1 y 9; #20 agrega 8 | Copiar o enlazar el contrato en `docs/apis/apigen.md`, porque `/implementar-escenario` busca ahí |
-| Módulo SNOMED | **Contrato pendiente** | #4 | Mock y borrador en `docs/apis/snomed.md` |
-| Transcripción del audio del resumen | **Contrato pendiente** (ni el LEL dice quién la provee) | #10 | Mock; el médico puede corregir o escribir el texto |
-| API de familiograma | **Contrato pendiente** | #10 | Mock que devuelve un PDF de ejemplo |
-| API de obras sociales | **Contrato pendiente** | #17 | Mock con tres obras sociales y su porcentaje |
-| Módulo de cupones | **Contrato pendiente** | #12 | Mock: generar, consultar vigencia y vencer |
-| Módulo de optimización de recorridos | **Contrato pendiente** (su contratación está en evaluación) | #13 | Mock que ordena por cercanía |
-| Bot de mensajería (Telegram) | La Bot API de Telegram es pública; **falta acordar el formato del mensaje** del centro | #8 | Webhook más un comando `flask bot simular` |
-| API del Ministerio de Salud | **Contrato pendiente** | #14 | Mock que devuelve un PDF de autorización |
-| Módulo de FedEx | **Contrato pendiente** | #19 | Mock; la URL de retiro se prueba con el cliente de test |
-| Chatbot de pacientes | **Contrato pendiente** | #5 | Mock con respuestas fijas |
+| Módulo SNOMED | Contrato pendiente | #4 | Mock y borrador en `docs/apis/snomed.md` |
+| Transcripción del audio del resumen | Contrato pendiente (ni el LEL dice quién la provee) | #10 | Mock; el médico puede corregir o escribir el texto |
+| API de familiograma | Contrato pendiente | #10 | Mock que devuelve un PDF de ejemplo |
+| API de obras sociales | Contrato pendiente | #17 | Mock con tres obras sociales y su porcentaje |
+| Módulo de cupones | Contrato pendiente | #12 | Mock: generar, consultar vigencia y vencer |
+| Módulo de optimización de recorridos | Contrato pendiente (su contratación está en evaluación) | #13 | Mock que ordena por cercanía |
+| Bot de mensajería (Telegram) | La Bot API de Telegram es pública; falta acordar el formato del mensaje del centro | #8 | Webhook más un comando `flask bot simular` |
+| API del Ministerio de Salud | Contrato pendiente | #14 | Mock que devuelve un PDF de autorización |
+| Módulo de FedEx | Contrato pendiente | #19 | Mock; la URL de retiro se prueba con el cliente de test |
+| Chatbot de pacientes | Contrato pendiente | #5 | Mock con respuestas fijas |
 | Mapa | No es una API de compañeros: Leaflet servido localmente y teselas de OpenStreetMap | #7 | Lista de centros como alternativa sin conexión |
 
-Regla para todo contrato pendiente: el issue que crea el cliente escribe en `docs/apis/<api>.md` un borrador con la interfaz que asume, marcado **provisorio**, y los mocks en `tests/fixtures/apis/<api>/`. Cuando llegue el contrato real, cambia solo el cliente.
+Regla para todo contrato pendiente: el issue que crea el cliente escribe en `docs/apis/<api>.md` un borrador con la interfaz que asume, marcado provisorio, y los mocks en `tests/fixtures/apis/<api>/`. Cuando llegue el contrato real, cambia solo el cliente.
 
-## Observaciones abiertas que se asumen
+### Observaciones abiertas que se asumen
 
-Los supuestos son los de [decisiones.md](decisiones.md). La columna Issue dice dónde se aplica cada uno.
+Los supuestos son los de `decisiones.md`. La columna Issue dice dónde se aplica cada uno.
 
 | # | Tema | Supuesto adoptado | Issue |
 |---|---|---|---|
 | O1 | Cinco o seis patologías | Seis en el LEL; se cargan las cinco base de Apigen (ver O11) | #4 |
 | O2 | Sospecha familiar sin síntomas | La regla de síntomas se aplica solo con sospecha clínica. Con sospecha familiar se acepta si algún familiar tiene diagnóstico confirmado de la patología | #4, #10 |
 | O3 | Cobertura parcial | El paciente paga la diferencia antes del turno, con el flujo de E14 | #17 |
-| O4 | Quién registra el volumen | El administrativo, al recibir la muestra | #18 |
+| O4 | Volumen de la muestra | **[16/11]** Ya no se registra en el sistema: lo detecta el laboratorio de Corea y avisa por mail (G14 y G15). Reemplaza al supuesto anterior (el administrativo al recibir la muestra) | #15, #18 |
 | O5 | Quién carga los datos crudos | El administrativo | #15 |
 | O6 | Cómo se genera el resultado | El sistema arma el PDF con la plantilla a partir de las variantes | #20 |
-| O7 | Inasistencia | Al cierre del día del turno, sin mensaje de muestra tomada: el turno queda `ausente` y el estudio vuelve a Habilitado para turno, con aviso al paciente | #8 |
+| O7 | Inasistencia | Al cierre del día del turno, sin mensaje de muestra tomada: el turno queda ausente y el estudio vuelve a Habilitado para turno, con aviso al paciente | #8 |
 | O8 | Costo del reanálisis | Sin costo y en el mismo estudio | #21 |
 | O9 | Nombres de estados | Los 16 del LEL | #3 |
 | O10 | Mail único y hermanos menores | Cada paciente tiene su propio mail | #10 |
@@ -96,7 +118,7 @@ Los supuestos son los de [decisiones.md](decisiones.md). La columna Issue dice d
 
 ### Supuestos nuevos de esta guía
 
-No están en el LEL ni en decisiones.md. Se proponen para que el agente no tenga que inventarlos, y van a la lista de consultas (sección 7).
+No están en el LEL ni en `decisiones.md`. Se proponen para que el agente no tenga que inventarlos, y van a la lista de consultas (sección 7).
 
 | # | Supuesto | Issue |
 |---|---|---|
@@ -111,11 +133,17 @@ No están en el LEL ni en decisiones.md. Se proponen para que el agente no tenga
 | G9 | El transportista informa su ubicación desde el navegador del celular cada 2 minutos mientras su orden del día está en curso | #18 |
 | G10 | Al registrar el retiro en un centro, el transportista se lleva todas las muestras Listo para retirar de ese centro | #13 |
 | G11 | FedEx puede invocar la URL más de una vez: la segunda llamada responde 200 y no cambia nada | #19 |
-| G12 | Los datos crudos se aceptan como `.txt` con solo A, C, T, G y saltos de línea, de hasta 20 MB | #15 |
+| G12 | Los datos crudos se aceptan como .txt con solo A, C, T, G y saltos de línea, de hasta 20 MB | #15 |
+| G13 | **[16/11]** El vínculo entre un familiar y un paciente se hace por DNI (el DNI del familiar es opcional; sin DNI no hay vínculo). Del familiar vinculado, el médico del paciente original ve solo el código y el estado de su estudio, no sus datos clínicos | #10 |
+| G14 | **[16/11]** El laboratorio de Corea avisa por mail, fuera del sistema, que la muestra no sirve. El administrativo devuelve el estudio a Requiere nueva extracción solo mientras está En viaje a Corea, con un motivo (`adn`, `volumen` u `otro`) y un detalle opcional. El sistema avisa al paciente y al médico por mail | #15 |
+| G15 | **[16/11]** El sistema no mide ni registra el volumen de la muestra: al llegar al laboratorio central pasa directo al sample set en armado | #3, #8, #14, #18 |
+| G16 | **[16/11]** El registro de cambios guarda una fila por campo cambiado: entidad (`paciente`, `estudio` o `sample_set`), id, acción (`alta`, `modificacion`, `baja` o `estado`), campo, valor anterior, valor nuevo, usuario (nulo si lo hizo el sistema) y fecha y hora. El cambio de estado de un estudio no se duplica: ya está en `historial_estados` y se muestra en el mismo historial. No se registran usuarios, pagos ni cupones | #22 |
+| G17 | **[16/11]** El historial de un paciente lo ven su médico tratante y el administrador general; el de un estudio, el médico tratante del paciente, el administrativo y el administrador general; el de un sample set, el administrativo y el administrador general. La lista completa es solo del administrador general. El paciente no ve registros | #22 |
+| G18 | **[16/11]** Corregir datos del paciente es del médico tratante: nombre, apellido, fecha de nacimiento, teléfono, mail y DNI, con las validaciones del alta. Cambiar la fecha de nacimiento no recalcula `pompe_urgente` (O14: se mide al dar de alta el estudio) | #23 |
 
-# 2. Flujo de trabajo
+## 2. Flujo de trabajo
 
-## Milestones
+### Milestones
 
 Uno por control. `develop` pasa a `main` el día anterior a cada uno, con un PR que abre Integrante 1.
 
@@ -128,7 +156,7 @@ Uno por control. `develop` pasa a `main` el día anterior a cada uno, con un PR 
 
 El tablero de BI del 22/12 queda fuera de estos issues: se arma sobre `historial_estados`, `asientos_financieros` y las fechas de `sample_sets`, que estos issues ya dejan cargados.
 
-## Labels
+### Labels
 
 | Label | Para qué |
 |---|---|
@@ -144,22 +172,22 @@ El tablero de BI del 22/12 queda fuera de estos issues: se arma sobre `historial
 | `docs` | Solo documentación |
 | `bug` | Algo que no anda en `develop` |
 
-Cada issue lleva el label del área de su escenario principal (#4 es gestión por E36; #12 es gestión por E37 y E38) y `integracion` solo si crea o amplía el cliente de una API.
+Cada issue lleva el label del área de su escenario principal (#4 es gestión por E36; #12 es gestión por E37 y E38) e `integracion` solo si crea o amplía el cliente de una API.
 
-## Ramas y commits
+### Ramas y commits
 
 - Cada issue sale de `develop` y vuelve a `develop` por PR. Rama: `<número>-<titulo-corto>`, por ejemplo `4-patologias-sintomas`. La base usa la rama `base`, que ya existe, y su PR va a `develop`.
 - Commits: `feat`, `fix`, `refactor`, `test`, `docs` o `chore`, el escenario y el número del issue. Ejemplo: `feat: E36 alta de patología con síntomas SNOMED (#4)`. Es la regla de `CLAUDE.md` (commits en español que nombran el escenario) con el tipo y el issue adelante. #3 actualiza `CLAUDE.md` y la decisión S16 con esta convención.
-- El PR lo revisa y lo aprueba **otro** integrante. Para que todos lean código de todas las áreas, la revisión rota: Integrante 2 revisa a Integrante 1, 3 a 2, 4 a 3 y 1 a 4.
-- Antes de cada control, Integrante 1 abre el PR `develop` → `main`, aplica las migraciones nuevas con `npx supabase db push` y corre `flask seeds`.
+- El PR lo revisa y lo aprueba otro integrante. Para que todos lean código de todas las áreas, la revisión rota: Integrante 2 revisa a Integrante 1, 3 a 2, 4 a 3 y 1 a 4.
+- Antes de cada control, Integrante 1 abre el PR `develop → main`, aplica las migraciones nuevas con `npx supabase db push` y corre `flask seeds`.
 
-## Piezas compartidas
+### Piezas compartidas
 
 Son las que, tocadas por dos issues a la vez, se rompen entre sí. Cada una tiene un dueño. Quien no es dueño solo la usa; si necesita cambiarla, el cambio va en el issue del dueño o en uno que dependa de él.
 
 | Pieza | La crea | La modifican después (siempre en secuencia) |
 |---|---|---|
-| `core/estudios/estados.py` y `servicios.py` (`crear_estudio`, `cambiar_estado`, las 21 transiciones) | #3 | Nadie |
+| `core/estudios/estados.py` y `servicios.py` (`crear_estudio`, `cambiar_estado`, las 20 transiciones desde el 16/11) | #3 | Nadie |
 | `helpers/auth.py`, `controllers/autenticacion.py`, `templates/autenticacion/` | #2 | #9 agrega solo el enlace "Registrarse" en `login.html`; después #16 (depende de #9) |
 | `tests/conftest.py`, fixture `login_como` | #2 | #16, para que siga entrando sin código de verificación |
 | `layout.html` y `templates/inicio/index.html` | #2, #3 | Nadie: cada pantalla nueva entra por el menú y por los links de los avisos |
@@ -176,60 +204,62 @@ Son las que, tocadas por dos issues a la vez, se rompen entre sí. Cada una tien
 | `core/logistica` | #8 (modelos), #13 | #18 |
 | `core/sample_sets` | #8 (modelo), #14 | #19 |
 | `core/analisis` (pendientes, tomar, variantes) | #15 | #20 y después #21 |
-| Detalle del estudio en el historial | #5 | #21 (botón de reanálisis) |
-| Registros de una línea: `MENU_POR_ROL` en `helpers/menu.py`, `register_blueprint` en `web/__init__.py`, `seeds.py`, `tests/fabricas.py`, `DATOS_POR_ESTADO` de `src/core/demo.py`, `.env.example` | Todos | Solo se **agregan** líneas. Si hay conflicto al mergear, se conservan las dos |
+| Detalle del estudio en el historial | #5 | #21 (botón de reanálisis y enlace al historial de cambios) |
+| `core/pacientes` (alta, familiares, `vincular_familiares`) y su detalle | #3 (modelo), #10 | #23 (corregir datos y familiares), después de #10 |
+| `core/auditoria` y la tabla `auditoria` (`registrar`, `historial_de`) | #22 | Nadie; #10, #14, #15, #19, #20, #21 y #23 solo llaman a `registrar` |
+| Registros de una línea: `MENU_POR_ROL` en `helpers/menu.py`, `register_blueprint` en `web/__init__.py`, `seeds.py`, `tests/fabricas.py`, `DATOS_POR_ESTADO` de `src/core/demo.py`, `.env.example` | Todos | Solo se agregan líneas. Si hay conflicto al mergear, se conservan las dos |
 
-## Migraciones
+### Migraciones
 
-- Cada tabla la crea completa, como dice [modelo-datos.md](modelo-datos.md), el primer issue de esta guía que la necesita. La tabla de la sección 3 lo indica en cada issue.
+- Cada tabla la crea completa, como dice `modelo-datos.md`, el primer issue de esta guía que la necesita. La tabla de la sección 3 lo indica en cada issue.
 - Antes de abrir el PR, si `develop` ya tiene una migración con timestamp posterior a la tuya, regenerala con `npx supabase migration new` y mové el SQL: `db push` no aplica migraciones más viejas que la última aplicada.
 - Nadie aplica migraciones al Supabase compartido desde su rama. Para probar en el navegador se usa la base local de `DATABASE_URL_LOCAL` con `flask migrar-local` (punto 7 de la sección 1).
 
-## El flujo de un issue
+### El flujo de un issue
 
 1. **Preparar.** `git switch develop`, `git pull` y `git switch -c 4-patologias-sintomas`. Abrí `claude` en la raíz del repo y, si venías de otra tarea, `/clear`. Comprobá que los issues de "Depende de" estén mergeados en `develop`.
-2. **Planificar.** Plan mode (`Shift+Tab` hasta ver *plan mode on*) y pegá el **prompt de referencia** del issue (sección 5). Arranca con `/implementar-escenario`, que ya pide leer el escenario, el LEL, el contrato y el módulo de referencia.
+2. **Planificar.** Plan mode (`Shift+Tab` hasta ver plan mode on) y pegá el prompt de referencia del issue (sección 5). Arranca con `/implementar-escenario`, que ya pide leer el escenario, el LEL, el contrato y el módulo de referencia.
 3. **Revisar el plan (vos).** ¿Usa los nombres del LEL? ¿Crea solo las tablas que le tocan? ¿Toca una pieza compartida de la que no es dueño? ¿Hay un test por episodio? Si algo no cierra, pedí otro plan.
-4. **Implementar.** Aprobá el plan. El agente edita y corre `pytest` hasta que pasa. Leé cada cambio y frenalo con `Esc` si se desvía.
+4. **Implementar.** Aprobá el plan. El agente edita y corre pytest hasta que pasa. Leé cada cambio y frenalo con `Esc` si se desvía.
 5. **Probar a mano (vos).** `poetry run flask migrar-local`; si el escenario parte de un estado, `poetry run flask demo <estado>`; y `poetry run flask run --debug` sobre la base local, con los usuarios que dice el prompt, en la computadora y en el celular.
 6. **Revisar con contexto limpio.** "Usá el subagente revisor-escenario para revisar E36, E07 y E08 contra el diff con develop". Corregí lo que afecte la corrección o los requisitos.
 7. **Guía de estudio.** `/guia-estudio E07-E08-E36` (los escenarios del issue unidos con guiones). Deja `docs/estudio/E07-E08-E36.md`, que es lo que vas a estudiar para el coloquio.
 8. **PR a develop.** "Commiteá y abrí un PR con gh a develop: el título nombra los escenarios, el cuerpo dice qué cambia, cómo se probó, qué se asumió, si hay migraciones, y cierra con Closes #4". Lo revisa el integrante que toca por rotación. La Action tiene que estar en verde.
 
-# 3. Tabla de issues
+## 3. Tabla de issues
 
 Los números son los que va a asignar GitHub si el script de la sección 9 corre antes de abrir cualquier otro issue o PR. El último número usado es el del PR #1, así que los issues empiezan en #2. Si GitHub asigna otros, el script reescribe las referencias entre issues y deja la correspondencia en `scripts/issues-creados.csv`.
 
-"Depende de" nombra los issues cuyo **código** usa este issue: tienen que estar mergeados en `develop` antes de empezar. Para el estado de partida de cada escenario no hace falta esperar al circuito completo: se usan las fábricas de test y los seeds de demo de #3. La numeración es topológica: cada issue depende solo de issues con número menor, así que no puede haber ciclos.
+"Depende de" nombra los issues cuyo código usa este issue: tienen que estar mergeados en `develop` antes de empezar. Para el estado de partida de cada escenario no hace falta esperar al circuito completo: se usan las fábricas de test y los seeds de demo de #3. La numeración es topológica: cada issue depende solo de issues con número menor, así que no puede haber ciclos. Excepción del 16/11: #22 y #23 se agregaron cuando #2 a #21 ya existían en GitHub, así que #10, #14 y #15 dependen de #22; sigue sin haber ciclos, porque #22 solo depende de #3.
 
-<!-- tabla-issues -->
 | # | Título | Escenarios | Área (label) | Puntos | Rama | Depende de | Responsable | Milestone |
 |---|---|---|---|---|---|---|---|---|
-| #2 | Base: estructura, base de datos y login | — (sesiones 2–4) | `infra` | 5 | `base` | — | Integrante 1 | Control 1 (17/11) |
-| #3 | Base: estados, notificaciones, integraciones y módulo de usuarios | E03, E39 | `infra` `integracion` | 5 | `base` | #2 | Integrante 1 | Control 1 (17/11) |
-| #4 | Patologías, síntomas SNOMED y validación del diagnóstico | E07, E08, E36 | `area:gestion` `integracion` | 5 | `4-patologias-sintomas` | #3 | Integrante 2 | Control 2 (24/11) |
-| #5 | Historial de estudios y chatbot del paciente | E11, E40 | `area:acceso` `integracion` | 3 | `5-historial-chatbot` | #3 | Integrante 1 | Control 2 (24/11) |
-| #6 | Presupuesto, pago particular y registro financiero | E13, E14, E41 | `area:pagos` | 5 | `6-presupuesto-pago` | #3 | Integrante 3 | Control 2 (24/11) |
-| #7 | Turnos de extracción: reservar, cancelar y recordar | E19, E20, E21 | `area:turnos` | 5 | `7-turnos-extraccion` | #3 | Integrante 4 | Control 2 (24/11) |
-| #8 | Toma de muestra por el bot e inasistencias | E22 | `area:turnos` `integracion` | 3 | `8-bot-toma-muestra` | #7 | Integrante 1 | Control 2 (24/11) |
-| #9 | Registro de médicos y del personal del laboratorio | E01, E02 | `area:acceso` | 3 | `9-registro-usuarios` | #4 | Integrante 2 | Control 3 (1/12) |
-| #10 | Alta de paciente y familiograma | E06, E09 | `area:acceso` `integracion` | 5 | `10-alta-paciente` | #4 | Integrante 2 | Control 3 (1/12) |
-| #11 | Alta de estudio con genes de Apigen | E10 | `area:acceso` | 3 | `11-alta-estudio` | #10 | Integrante 3 | Control 3 (1/12) |
-| #12 | Cupones de descuento | E15, E37, E38 | `area:gestion` `integracion` | 5 | `12-cupones` | #6 | Integrante 3 | Control 3 (1/12) |
-| #13 | Orden del día y retiro de muestras | E23, E24 | `area:turnos` `integracion` | 5 | `13-orden-del-dia` | #8 | Integrante 4 | Control 3 (1/12) |
-| #14 | Sample set y autorización ministerial | E28, E29 | `area:corea` `integracion` | 5 | `14-sample-set` | #8 | Integrante 1 | Control 3 (1/12) |
-| #15 | Nueva extracción, datos crudos y toma del estudio | E27, E32, E33 | `area:analisis` | 5 | `15-datos-crudos` | #8 | Integrante 4 | Control 3 (1/12) |
-| #16 | Código de verificación y activación de la cuenta del paciente | E04, E05 | `area:acceso` | 3 | `16-verificacion-activacion` | #5, #9, #10 | Integrante 2 | Entrega (8/12) |
-| #17 | Cobertura de obra social y reautorización | E16, E17, E18 | `area:pagos` `integracion` | 5 | `17-obra-social` | #12 | Integrante 4 | Entrega (8/12) |
-| #18 | Seguimiento y llegada de las muestras al laboratorio central | E25, E26 | `area:turnos` | 5 | `18-llegada-muestras` | #13, #14, #15 | Integrante 3 | Entrega (8/12) |
-| #19 | Retiro de FedEx y despacho del sample set | E30, E31 | `area:corea` `integracion` | 3 | `19-retiro-fedex` | #14 | Integrante 3 | Entrega (8/12) |
-| #20 | Variantes y resultado del estudio | E34, E35 | `area:analisis` `integracion` | 5 | `20-variantes-resultado` | #5, #11, #15 | Integrante 2 | Entrega (8/12) |
-| #21 | Reanálisis | E12 | `area:analisis` | 2 | `21-reanalisis` | #5, #11, #20 | Integrante 4 | Entrega (8/12) |
-<!-- fin tabla-issues -->
+| #2 | Base: estructura, base de datos y login | — (sesiones 2–4) | infra | 5 | `base` | — | Integrante 1 | Control 1 (17/11) |
+| #3 | Base: estados, notificaciones, integraciones y módulo de usuarios | E03, E39 | infra, integracion | 5 | `base` | #2 | Integrante 1 | Control 1 (17/11) |
+| #4 | Patologías, síntomas SNOMED y validación del diagnóstico | E07, E08, E36 | area:gestion, integracion | 5 | `4-patologias-sintomas` | #3 | Integrante 2 | Control 2 (24/11) |
+| #5 | Historial de estudios y chatbot del paciente | E11, E40 | area:acceso, integracion | 3 | `5-historial-chatbot` | #3 | Integrante 1 | Control 2 (24/11) |
+| #6 | Presupuesto, pago particular y registro financiero | E13, E14, E41 | area:pagos | 5 | `6-presupuesto-pago` | #3 | Integrante 3 | Control 2 (24/11) |
+| #7 | Turnos de extracción: reservar, cancelar y recordar | E19, E20, E21 | area:turnos | 5 | `7-turnos-extraccion` | #3 | Integrante 4 | Control 2 (24/11) |
+| #8 | Toma de muestra por el bot e inasistencias | E22 | area:turnos, integracion | 3 | `8-bot-toma-muestra` | #7 | Integrante 1 | Control 2 (24/11) |
+| #9 | Registro de médicos y del personal del laboratorio | E01, E02 | area:acceso | 3 | `9-registro-usuarios` | #4 | Integrante 2 | Control 3 (1/12) |
+| #10 | Alta de paciente y familiograma | E06, E09 | area:acceso, integracion | 5 | `10-alta-paciente` | #4, #22 | Integrante 2 | Control 3 (1/12) |
+| #11 | Alta de estudio con genes de Apigen | E10 | area:acceso | 3 | `11-alta-estudio` | #10 | Integrante 3 | Control 3 (1/12) |
+| #12 | Cupones de descuento | E15, E37, E38 | area:gestion, integracion | 5 | `12-cupones` | #6 | Integrante 3 | Control 3 (1/12) |
+| #13 | Orden del día y retiro de muestras | E23, E24 | area:turnos, integracion | 5 | `13-orden-del-dia` | #8 | Integrante 4 | Control 3 (1/12) |
+| #14 | Sample set y autorización ministerial | E28, E29 | area:corea, integracion | 5 | `14-sample-set` | #8, #22 | Integrante 1 | Control 3 (1/12) |
+| #15 | Nueva extracción, datos crudos y toma del estudio | E27, E32, E33 | area:analisis | 5 | `15-datos-crudos` | #8, #22 | Integrante 4 | Control 3 (1/12) |
+| #16 | Código de verificación y activación de la cuenta del paciente | E04, E05 | area:acceso | 3 | `16-verificacion-activacion` | #5, #9, #10 | Integrante 2 | Entrega (8/12) |
+| #17 | Cobertura de obra social y reautorización | E16, E17, E18 | area:pagos, integracion | 5 | `17-obra-social` | #12 | Integrante 4 | Entrega (8/12) |
+| #18 | Seguimiento y llegada de las muestras al laboratorio central | E25, E26 | area:turnos | 3 | `18-llegada-muestras` | #13, #14 | Integrante 3 | Entrega (8/12) |
+| #19 | Retiro de FedEx y despacho del sample set | E30, E31 | area:corea, integracion | 3 | `19-retiro-fedex` | #14 | Integrante 3 | Entrega (8/12) |
+| #20 | Variantes y resultado del estudio | E34, E35 | area:analisis, integracion | 5 | `20-variantes-resultado` | #5, #11, #15 | Integrante 2 | Entrega (8/12) |
+| #21 | Reanálisis | E12 | area:analisis | 2 | `21-reanalisis` | #5, #11, #20 | Integrante 4 | Entrega (8/12) |
+| #22 | Registro de cambios (auditoría) y su consulta | E43 | area:acceso | 3 | `22-auditoria` | #3 | Integrante 3 | Control 2 (24/11) |
+| #23 | Modificación de los datos del paciente y de sus familiares | E42 | area:acceso | 3 | `23-modificar-paciente` | #10, #22 | Integrante 1 | Entrega (8/12) |
 
-**Total:** 20 issues, 85 puntos. Escala: 1 = un cambio chico; 2 = una pantalla con su regla; 3 = un escenario con una integración o una tarea programada, o dos escenarios chicos con una integración; 5 = dos o tres escenarios con varias reglas, integraciones o tareas programadas.
+**Total: 22 issues, 89 puntos.** Escala: 1 = un cambio chico; 2 = una pantalla con su regla; 3 = un escenario con una integración o una tarea programada, o dos escenarios chicos con una integración; 5 = dos o tres escenarios con varias reglas, integraciones o tareas programadas.
 
-## Cada escenario en un solo issue
+### Cada escenario en un solo issue
 
 | Escenario | Issue | Escenario | Issue | Escenario | Issue | Escenario | Issue |
 |---|---|---|---|---|---|---|---|
@@ -241,8 +271,8 @@ Los números son los que va a asignar GitHub si el script de la sección 9 corre
 | E06 | #10 | E17 | #17 | E28 | #14 | E39 | #3 |
 | E07 | #4 | E18 | #17 | E29 | #14 | E40 | #5 |
 | E08 | #4 | E19 | #7 | E30 | #19 | E41 | #6 |
-| E09 | #10 | E20 | #7 | E31 | #19 | | |
-| E10 | #11 | E21 | #7 | E32 | #15 | | |
+| E09 | #10 | E20 | #7 | E31 | #19 | E42 | #23 |
+| E10 | #11 | E21 | #7 | E32 | #15 | E43 | #22 |
 | E11 | #5 | E22 | #8 | E33 | #15 | | |
 
 Cuatro escenarios tienen una parte que ya resolvió, o que completa, otro issue. No es una segunda asignación, pero conviene saberlo:
@@ -250,11 +280,11 @@ Cuatro escenarios tienen una parte que ya resolvió, o que completa, otro issue.
 - **E04** está en #16. La base (#2) ya hizo los episodios 1–3 y 6 (usuario, contraseña, rechazo y vista por rol); #16 agrega el código de verificación (episodios 4 y 5) y vuelve a probar el escenario entero.
 - **E14** está en #6. Su episodio 3 ("si tiene un cupón, realiza APLICAR CUPÓN") lo completa #12, que implementa E15 y lo repite como criterio.
 - **E41** está en #6, que deja `registrar_asiento()` para todos los tipos. Sus episodios 2 (descuento del cupón) y 3 (cobertura de la obra social) se aceptan en #12 y #17, que los repiten como criterios.
-- **E26** está en #18. Su episodio 5 llama a SOLICITAR NUEVA EXTRACCIÓN (E27, #15) y el 6 a ARMAR SAMPLE SET (E28, #14): #18 las usa, no las reescribe.
+- **E26** está en #18. **[16/11]** Cubre la llegada (episodios 1 a 3) y su episodio 4 llama a ARMAR SAMPLE SET (E28, #14): #18 la usa, no la reescribe. Ya no registra el volumen ni llama a SOLICITAR NUEVA EXTRACCIÓN: eso lo dispara E27 (#15) cuando Corea avisa que la muestra no sirve.
 
-## Tablas que crea cada issue
+### Tablas que crea cada issue
 
-Las 39 tablas de [modelo-datos.md](modelo-datos.md), cada una en un solo issue. El orden cambia un poco respecto del "Orden sugerido" del modelo: `pacientes` y `estudios` van en la base (sesión 5) antes que `patologias`, porque ninguna de las dos tiene clave foránea a patologías.
+Las 39 tablas de `modelo-datos.md` más `auditoria` (agregada el 16/11), cada una en un solo issue. El orden cambia un poco respecto del "Orden sugerido" del modelo: `pacientes` y `estudios` van en la base (sesión 5) antes que `patologias`, porque ninguna de las dos tiene clave foránea a patologías.
 
 | Issue | Tablas o columnas nuevas |
 |---|---|
@@ -263,50 +293,50 @@ Las 39 tablas de [modelo-datos.md](modelo-datos.md), cada una en un solo issue. 
 | #4 | `terminos_snomed`, `patologias`, `patologia_sintomas` |
 | #6 | `obras_sociales`, `cupones`, `presupuestos`, `pagos`, `asientos_financieros`. `cupones` y `obras_sociales` van acá porque `pagos` y `asientos_financieros` las referencian |
 | #7 | `feriados`, `centros_extraccion`, `turnos_extraccion` |
-| #8 | `mensajes_bot`, `ordenes_del_dia`, `paradas_orden_del_dia`, `sample_sets`, `muestras`. Las tres del medio son destino de claves foráneas de `muestras`; sus pantallas son de #13 y #14 |
+| #8 | `mensajes_bot`, `ordenes_del_dia`, `paradas_orden_del_dia`, `sample_sets`, `muestras` (sin columnas de volumen desde el 16/11). Las tres del medio son destino de claves foráneas de `muestras`; sus pantallas son de #13 y #14 |
 | #9 | `medico_especialidades` |
-| #10 | `usuarios.debe_cambiar_contrasena`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares`, `familiar_sintomas`, `familiar_patologias` |
+| #10 | `usuarios.debe_cambiar_contrasena`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares` (con `dni`, `paciente_vinculado_id` y `vinculado_en`), `familiar_sintomas`, `familiar_patologias` |
 | #11 | `analisis_patologias` |
 | #16 | `dispositivos_confiables`, `codigos_verificacion` |
 | #17 | `coberturas`, `demandas_reautorizacion` |
 | #20 | `variantes_encontradas` |
-| #5, #12–#15, #18, #19, #21 | Ninguna: usan tablas de issues anteriores |
+| #22 | `auditoria` |
+| #5, #12–#15, #18, #19, #21, #23 | Ninguna: usan tablas de issues anteriores |
 
-# 4. Reparto
+## 4. Reparto
 
 | Integrante | Usuario de GitHub | Issues | Puntos | Áreas | Integraciones |
 |---|---|---|---|---|---|
-| Integrante 1 | | #2, #3, #5, #8, #14 | 5 + 5 + 3 + 3 + 5 = **21** | infra, acceso, turnos, corea | Crea: Apigen y Storage (#3), chatbot (#5), Telegram (#8), Ministerio de Salud (#14) |
-| Integrante 2 | | #4, #9, #10, #16, #20 | 5 + 3 + 5 + 3 + 5 = **21** | gestión, acceso, análisis | Crea: SNOMED (#4), familiograma y transcripción (#10). Amplía Apigen: endpoints 1 y 9 (#4) y 8 (#20) |
-| Integrante 3 | | #6, #11, #12, #18, #19 | 5 + 3 + 5 + 5 + 3 = **21** | pagos, acceso, gestión, turnos, corea | Crea: módulo de cupones (#12), FedEx (#19). Usa Apigen (#11) |
-| Integrante 4 | | #7, #13, #15, #17, #21 | 5 + 5 + 5 + 5 + 2 = **22** | turnos, análisis, pagos | Crea: optimización de recorridos (#13), obras sociales (#17). Usa Apigen (#21) |
+| Integrante 1 | | #2, #3, #5, #8, #14, #23 | 5 + 5 + 3 + 3 + 5 + 3 = 24 | infra, acceso, turnos, corea | Crea: Apigen y Storage (#3), chatbot (#5), Telegram (#8), Ministerio de Salud (#14) |
+| Integrante 2 | | #4, #9, #10, #16, #20 | 5 + 3 + 5 + 3 + 5 = 21 | gestión, acceso, análisis | Crea: SNOMED (#4), familiograma y transcripción (#10). Amplía Apigen: endpoints 1 y 9 (#4) y 8 (#20) |
+| Integrante 3 | | #6, #11, #12, #18, #19, #22 | 5 + 3 + 5 + 3 + 3 + 3 = 22 | pagos, acceso, gestión, turnos, corea | Crea: módulo de cupones (#12), FedEx (#19) y el registro de cambios (#22). Usa Apigen (#11) |
+| Integrante 4 | | #7, #13, #15, #17, #21 | 5 + 5 + 5 + 5 + 2 = 22 | turnos, análisis, pagos | Crea: optimización de recorridos (#13), obras sociales (#17). Usa Apigen (#21) |
 
 Carga por milestone:
 
 | Integrante | Control 1 | Control 2 | Control 3 | Entrega |
 |---|---|---|---|---|
-| Integrante 1 | 10 (#2, #3) | 6 (#5, #8) | 5 (#14) | 0: pasa `develop` a `main`, aplica migraciones, corrige bugs y prepara el deploy |
+| Integrante 1 | 10 (#2, #3) | 6 (#5, #8) | 5 (#14) | 3 (#23); además pasa `develop` a `main`, aplica migraciones, corrige bugs y prepara el deploy |
 | Integrante 2 | 0 | 5 (#4) | 8 (#9, #10) | 8 (#16, #20) |
-| Integrante 3 | 0 | 5 (#6) | 8 (#11, #12) | 8 (#18, #19) |
+| Integrante 3 | 0 | 8 (#6, #22) | 8 (#11, #12) | 6 (#18, #19) |
 | Integrante 4 | 0 | 5 (#7) | 10 (#13, #15) | 7 (#17, #21) |
-| **Total** | 10 | 21 | 31 | 23 |
+| **Total** | 10 | 24 | 31 | 24 |
 
 Hasta que #3 esté en `develop`, Integrantes 2 a 4 preparan su primer issue en plan mode (sin editar) y escriben el borrador del contrato de la API que les toca.
 
-## Chequeo de los criterios
+### Chequeo de los criterios
 
 1. **Issues verticales.** Cada issue tiene core, controlador con sus rutas y roles, vistas y tests. Los que necesitan una tabla nueva traen su migración (tabla de arriba) y los que usan una API traen su cliente o lo amplían. No hay issues de "solo back" ni de "solo front". Los escenarios que hace el sistema solo (E21, E23, E28, E29) también tienen pantalla: la lista que consulta el rol que los sigue.
 2. **Tres áreas y una integración por persona.** Integrante 1: acceso, turnos y corea, más la base. Integrante 2: gestión, acceso y análisis. Integrante 3: pagos, acceso, gestión, turnos y corea. Integrante 4: turnos, análisis y pagos. Cada uno crea al menos un cliente de API nuevo (columna Integraciones).
-3. **Carga equitativa.** Promedio 21,25 puntos; el rango de ±10 % va de 19,1 a 23,4. Quedan 21, 21, 21 y 22, contando #2 como pide el reparto. Sobre lo pendiente, Integrante 1 tiene 16: es a propósito, porque en la Entrega se ocupa de pasar `develop` a `main`, aplicar las migraciones, el deploy y los bugs, que no son issues con puntos. Si el grupo prefiere emparejar lo pendiente, #19 (3 puntos, depende de su #14) pasa a Integrante 1: quedarían 24, 21, 18 y 22, fuera del ±10 % con #2 incluido.
-4. **Dependencias sin ciclos y sin choques.** Cada issue depende solo de números menores. Los issues de un mismo milestone que se hacen en paralelo no comparten ninguna pieza de la tabla "Piezas compartidas": donde dos la tocan, uno depende del otro (#7 → #8 → #13 en `tareas.py`; #6 → #12 → #17 en `core/pagos`; #9 → #16 en `login.html`; #15 → #20 → #21 en `core/analisis`; #4 → #20 en `apigen.py`). En Control 3, #9 y #10 no comparten archivos: #9 pone las especialidades en un archivo nuevo, `core/usuarios/especialidades.py` (modelo y `guardar_especialidades`, que llama desde `controllers/usuarios.py`), y no toca `modelos.py` ni `servicios.py`; #10 es el único que modifica `modelos.py` en ese milestone. #13, #14 y #15 usan la fábrica de muestras de #8 y ninguno escribe la suya.
+3. **Carga equitativa.** Promedio 22,25 puntos; el rango de ±10 % va de 20,0 a 24,5. Quedan 24, 21, 22 y 22, contando #2 como pide el reparto. Sobre lo pendiente, Integrante 1 tiene 19: es a propósito que sea el que menos tiene en la Entrega (solo #23), porque además se ocupa de pasar `develop` a `main`, aplicar las migraciones, el deploy y los bugs, que no son issues con puntos. Por eso no conviene pasarle más: con #19 quedaría en 27, fuera del ±10 %. (Antes del 16/11 el reparto era 21, 21, 21 y 22 sobre 85 puntos.)
+4. **Dependencias sin ciclos y sin choques.** Cada issue depende solo de números menores, salvo #10, #14 y #15, que desde el 16/11 dependen también de #22 (ver los riesgos de la sección 6). Los issues de un mismo milestone que se hacen en paralelo no comparten ninguna pieza de la tabla "Piezas compartidas": donde dos la tocan, uno depende del otro (#7 → #8 → #13 en `tareas.py`; #6 → #12 → #17 en `core/pagos`; #9 → #16 en `login.html`; #15 → #20 → #21 en `core/analisis`; #4 → #20 en `apigen.py`). En Control 3, #9 y #10 no comparten archivos: #9 pone las especialidades en un archivo nuevo, `core/usuarios/especialidades.py` (modelo y `guardar_especialidades`, que llama desde `controllers/usuarios.py`), y no toca `modelos.py` ni `servicios.py`; #10 es el único que modifica `modelos.py` en ese milestone. #13, #14 y #15 usan la fábrica de muestras de #8 y ninguno escribe la suya.
 
-# 5. Detalle de cada issue
+## 5. Detalle de cada issue
 
-Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre las marcas `<!-- issue:N -->`). Los criterios de aceptación son los episodios del escenario, numerados `E##.n`. Los prompts no repiten lo que ya dice `CLAUDE.md` (decoradores, CSRF, `cambiar_estado()`, nombres del LEL, tests antes de terminar).
+Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre las marcas `issue:N`). Los criterios de aceptación son los episodios del escenario, numerados `E##.n`. Los prompts no repiten lo que ya dice `CLAUDE.md` (decoradores, CSRF, `cambiar_estado()`, nombres del LEL, tests antes de terminar).
 
-## #2 · Base: estructura, base de datos y login
+### #2 · Base: estructura, base de datos y login
 
-<!-- issue:2 -->
 **Escenarios:** ninguno (sesiones 2–4 de `docs/guia-agentes.md`) · **Área:** infra · **Puntos:** 5 · **Rama:** `base` · **Depende de:** — · **Milestone:** Control 1 (17/11) · **Estado:** hecho en la rama `base` (commits `4a48003` a `499e4e1`); se cierra con el PR de la base.
 
 **Objetivo.** Que cualquiera pueda clonar, instalar, levantar la app, entrar con cada rol y correr los tests.
@@ -320,26 +350,24 @@ Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre
 - `login_required`, `rol_requerido(*roles)`, CSRF en todo POST y `Cache-Control: no-store`.
 - `layout.html` responsivo con Bootstrap local, menú por rol y mensajes flash; `flask seeds` con un usuario por rol.
 
-**Qué toca por capa:** ya está hecho; ver la sección 1 de `docs/guia-issues.md`.
+**Qué toca por capa:** ya está hecho; ver la sección 1.
 
 **Tests mínimos (existentes):** `test_app.py`, `test_autenticacion.py`, `test_base_de_datos.py`, `test_csrf.py`, `test_seeds.py`.
 
 **Fuera de alcance:** el código por dispositivo nuevo (E04 ep. 4 y 5, en #16) y la activación de la cuenta del paciente (E05, en #16).
 
 **Prompt de referencia:** no aplica. Se ejecutaron los prompts de las sesiones 2, 3 y 4 de `docs/guia-agentes.md`.
-<!-- /issue:2 -->
 
-## #3 · Base: estados, notificaciones, integraciones y módulo de usuarios
+### #3 · Base: estados, notificaciones, integraciones y módulo de usuarios
 
-<!-- issue:3 -->
 **Escenarios:** E03, E39 · **Área:** infra · **Puntos:** 5 · **Rama:** `base` · **Depende de:** #2 · **Milestone:** Control 1 (17/11) · **Estado:** sesión 5 hecha (commit `0200281`); faltan las sesiones 6 y 7.
 
 **Objetivo.** Terminar las sesiones 5 a 7 de `docs/guia-agentes.md` y dejar las piezas que los demás issues usan sin modificarlas. Bloquea a todos los demás issues.
 
 **Criterios de aceptación**
 
-- Sesión 5 (hecha): modelos `Paciente`, `Estudio`, `HistorialEstado`, `Analisis` y `AnalisisGen`; enum de 16 estados con las 21 transiciones del LEL; `crear_estudio()` con el código del estudio, el análisis inicial y la primera fila del historial; `cambiar_estado(estudio, nuevo_estado, usuario, motivo=None)`, que rechaza lo que no está en el LEL y guarda el historial con fecha y usuario.
-- Sesión 6: cliente base con `httpx` (timeout de 5 s, `IntegracionError` con mensaje legible, mock con `USE_MOCKS=1` desde `tests/fixtures/apis/`); cliente de Apigen con los endpoints 3, 4, 5 y 7 y `APIGEN_GRUPO_ID`; `integraciones/storage.py` con mock en disco; `layout.html` con los bloques `head` y `scripts`.
+- Sesión 5 (hecha): modelos `Paciente`, `Estudio`, `HistorialEstado`, `Analisis` y `AnalisisGen`; enum de 16 estados con las 21 transiciones del LEL (20 desde el 16/11, ver el cierre); `crear_estudio()` con el código del estudio, el análisis inicial y la primera fila del historial; `cambiar_estado(estudio, nuevo_estado, usuario, motivo=None)`, que rechaza lo que no está en el LEL y guarda el historial con fecha y usuario.
+- Sesión 6: cliente base con httpx (timeout de 5 s, `IntegracionError` con mensaje legible, mock con `USE_MOCKS=1` desde `tests/fixtures/apis/`); cliente de Apigen con los endpoints 3, 4, 5 y 7 y `APIGEN_GRUPO_ID`; `integraciones/storage.py` con mock en disco; `layout.html` con los bloques `head` y `scripts`.
 - E39.1 El sistema detecta un evento que requiere avisar a un usuario (lo invoca cada issue con `notificar(usuario, asunto, mensaje, link, estudio=None)`).
 - E39.2 El sistema envía una notificación por mail (en desarrollo, por consola).
 - E39.3 El sistema publica un aviso en la lista de pendientes del usuario.
@@ -348,7 +376,7 @@ Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre
 - E03.2 El administrador general completa los datos que corresponden al rol (matrícula para médicos y gerentes; provincia para transportistas, con un solo transportista por provincia).
 - E03.3 El sistema crea las credenciales de acceso (contraseña generada al azar).
 - E03.4 El sistema envía al nuevo usuario una notificación por mail con sus credenciales.
-- Cierre: grilla de usuarios con búsqueda, filtro por rol, orden y paginación, y las once piezas de "Lo que la base (#3) tiene que dejar" de la sección 1 de la guía.
+- Cierre: grilla de usuarios con búsqueda, filtro por rol, orden y paginación, y las once piezas de "Lo que la base (#3) tiene que dejar" de la sección 1. **[16/11]** Ajuste de la sesión 5: quitar la transición `en_laboratorio_central → requiere_nueva_extraccion` de `estados.py` y de sus tests, porque el volumen de la muestra ya no se registra (G15). Quedan 20 transiciones entre los 16 estados.
 
 **Qué toca por capa**
 
@@ -363,7 +391,7 @@ Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre
 
 **Cambios de estado y reglas**
 
-- No agrega transiciones: usa las 21 que ya están.
+- **[16/11]** Quita una transición (`en_laboratorio_central → requiere_nueva_extraccion`) y no agrega ninguna: quedan 20.
 - Un solo transportista por provincia; matrícula única; mail único sin distinguir mayúsculas.
 - `flask migrar-local` se niega si la URL es de Supabase o es igual a `DATABASE_URL`, porque borra el esquema `public`.
 - `flask demo` crea siempre un paciente nuevo (O20) y solo usa `crear_estudio()` y `cambiar_estado()`. Un estado que necesita filas de un issue que todavía no está (turno, muestra, sample set) falla con un mensaje claro.
@@ -376,6 +404,7 @@ Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre
 - `migrar-local` con una URL de Supabase o igual a `DATABASE_URL` → se niega.
 - `flask demo habilitado_turno` → paciente nuevo con su estudio en ese estado y el historial completo.
 - La suite existente sigue en verde después de mover las fábricas.
+- **[16/11]** `puede_pasar(en_laboratorio_central, requiere_nueva_extraccion)` es falso, `cambiar_estado` lo rechaza y la tabla tiene 20 transiciones.
 
 **Fuera de alcance y supuestos:** especialidades SNOMED en el alta de médicos (las agrega #9); bajas y modificación de usuarios (restricción de E03); O9 y O20.
 
@@ -383,7 +412,7 @@ Cada detalle es también el cuerpo del issue en GitHub (el script lo copia entre
 
 Sesión 6:
 
-```text
+```
 /implementar-escenario E39
 Issue #3, sesión 6 de @docs/guia-agentes.md (notificaciones e integraciones). La sesión 5 está
 hecha: leé src/core/estudios y src/core/usuarios antes de planificar.
@@ -404,7 +433,7 @@ por consola.
 
 Sesión 7:
 
-```text
+```
 /implementar-escenario E03
 Issue #3, sesión 7 de @docs/guia-agentes.md: el módulo de referencia que copian todos. Grilla de
 usuarios con búsqueda, filtro por rol, orden y paginación del servidor; alta con validación en
@@ -416,17 +445,17 @@ Cerrá las piezas de "Lo que la base (#3) tiene que dejar" en la sección 1 de @
 fábricas de conftest.py a tests/fabricas.py con pytest_plugins; flask migrar-local con
 DATABASE_URL_LOCAL y la protección de _url_de_test; flask demo <estado> con DATOS_POR_ESTADO;
 .github/workflows/tests.yml; CLAUDE.md, revisor-escenario.md, y S11 y S16 de decisiones.md.
-No cambies core/estudios/estados.py ni servicios.py, ni la lógica del login.
+Única excepción en estados.py (cambio del profesor del 16/11, G15 de @docs/guia-issues.md): quitá la
+transición en_laboratorio_central → requiere_nueva_extraccion y ajustá su test; quedan 20. No
+cambies servicios.py ni la lógica del login.
 Tests: alta de cada rol, mail repetido, segundo transportista en una provincia, permisos,
 migrar-local que se niega con Supabase y flask demo habilitado_turno.
 Control: pytest en verde; admin@exoma.test da de alta un transportista y le llega el mail. Decime
 qué falta de "Qué incluye la base" de @docs/guia-agentes.md.
 ```
-<!-- /issue:3 -->
 
-## #4 · Patologías, síntomas SNOMED y validación del diagnóstico
+### #4 · Patologías, síntomas SNOMED y validación del diagnóstico
 
-<!-- issue:4 -->
 **Escenarios:** E07, E08, E36 · **Área:** gestión médica · **Puntos:** 5 · **Rama:** `4-patologias-sintomas` · **Depende de:** #3 · **Milestone:** Control 2 (24/11)
 
 **Objetivo.** El gerente médico define las patologías con su síntoma cardinal y sus síntomas secundarios codificados en SNOMED. Quedan dos piezas que usan otros issues sin modificarlas: el buscador de síntomas (E07) y la regla que valida el diagnóstico presuntivo (E08).
@@ -444,7 +473,7 @@ qué falta de "Qué incluye la base" de @docs/guia-agentes.md.
 - E08.4 Si no se cumple la regla, el sistema rechaza el alta.
 - E08.5 Si rechaza el alta, el sistema informa la inconsistencia al médico tratante (qué patología y qué falta).
 - E08.6 Si se rechazó el alta, el médico tratante corrige el diagnóstico presuntivo o la lista de síntomas (la función se puede volver a llamar; el formulario es de #10).
-- E36.1 El gerente médico carga el nombre de la patología lisosomal (y, si es propia del grupo, el código y la herencia que pide el endpoint 9 de Apigen).
+- E36.1 El gerente médico carga el nombre de la patología lisosómica (y, si es propia del grupo, el código y la herencia que pide el endpoint 9 de Apigen).
 - E36.2 El gerente médico selecciona el síntoma cardinal mediante BUSCAR SÍNTOMA.
 - E36.3 El gerente médico selecciona los síntomas secundarios mediante BUSCAR SÍNTOMA.
 - E36.4 El sistema guarda la patología para su uso en VALIDAR DIAGNÓSTICO PRESUNTIVO.
@@ -456,7 +485,7 @@ qué falta de "Qué incluye la base" de @docs/guia-agentes.md.
 - Core: `core/patologias` (modelos, alta, modificación, activar/desactivar) y `validar_diagnostico_presuntivo(sintomas, patologias, tipo_sospecha, patologias_de_familiares)`, una función pura que devuelve si acepta y las inconsistencias por patología. `core/snomed`: guardar el término elegido en `terminos_snomed` (upsert).
 - Controlador: `patologias` (gerente médico): `GET /patologias`, `GET|POST /patologias/nueva`, `GET|POST /patologias/<id>/editar`, `POST /patologias/<id>/activa`. `snomed` (médico tratante y gerente médico): `GET /snomed/terminos?q=&tipo=sintoma` en JSON.
 - Vistas: `patologias/listado.html`, `patologias/formulario.html`; macro `snomed/_buscador.html` con parámetros (URL del endpoint, tipo `sintoma` o `especialidad`, nombre del campo oculto y si admite uno o varios términos) y `static/js/buscador_snomed.js` (desde 3 letras, con espera entre teclas). Se puede repetir en la misma página: #10 lo usa para el paciente y para cada familiar, y #4 para el cardinal (uno) y los secundarios (varios).
-- Integración: `integraciones/snomed.py` con `buscar_terminos(texto, tipo)` (**contrato pendiente**: mocks de síntomas y de especialidades, y borrador en `docs/apis/snomed.md`). Apigen: endpoint 1 (buscar genes) y 9 (alta de patología del grupo), que se agregan a `apigen.py`.
+- Integración: `integraciones/snomed.py` con `buscar_terminos(texto, tipo)` (contrato pendiente: mocks de síntomas y de especialidades, y borrador en `docs/apis/snomed.md`). Apigen: endpoint 1 (buscar genes) y 9 (alta de patología del grupo), que se agregan a `apigen.py`.
 
 **Cambios de estado y reglas**
 
@@ -478,7 +507,7 @@ qué falta de "Qué incluye la base" de @docs/guia-agentes.md.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E36 E07 E08
 Issue #4; la base (#3) está en develop. Leé el módulo usuarios, integraciones/base.py y apigen.py,
 apigen/contrato.md (endpoints 1 y 9), O2 y O11 de @docs/decisiones.md y las tablas
@@ -499,11 +528,9 @@ Tests: cada caso de la regla (cardinal, dos secundarios, uno, ninguno, dos patol
 falla, familiar con y sin diagnóstico), dos cardinales, permisos y APIs caídas.
 Control: pytest en verde; gerente@exoma.test da de alta una patología y le cambia un secundario.
 ```
-<!-- /issue:4 -->
 
-## #5 · Historial de estudios y chatbot del paciente
+### #5 · Historial de estudios y chatbot del paciente
 
-<!-- issue:5 -->
 **Escenarios:** E11, E40 · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `5-historial-chatbot` · **Depende de:** #3 · **Milestone:** Control 2 (24/11)
 
 **Objetivo.** El médico tratante y el paciente ven el estudio y en qué estado está; el paciente le hace preguntas al chatbot. Es la vista del paciente que habilita E05.
@@ -524,7 +551,7 @@ Control: pytest en verde; gerente@exoma.test da de alta una patología y le camb
 - Core: `core/historial` con consultas de solo lectura (`estudio_del_paciente`, `estudios_del_medico(busqueda)`, `puede_ver(usuario, estudio)`). No modifica `core/estudios`.
 - Controlador: `historial` (paciente y médico tratante): `GET /historial`, `GET /historial/estudios/<id>`, `GET /historial/analisis/<id>/resultado` (descarga desde Storage). `chatbot` (paciente): `GET|POST /chatbot`.
 - Vistas: `historial/listado.html` (el médico busca por DNI o nombre), `historial/detalle.html` (estado con el nombre del LEL, línea de tiempo de `historial_estados`, análisis con su resultado), `chatbot/conversacion.html`.
-- Integración: `integraciones/chatbot.py` con `preguntar(texto)` (**contrato pendiente**: mock y `docs/apis/chatbot.md`); Storage para la descarga.
+- Integración: `integraciones/chatbot.py` con `preguntar(texto)` (contrato pendiente: mock y `docs/apis/chatbot.md`); Storage para la descarga.
 
 **Cambios de estado y reglas**
 
@@ -545,7 +572,7 @@ Control: pytest en verde; gerente@exoma.test da de alta una patología y le camb
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E11 E40
 Issue #5; la base (#3) está en develop. Leé primero el módulo usuarios como referencia,
 src/core/estudios (modelos y estados, sin modificarlos), src/integraciones/base.py y storage.py,
@@ -564,11 +591,9 @@ otros roles, chatbot con respuesta, vacío y caído.
 No toques core/estudios ni layout.html.
 Control: pytest en verde; paciente@exoma.test ve su estudio y le pregunta al chatbot.
 ```
-<!-- /issue:5 -->
 
-## #6 · Presupuesto, pago particular y registro financiero
+### #6 · Presupuesto, pago particular y registro financiero
 
-<!-- issue:6 -->
 **Escenarios:** E13, E14, E41 · **Área:** presupuesto y pagos · **Puntos:** 5 · **Rama:** `6-presupuesto-pago` · **Depende de:** #3 · **Milestone:** Control 2 (24/11)
 
 **Objetivo.** El administrativo emite el presupuesto, el paciente paga de forma particular y cada operación queda en el registro financiero para el tablero de control.
@@ -601,7 +626,7 @@ Control: pytest en verde; paciente@exoma.test ve su estudio y le pregunta al cha
 
 **Cambios de estado y reglas**
 
-- `creado` → `presupuestado` al emitir; `presupuestado` → `habilitado_turno` al pagar.
+- `creado → presupuestado` al emitir; `presupuestado → habilitado_turno` al pagar.
 - Importe según los genes del análisis inicial; los de hallazgos secundarios no cuentan (O13). El precio es fijo: no hay forma de editarlo y hay un solo presupuesto por estudio.
 - Pago único y sin cuotas: el importe que confirma el paciente tiene que ser igual al importe final. Un solo pago particular por estudio.
 - Asientos: `presupuesto_emitido` al emitir y `pago_particular` al pagar. Solo se insertan. Pago, asiento y cambio de estado van en la misma transacción.
@@ -618,7 +643,7 @@ Control: pytest en verde; paciente@exoma.test ve su estudio y le pregunta al cha
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E13 E14 E41
 Issue #6; la base (#3) está en develop. Leé el módulo usuarios como referencia, src/core/estudios
 (sin modificarlo), y en @docs/modelo-datos.md las tablas presupuestos, pagos, cupones,
@@ -637,11 +662,9 @@ No implementes el cupón: dejá pagar_particular sin ese parámetro; lo agrega #
 Control: pytest en verde; administrativo@exoma.test emite el presupuesto del estudio de prueba y
 paciente@exoma.test lo paga.
 ```
-<!-- /issue:6 -->
 
-## #7 · Turnos de extracción: reservar, cancelar y recordar
+### #7 · Turnos de extracción: reservar, cancelar y recordar
 
-<!-- issue:7 -->
 **Escenarios:** E19, E20, E21 · **Área:** turnos y logística · **Puntos:** 5 · **Rama:** `7-turnos-extraccion` · **Depende de:** #3 · **Milestone:** Control 2 (24/11)
 
 **Objetivo.** El paciente elige un centro de extracción en el mapa, reserva un turno de 15 minutos, lo puede cancelar y recibe un recordatorio. Quedan tres piezas reutilizables: el mapa, la generación de PDFs y las tareas programadas.
@@ -674,7 +697,7 @@ paciente@exoma.test lo paga.
 
 **Cambios de estado y reglas**
 
-- `habilitado_turno` → `turno_sacado` y `requiere_nueva_extraccion` → `turno_sacado` al reservar; `turno_sacado` → `habilitado_turno` al cancelar.
+- `habilitado_turno → turno_sacado` y `requiere_nueva_extraccion → turno_sacado` al reservar; `turno_sacado → habilitado_turno` al cancelar.
 - Franjas de 15 minutos, de lunes a viernes, desde las 9:00 y la última a las 17:45, fuera de `feriados` y nunca en el pasado.
 - Un paciente por franja: el índice único es el que manda; si dos reservan a la vez, el segundo recibe "ese turno ya se reservó". Un turno vigente por estudio.
 - Desde Requiere nueva extracción se reserva sin pagar de nuevo (E27).
@@ -693,7 +716,7 @@ paciente@exoma.test lo paga.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E19 E20 E21
 Issue #7; la base (#3) está en develop. Leé el módulo usuarios como referencia, src/core/estudios
 (sin modificarlo), notificar() y storage, y en @docs/modelo-datos.md las tablas feriados,
@@ -714,11 +737,9 @@ No toques layout.html: el CSS y el JS del mapa van en los bloques head y scripts
 Control: pytest en verde; el paciente de flask demo habilitado_turno reserva en el celular,
 descarga la orden y cancela.
 ```
-<!-- /issue:7 -->
 
-## #8 · Toma de muestra por el bot e inasistencias
+### #8 · Toma de muestra por el bot e inasistencias
 
-<!-- issue:8 -->
 **Escenarios:** E22 (más el supuesto O7) · **Área:** turnos y logística · **Puntos:** 3 · **Rama:** `8-bot-toma-muestra` · **Depende de:** #7 · **Milestone:** Control 2 (24/11)
 
 **Objetivo.** El centro de extracción avisa por Telegram que tomó la muestra y el estudio pasa solo a Listo para retirar, sin llamados. Si el paciente no fue, el turno se libera al cierre del día.
@@ -735,16 +756,16 @@ descarga la orden y cancela.
 
 **Qué toca por capa**
 
-- Migración: `mensajes_bot`, `ordenes_del_dia`, `paradas_orden_del_dia`, `sample_sets` y `muestras`. Solo las tablas y sus modelos (`core/logistica/modelos.py`, `core/sample_sets/modelos.py`); la lógica de las tres del medio es de #13 y #14.
+- Migración: `mensajes_bot`, `ordenes_del_dia`, `paradas_orden_del_dia`, `sample_sets` y `muestras`. Solo las tablas y sus modelos (`core/logistica/modelos.py`, `core/sample_sets/modelos.py`); la lógica de las tres del medio es de #13 y #14. **[16/11]** `muestras` va sin las columnas de volumen (`volumen_ml`, `volumen_registrado_por`, `volumen_registrado_en`): el sistema ya no registra el volumen (G15).
 - Core: `core/muestras` (modelos `Muestra` y `MensajeBot`, `registrar_toma(update)`, `centros_con_muestras_listas(provincia)`, `procesar_inasistencias(fecha)`).
 - Controlador: `bot`. `POST /bot/telegram`: sin sesión, exento de CSRF, valida el header `X-Telegram-Bot-Api-Secret-Token`. Administrativo: `GET /bot/mensajes` (mensajes recibidos y los que no se pudieron procesar).
 - Vistas: `bot/mensajes.html`.
-- Integración: Telegram Bot API (webhook). `integraciones/telegram.py` responde al centro con `sendMessage` y tiene mock. Comando `flask bot simular <chat_id> <texto>` para probar sin Telegram. Borrador del formato del mensaje en `docs/apis/telegram.md` (**formato pendiente** de acordar). Variables nuevas en `.env.example`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
+- Integración: Telegram Bot API (webhook). `integraciones/telegram.py` responde al centro con `sendMessage` y tiene mock. Comando `flask bot simular <chat_id> <texto>` para probar sin Telegram. Borrador del formato del mensaje en `docs/apis/telegram.md` (formato pendiente de acordar). Variables nuevas en `.env.example`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
 - Tareas: job diario de inasistencias a las 18:30 en `tareas.py`.
 
 **Cambios de estado y reglas**
 
-- `turno_sacado` → `listo_para_retirar` al procesar el mensaje; `turno_sacado` → `habilitado_turno` por inasistencia.
+- `turno_sacado → listo_para_retirar` al procesar el mensaje; `turno_sacado → habilitado_turno` por inasistencia.
 - `telegram_update_id` único: un mensaje repetido no hace nada.
 - Chat que no es de un centro, código inexistente, estudio que no está en Turno sacado o turno de otro centro: se guarda el error en `mensajes_bot.error` y no cambia nada. El webhook responde 200 igual, para que Telegram no reintente.
 - Al procesar: se crea la muestra con `turno_id` y `tomada_en`, y el turno pasa a `asistido`.
@@ -763,13 +784,15 @@ descarga la orden y cancela.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E22
 Issue #8; #7 (turnos) ya está en develop. Leé src/core/turnos, src/web/tareas.py, el módulo
 usuarios como referencia y en @docs/modelo-datos.md las tablas mensajes_bot, muestras,
 ordenes_del_dia, paradas_orden_del_dia y sample_sets.
-Migración: esas cinco tablas completas. De ordenes_del_dia, paradas y sample_sets hacé solo los
-modelos (core/logistica/modelos.py y core/sample_sets/modelos.py): su lógica es de #13 y #14.
+Migración: esas cinco tablas completas, salvo que muestras va sin las columnas volumen_ml,
+volumen_registrado_por y volumen_registrado_en: el volumen ya no se registra (G15). De
+ordenes_del_dia, paradas y sample_sets hacé solo los modelos (core/logistica/modelos.py y
+core/sample_sets/modelos.py): su lógica es de #13 y #14.
 El webhook POST /bot/telegram es una ruta sin sesión: eximila de CSRF y validá el header
 X-Telegram-Bot-Api-Secret-Token contra TELEGRAM_WEBHOOK_SECRET (agregala a .env.example).
 Guardá cada update en mensajes_bot (update_id único) y respondé 200 aunque haya error.
@@ -784,11 +807,9 @@ secreto, inasistencia con y sin muestra, y permisos de /bot/mensajes.
 Control: pytest en verde; con flask demo turno_sacado y flask bot simular, ese estudio pasa a Listo
 para retirar y administrativo@exoma.test ve el mensaje. Solo tocás core/turnos para asistido/ausente.
 ```
-<!-- /issue:8 -->
 
-## #9 · Registro de médicos y del personal del laboratorio
+### #9 · Registro de médicos y del personal del laboratorio
 
-<!-- issue:9 -->
 **Escenarios:** E01, E02 · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `9-registro-usuarios` · **Depende de:** #4 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** Médicos tratantes, gerentes médicos, administrativos y bioinformáticos se registran solos y entran con su rol, como alternativa al alta por el administrador (E03).
@@ -833,7 +854,7 @@ para retirar y administrativo@exoma.test ve el mensaje. Solo tocás core/turnos 
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E01 E02
 Issue #9; #4 (SNOMED) ya está en develop. Leé el módulo usuarios (core, controlador y vistas de
 E03), helpers/auth.py y el login, integraciones/snomed.py y el macro snomed/_buscador.html, y la
@@ -853,37 +874,38 @@ en servicios.py) y un enlace "Registrarse" en login.html: es el único cambio pe
 Control: pytest en verde; en el navegador, sin sesión, registrá un médico con dos especialidades y
 entrá con él.
 ```
-<!-- /issue:9 -->
 
-## #10 · Alta de paciente y familiograma
+### #10 · Alta de paciente y familiograma
 
-<!-- issue:10 -->
-**Escenarios:** E06, E09 · **Área:** acceso y alta clínica · **Puntos:** 5 · **Rama:** `10-alta-paciente` · **Depende de:** #4 · **Milestone:** Control 3 (1/12)
+**Escenarios:** E06, E09 · **Área:** acceso y alta clínica · **Puntos:** 5 · **Rama:** `10-alta-paciente` · **Depende de:** #4, #22 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** El médico tratante registra al paciente en la misma consulta, con su diagnóstico presuntivo validado, sus síntomas, el resumen de historia clínica dictado y, si hay, sus familiares y el familiograma.
 
 **Criterios de aceptación**
 
 - E06.1 El médico tratante carga DNI, nombre, apellido, fecha de nacimiento, teléfono y mail del paciente.
-- E06.2 El médico tratante registra el diagnóstico presuntivo, con una o más patologías lisosomales, y el tipo de sospecha.
+- E06.2 El médico tratante registra el diagnóstico presuntivo, con una o más patologías lisosómicas, y el tipo de sospecha.
 - E06.3 El médico tratante graba el resumen de historia clínica y el sistema lo transcribe a texto.
 - E06.4 El médico tratante carga la lista de síntomas del paciente mediante BUSCAR SÍNTOMA.
 - E06.5 Si el paciente informa familiares, el médico tratante realiza REGISTRAR FAMILIOGRAMA.
 - E06.6 El sistema realiza VALIDAR DIAGNÓSTICO PRESUNTIVO y, si es válido, envía las credenciales de acceso al paciente.
 - E09.1 El médico tratante da de alta un familiar con su parentesco y su nombre.
 - E09.2 El médico tratante carga los síntomas del familiar mediante BUSCAR SÍNTOMA.
-- E09.3 El médico tratante indica si el familiar tiene diagnóstico de alguna patología lisosomal.
+- E09.3 El médico tratante indica si el familiar tiene diagnóstico de alguna patología lisosómica.
 - E09.4 El médico tratante repite los episodios anteriores por cada familiar.
 - E09.5 El sistema envía los familiares a la API de familiograma.
 - E09.6 El sistema asocia al paciente el familiograma en PDF devuelto.
+- E09.7 **[16/11]** Si el familiar tiene DNI y ya es paciente del sistema, el sistema lo vincula con ese paciente al darlo de alta y deja el identificador del vínculo (su DNI y su paciente).
+- E09.8 **[16/11]** Cuando se da de alta un paciente cuyo DNI coincide con el de un familiar de otro paciente, el sistema vincula ese familiar con el paciente nuevo, sin que nadie lo pida.
+- E09.9 **[16/11]** El médico tratante ve en el detalle del paciente cada familiar y, si ya es paciente, el código y el estado de su estudio.
 
 **Qué toca por capa**
 
-- Migración: `usuarios.debe_cambiar_contrasena`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares`, `familiar_sintomas`, `familiar_patologias`.
-- Core: `core/pacientes` (`dar_de_alta(...)` en una transacción: valida con E08 de #4, crea el usuario paciente con contraseña provisoria y `debe_cambiar_contrasena`, el paciente, síntomas, diagnóstico y familiares; después del commit pide el familiograma y manda el mail; `pacientes_del_medico(busqueda)`; `reintentar_familiograma`). Agrega la columna nueva al modelo `Usuario`.
+- Migración: `usuarios.debe_cambiar_contrasena`, `paciente_sintomas`, `diagnosticos_presuntivos`, `familiares`, `familiar_sintomas`, `familiar_patologias`. **[16/11]** En `familiares`, tres columnas más: `dni` (opcional), `paciente_vinculado_id` (FK → pacientes, nula) y `vinculado_en`.
+- Core: `core/pacientes` (`dar_de_alta(...)` en una transacción: valida con E08 de #4, crea el usuario paciente con contraseña provisoria y `debe_cambiar_contrasena`, el paciente, síntomas, diagnóstico y familiares; después del commit pide el familiograma y manda el mail; `pacientes_del_medico(busqueda)`; `reintentar_familiograma`; **[16/11]** `vincular_familiares(paciente)` en `core/pacientes/familiares.py`, que usan el alta y #23; cada alta llama a `auditoria.registrar` de #22). Agrega la columna nueva al modelo `Usuario`.
 - Controlador: `pacientes` (médico tratante): `GET /pacientes`, `GET|POST /pacientes/nuevo`, `POST /pacientes/transcribir` (fetch con el audio), `GET /pacientes/<id>`, `POST /pacientes/<id>/familiograma`, `GET /pacientes/<id>/familiograma.pdf`.
-- Vistas: `pacientes/listado.html` ("Mis pacientes", con búsqueda por DNI o nombre y el botón de alta), `pacientes/formulario.html` (datos, diagnóstico con las patologías activas, tipo de sospecha, grabación con MediaRecorder y texto editable, buscador de síntomas de #4, familiares que se agregan en la misma página), `pacientes/detalle.html`, `mails/credenciales_paciente.html`.
-- Integraciones: `integraciones/transcripcion.py` (`transcribir(audio)`) y `integraciones/familiograma.py` (`generar(familiares)` → PDF), las dos con **contrato pendiente** (mocks y borradores en `docs/apis/`); Storage para el audio y el PDF.
+- Vistas: `pacientes/listado.html` ("Mis pacientes", con búsqueda por DNI o nombre y el botón de alta), `pacientes/formulario.html` (datos, diagnóstico con las patologías activas, tipo de sospecha, grabación con MediaRecorder y texto editable, buscador de síntomas de #4, familiares que se agregan en la misma página), `pacientes/detalle.html` (**[16/11]** con cada familiar y, si ya es paciente, el código y el estado de su estudio; y el enlace «Historial de cambios» a `/auditoria/paciente/<id>`, de #22), `mails/credenciales_paciente.html`.
+- Integraciones: `integraciones/transcripcion.py` (`transcribir(audio)`) y `integraciones/familiograma.py` (`generar(familiares)` → PDF), las dos con contrato pendiente (mocks y borradores en `docs/apis/`); Storage para el audio y el PDF.
 
 **Cambios de estado y reglas**
 
@@ -893,6 +915,9 @@ entrá con él.
 - Si la transcripción falla, el médico escribe el resumen; el texto es obligatorio.
 - Si la API de familiograma falla, el alta queda guardada sin PDF y el detalle ofrece reintentarlo (G3).
 - La contraseña provisoria va solo en el mail: nunca en el aviso ni en los logs.
+- **[16/11]** El familiar puede llevar DNI (7 u 8 dígitos, opcional). Con DNI el vínculo es automático y va en los dos sentidos (G13): al agregar el familiar, si ya hay un paciente con ese DNI; y al dar de alta un paciente, para cada familiar de otro paciente con ese DNI. Sin DNI no hay vínculo.
+- **[16/11]** Del familiar vinculado el médico ve solo el código y el estado de su estudio, no sus datos clínicos (G13).
+- **[16/11]** Cada alta de paciente y de familiar llama a `auditoria.registrar` (#22) en la misma transacción.
 
 **Tests mínimos**
 
@@ -901,19 +926,23 @@ entrá con él.
 - DNI repetido, mail repetido o sin resumen → error.
 - Con familiares → la API recibe parentesco, nombre, síntomas y diagnóstico, y el PDF queda guardado; API caída → alta guardada sin PDF; el reintento lo genera.
 - Transcripción con mock.
+- **[16/11]** Familiar con el DNI de un paciente existente → queda vinculado; paciente nuevo cuyo DNI figura como familiar de otro → ese familiar queda vinculado; familiar sin DNI → sin vínculo; el detalle muestra el código y el estado del estudio vinculado; el alta deja registros en `auditoria`.
 - El médico ve solo sus pacientes (otro → 404); el administrativo entra a `/pacientes` → 403.
 
-**Fuera de alcance y supuestos:** el responsable del menor usa la cuenta del paciente (LEL); modificar datos (restricción de E03); O2, O10, G3.
+**Fuera de alcance y supuestos:** el responsable del menor usa la cuenta del paciente (LEL); modificar los datos del paciente y de sus familiares (es de #23, E42); O2, O10, G3, G13.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E06 E09
-Issue #10; #4 ya está en develop. Leé core/patologias (validar_diagnostico_presuntivo), el macro
-snomed/_buscador.html, src/core/pacientes y src/core/usuarios, storage.py y en
-@docs/modelo-datos.md las tablas pacientes, paciente_sintomas, diagnosticos_presuntivos,
-familiares, familiar_sintomas, familiar_patologias y la columna usuarios.debe_cambiar_contrasena.
+Issue #10; #4 y #22 ya están en develop (auditoria.registrar). Leé core/patologias
+(validar_diagnostico_presuntivo), el macro snomed/_buscador.html, src/core/pacientes y
+src/core/usuarios, storage.py y en @docs/modelo-datos.md las tablas pacientes, paciente_sintomas,
+diagnosticos_presuntivos, familiares, familiar_sintomas, familiar_patologias y la columna
+usuarios.debe_cambiar_contrasena.
 Migración: esas cinco tablas y la columna; sos el único issue del milestone que toca modelos.py.
+En familiares agregá dni (opcional), paciente_vinculado_id (FK a pacientes, nula) y vinculado_en: el
+vínculo con un paciente que ya existe es automático y en los dos sentidos (G13 de @docs/guia-issues.md).
 dar_de_alta va en una transacción: valida con E08 (si rechaza, no guarda nada y el formulario vuelve
 con los datos y la inconsistencia) y crea usuario con contraseña provisoria, paciente, síntomas,
 diagnóstico y familiares. Después del commit: familiograma y mail con credenciales.
@@ -922,17 +951,18 @@ mocks y borradores provisorios en docs/apis/. Si falla la transcripción, el mé
 texto; si falla el familiograma, el alta se guarda y se reintenta (G3 de @docs/guia-issues.md).
 El audio se graba en el navegador (MediaRecorder) y va por fetch con X-CSRFToken.
 Reglas con test: todo obligatorio salvo el familiograma; DNI y mail únicos (O10); al menos una
-patología activa; la contraseña provisoria nunca en avisos ni logs.
+patología activa; la contraseña provisoria nunca en avisos ni logs; el vínculo por DNI en el alta del
+familiar y en el alta del paciente (vincular_familiares en core/pacientes/familiares.py, que también
+usará #23); cada alta llama a auditoria.registrar de #22 en la misma transacción.
 Tests: alta completa, rechazo de E08, sospecha familiar, duplicados, familiograma ok, caído y
-reintento, médico ajeno y permisos. No toques core/patologias ni el buscador de #4.
+reintento, vínculo de familiares en los dos sentidos y sin DNI, médico ajeno y permisos. No toques
+core/patologias ni el buscador de #4.
 Control: pytest en verde; medico@exoma.test da de alta desde el celular un paciente con dos
 familiares y el mail con las credenciales sale por consola.
 ```
-<!-- /issue:10 -->
 
-## #11 · Alta de estudio con genes de Apigen
+### #11 · Alta de estudio con genes de Apigen
 
-<!-- issue:11 -->
 **Escenarios:** E10 · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `11-alta-estudio` · **Depende de:** #10 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** El médico tratante inicia el circuito del exoma para un paciente: el estudio queda Creado, con los genes que devuelve Apigen para el diagnóstico presuntivo y los que agrega a mano.
@@ -975,7 +1005,7 @@ familiares y el mail con las credenciales sale por consola.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E10
 Issue #11; #10 (alta de paciente) ya está en develop. Leé src/core/estudios (modelos y
 crear_estudio() de servicios.py, sin modificarlos), src/core/pacientes, controllers/pacientes.py,
@@ -996,11 +1026,9 @@ caído y permisos.
 Control: pytest en verde; medico@exoma.test da de alta un estudio para un paciente nuevo de #10
 (el de los seeds ya tiene uno, O20) y administrativo@exoma.test recibe el aviso.
 ```
-<!-- /issue:11 -->
 
-## #12 · Cupones de descuento
+### #12 · Cupones de descuento
 
-<!-- issue:12 -->
 **Escenarios:** E15, E37, E38 (y completa E14.3) · **Área:** gestión médica · **Puntos:** 5 · **Rama:** `12-cupones` · **Depende de:** #6 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** El gerente médico genera cupones y los reparte entre los médicos tratantes; cada médico decide a qué paciente beneficiar, y el paciente lo usa al pagar.
@@ -1033,7 +1061,7 @@ Control: pytest en verde; medico@exoma.test da de alta un estudio para un pacien
 - Controlador: `cupones`. Gerente médico: `GET /cupones`, `GET|POST /cupones/generar`. Médico tratante: `GET /mis-cupones`, `POST /mis-cupones/<id>/asignar`. Paciente: `GET /cupones/mios`, `GET /cupones/<id>/pdf`. En la ruta de pago de #6, el campo del código o del PDF.
 - Vistas: `cupones/listado.html`, `cupones/generar.html`, `cupones/del_medico.html`, `cupones/del_paciente.html`; cambio en `pagos/pagar.html`.
 - Dependencia nueva: `pypdf` con `poetry add`, para leer el código del PDF (G7). Es el único issue que cambia `pyproject.toml`.
-- Integración: `integraciones/cupones.py` con `generar(descuento, cantidad)`, `consultar(codigo)` y `vencer(codigo)` (**contrato pendiente**: mock y `docs/apis/cupones.md`); Storage para los PDF.
+- Integración: `integraciones/cupones.py` con `generar(descuento, cantidad)`, `consultar(codigo)` y `vencer(codigo)` (contrato pendiente: mock y `docs/apis/cupones.md`); Storage para los PDF.
 
 **Cambios de estado y reglas**
 
@@ -1054,7 +1082,7 @@ Control: pytest en verde; medico@exoma.test da de alta un estudio para un pacien
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E37 E38 E15
 Issue #12; #6 (pagos) ya está en develop. Leé core/pagos, core/finanzas, controllers/pagos.py y
 pagos/pagar.html, la tabla cupones de @docs/modelo-datos.md y O15 de @docs/decisiones.md.
@@ -1074,11 +1102,9 @@ No cambies el resto de core/pagos ni las rutas de presupuesto: las modifica #17.
 Control: pytest en verde; gerente@exoma.test genera cupones para medico@exoma.test, que le asigna
 uno al paciente de flask demo presupuestado, y ese paciente paga con descuento.
 ```
-<!-- /issue:12 -->
 
-## #13 · Orden del día y retiro de muestras
+### #13 · Orden del día y retiro de muestras
 
-<!-- issue:13 -->
 **Escenarios:** E23, E24 · **Área:** turnos y logística · **Puntos:** 5 · **Rama:** `13-orden-del-dia` · **Depende de:** #8 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** Cada mañana hábil, cada transportista recibe la lista de centros a visitar en un orden fijo, y al retirar en cada centro las muestras pasan a En camino al laboratorio central.
@@ -1102,12 +1128,12 @@ uno al paciente de flask demo presupuestado, y ese paciente paga con descuento.
 - Core: `core/logistica` (`generar_ordenes(fecha)`, `orden_de_hoy(transportista)`, `registrar_retiro(parada, transportista)`). Usa `centros_con_muestras_listas` de #8.
 - Controlador: `logistica`. Transportista: `GET /orden-del-dia`, `POST /orden-del-dia/paradas/<posicion>/retiro`. Administrativo: `GET /ordenes-del-dia?fecha=`, `POST /ordenes-del-dia/generar` (regenerar a mano).
 - Vistas: `logistica/orden_del_dia.html` (pensada para el celular: centro, dirección y botón de retiro por parada), `logistica/ordenes.html`.
-- Integración: `integraciones/optimizacion.py` con `ordenar(centros)`, que recibe la dirección y las coordenadas de cada centro y devuelve el orden (**contrato pendiente**: mock que ordena por cercanía; `docs/apis/optimizacion.md`).
+- Integración: `integraciones/optimizacion.py` con `ordenar(centros)`, que recibe la dirección y las coordenadas de cada centro y devuelve el orden (contrato pendiente: mock que ordena por cercanía; `docs/apis/optimizacion.md`).
 - Tareas: job de lunes a viernes a las 7:00 en `tareas.py`, que no corre en feriados.
 
 **Cambios de estado y reglas**
 
-- `listo_para_retirar` → `en_camino_laboratorio` al registrar el retiro en un centro.
+- `listo_para_retirar → en_camino_laboratorio` al registrar el retiro en un centro.
 - Una orden por transportista y fecha: generar dos veces no duplica.
 - No se genera en sábados, domingos ni feriados.
 - Provincia con muestras y sin transportista → aviso a los administrativos.
@@ -1129,7 +1155,7 @@ uno al paciente de flask demo presupuestado, y ese paciente paga con descuento.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E23 E24
 Issue #13; #8 ya está en develop. Leé core/muestras (centros_con_muestras_listas),
 core/logistica/modelos.py, src/web/tareas.py, el modelo Transportista y en @docs/modelo-datos.md
@@ -1151,18 +1177,16 @@ No toques core/muestras ni core/sample_sets.
 Control: pytest en verde; con flask demo listo_para_retirar, administrativo@exoma.test genera la
 orden y transportista@exoma.test registra el retiro desde el celular.
 ```
-<!-- /issue:13 -->
 
-## #14 · Sample set y autorización ministerial
+### #14 · Sample set y autorización ministerial
 
-<!-- issue:14 -->
-**Escenarios:** E28, E29 · **Área:** envío a Corea · **Puntos:** 5 · **Rama:** `14-sample-set` · **Depende de:** #8 · **Milestone:** Control 3 (1/12)
+**Escenarios:** E28, E29 · **Área:** envío a Corea · **Puntos:** 5 · **Rama:** `14-sample-set` · **Depende de:** #8, #22 · **Milestone:** Control 3 (1/12)
 
 **Objetivo.** Las muestras válidas se juntan en paquetes de 10 (o menos si hay un Pompe urgente) y el Ministerio de Salud autoriza su salida con el CCB.
 
 **Criterios de aceptación**
 
-- E28.1 El sistema agrega cada muestra En laboratorio central al sample set en armado (`agregar_muestra`, que llama #18 cuando el volumen es válido).
+- E28.1 El sistema agrega cada muestra En laboratorio central al sample set en armado (`agregar_muestra`, que llama #18 al registrar la llegada de la muestra; **[16/11]** ya no hay chequeo de volumen).
 - E28.2 El sistema identifica como Pompe urgente todo estudio con diagnóstico presuntivo de Pompe en un paciente menor de 4 meses (la marca `pompe_urgente` que calcula #11).
 - E28.3 Si el sample set llega a 10 muestras, el sistema lo cierra.
 - E28.4 Si el sample set contiene un Pompe urgente, el sistema lo cierra aunque esté incompleto.
@@ -1181,24 +1205,26 @@ orden y transportista@exoma.test registra el retiro desde el celular.
 - Core: `core/sample_sets` (`agregar_muestra(muestra)`, `cerrar`, `solicitar_autorizacion`, `generar_ccb` con openpyxl). `agregar_muestra` trabaja dentro de la transacción de quien la llama y devuelve el sample set si lo cerró; quien la llama hace commit y recién después llama a `solicitar_autorizacion`, para que la llamada al Ministerio no quede dentro de una transacción que después se revierte.
 - Tests y demo: fábrica de sample set en `tests/fabricas.py` y las entradas de `pendiente_autorizacion_ministerial` y `pendiente_envio` en `DATOS_POR_ESTADO`.
 - Controlador: `sample_sets` (administrativo): `GET /sample-sets`, `GET /sample-sets/<id>`, `GET /sample-sets/<id>/ccb.xlsx`, `GET /sample-sets/<id>/autorizacion.pdf`, `POST /sample-sets/<id>/autorizacion` (reintentar).
-- Vistas: `sample_sets/listado.html` (estado, cantidad de muestras, si tiene un Pompe urgente), `sample_sets/detalle.html`.
-- Integración: `integraciones/ministerio.py` con `autorizar(ccb)` → PDF (**contrato pendiente**: mock y `docs/apis/ministerio.md`); Storage para el CCB y el PDF.
+- Vistas: `sample_sets/listado.html` (estado, cantidad de muestras, si tiene un Pompe urgente), `sample_sets/detalle.html` (**[16/11]** con el enlace «Historial de cambios» a `/auditoria/sample_set/<id>`, de #22).
+- Integración: `integraciones/ministerio.py` con `autorizar(ccb)` → PDF (contrato pendiente: mock y `docs/apis/ministerio.md`); Storage para el CCB y el PDF.
 
 **Cambios de estado y reglas**
 
-- Estudio: `en_laboratorio_central` → `pendiente_autorizacion_ministerial` al cerrar; → `pendiente_envio` al llegar el PDF. Sample set: `en_armado` → `cerrado` → `pendiente_retiro`.
+- Estudio: `en_laboratorio_central → pendiente_autorizacion_ministerial` al cerrar; `→ pendiente_envio` al llegar el PDF. Sample set: `en_armado → cerrado → pendiente_retiro`.
 - Un solo sample set en armado (índice de la base); máximo 10 muestras; un sample set cerrado no admite más (la siguiente muestra abre uno nuevo).
 - Cierra al llegar a 10 o en cuanto contiene un Pompe urgente.
-- Solo entran muestras con volumen registrado, que no son insuficientes y que no están en otro sample set.
+- **[16/11]** Solo entran muestras de estudios En laboratorio central que no están en otro sample set. El volumen ya no se registra (G15): no hay chequeo de volumen.
 - El CCB tiene una fila por estudio: código, DNI, nombre, apellido y fecha de nacimiento.
 - Si el Ministerio falla, el sample set queda Cerrado, sus estudios en Pendiente de autorización ministerial, y el administrativo recibe un aviso y puede reintentar (G8).
 - Cerrar y cambiar los estados de los estudios va en una sola transacción.
+- **[16/11]** Cada cambio del sample set (agregar una muestra, cerrar, autorizar, cambiar de estado) llama a `auditoria.registrar` (#22, entidad `sample_set`) en la misma transacción.
 
 **Tests mínimos**
 
 - Nueve muestras → sigue en armado; la décima → cerrado, 10 estudios en Pendiente de autorización ministerial y la siguiente muestra abre otro.
 - Un Pompe urgente solo → cierra con 1; un Pompe urgente en un sample set con 3 → cierra con 4.
-- Muestra sin volumen, insuficiente o ya incluida → error.
+- **[16/11]** Muestra de un estudio que no está En laboratorio central, o ya incluida → error.
+- **[16/11]** Cada muestra agregada, el cierre y la autorización dejan un registro en `auditoria`.
 - CCB con una fila por estudio y las columnas pedidas.
 - Autorización correcta → PDF guardado, Pendiente de retiro, estudios en Pendiente de envío y aviso; Ministerio caído → Cerrado, y el reintento funciona.
 - El transportista entra a `/sample-sets` → 403.
@@ -1207,39 +1233,40 @@ orden y transportista@exoma.test registra el retiro desde el celular.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E28 E29
-Issue #14; #8 ya está en develop. Leé core/sample_sets/modelos.py, core/muestras, el modelo
+Issue #14; #8 y #22 ya están en develop. Leé core/sample_sets/modelos.py, core/muestras, el modelo
 Estudio (pompe_urgente), storage.py, la tabla sample_sets de @docs/modelo-datos.md con su índice
 de un solo sample set en armado, y los estados del sample set en @docs/lel.md.
 Sin migración.
-agregar_muestra(muestra) es el punto de entrada (lo llama #18 al registrar un volumen válido): no
+agregar_muestra(muestra) es el punto de entrada (lo llama #18 al registrar la llegada): no
 hace commit ni llama a la API; quien la llama hace commit y después solicitar_autorizacion.
 El Ministerio no tiene contrato: creá integraciones/ministerio.py con autorizar(ccb) → PDF, un mock
 y un borrador provisorio en docs/apis/ministerio.md. El CCB se arma con openpyxl.
 Reglas con test: máximo 10; cierra con 10 o con un Pompe urgente; cerrado no admite más; solo
-muestras con volumen válido y sin sample set; cerrar y cambiar estados en una transacción; si el
-Ministerio falla, queda Cerrado y se puede reintentar (G8 de @docs/guia-issues.md).
+muestras de estudios En laboratorio central y sin sample set (el volumen ya no se registra, G15);
+cerrar y cambiar estados en una transacción; si el Ministerio falla, queda Cerrado y se puede
+reintentar (G8 de @docs/guia-issues.md). Cada cambio del sample set (agregar muestra, cerrar,
+autorizar) llama a auditoria.registrar de #22 en la misma transacción (entidad sample_set).
 Transiciones: en_laboratorio_central → pendiente_autorizacion_ministerial → pendiente_envio.
 El CCB tiene datos de pacientes: solo lo baja el administrativo y va a Storage privado.
 Tests: 9 y 10 muestras, Pompe solo y acompañado, muestras inválidas, columnas del CCB,
 autorización correcta, Ministerio caído con reintento y permisos.
-No toques core/logistica ni core/muestras: la llegada y el volumen son de #18.
-Dejá la fábrica de sample set y DATOS_POR_ESTADO de pendiente_envio. Control: pytest en verde;
-con flask demo pendiente_envio, administrativo@exoma.test descarga el CCB y la autorización.
+No toques core/logistica ni core/muestras: la llegada es de #18.
+Dejá la fábrica de sample set y DATOS_POR_ESTADO de pendiente_envio.
+Control: pytest en verde; con flask demo pendiente_envio, administrativo@exoma.test descarga el CCB
+y la autorización.
 ```
-<!-- /issue:14 -->
 
-## #15 · Nueva extracción, datos crudos y toma del estudio
+### #15 · Nueva extracción, datos crudos y toma del estudio
 
-<!-- issue:15 -->
-**Escenarios:** E27, E32, E33 · **Área:** análisis y resultados · **Puntos:** 5 · **Rama:** `15-datos-crudos` · **Depende de:** #8 · **Milestone:** Control 3 (1/12)
+**Escenarios:** E27, E32, E33 · **Área:** análisis y resultados · **Puntos:** 5 · **Rama:** `15-datos-crudos` · **Depende de:** #8, #22 · **Milestone:** Control 3 (1/12)
 
-**Objetivo.** El administrativo carga los datos crudos que llegan de Corea, o pide una nueva extracción si la muestra no sirve, y cada bioinformático toma un estudio sin que otro lo tome a la vez.
+**Objetivo.** El administrativo carga los datos crudos que llegan de Corea o, si el laboratorio de Corea avisa por mail que la muestra no sirve, devuelve el estudio a Requiere nueva extracción **[16/11]**; y cada bioinformático toma un estudio sin que otro lo tome a la vez.
 
 **Criterios de aceptación**
 
-- E27.1 El administrativo registra que la muestra es insuficiente e indica el motivo.
+- E27.1 **[16/11]** El administrativo, avisado por el laboratorio de Corea (por mail, fuera del sistema), registra que la muestra no sirve e indica el motivo (`adn`, `volumen` u `otro`, con un detalle opcional). Solo puede hacerlo mientras el estudio está En viaje a Corea.
 - E27.2 El sistema cambia el estudio a Requiere nueva extracción.
 - E27.3 El sistema notifica al paciente y al médico tratante.
 - E27.4 El paciente realiza RESERVAR TURNO DE EXTRACCIÓN sin un nuevo pago (ya lo permite #7).
@@ -1256,58 +1283,59 @@ con flask demo pendiente_envio, administrativo@exoma.test descarga el CCB y la a
 **Qué toca por capa**
 
 - Migración: ninguna.
-- Core: `core/muestras/nueva_extraccion.py` (`solicitar_nueva_extraccion(muestra, motivo, administrativo)`, que también usa #18 para el volumen); `core/analisis` (`cargar_datos_crudos`, `pendientes()`, `tomar(analisis, bioinformatico)`).
-- Controlador: `datos_crudos` (administrativo): `GET /datos-crudos` (estudios En viaje a Corea), `POST /estudios/<id>/datos-crudos`, `POST /estudios/<id>/adn-insuficiente`. `bioinformatica` (bioinformático): `GET /bioinformatica/pendientes`, `POST /bioinformatica/analisis/<id>/tomar`, `GET /bioinformatica/mis-analisis`.
+- Core: `core/muestras/nueva_extraccion.py` (`solicitar_nueva_extraccion(muestra, motivo, administrativo)`, **[16/11]** solo desde En viaje a Corea; ya no la usa #18); `core/analisis` (`cargar_datos_crudos`, `pendientes()`, `tomar(analisis, bioinformatico)`).
+- Controlador: `datos_crudos` (administrativo): `GET /datos-crudos` (estudios En viaje a Corea), `POST /estudios/<id>/datos-crudos`, `POST /estudios/<id>/nueva-extraccion` (con el motivo y un detalle opcional). `bioinformatica` (bioinformático): `GET /bioinformatica/pendientes`, `POST /bioinformatica/analisis/<id>/tomar`, `GET /bioinformatica/mis-analisis`.
 - Vistas: `datos_crudos/listado.html`, `bioinformatica/pendientes.html`, `bioinformatica/mis_analisis.html`.
 - Integración: Storage para el archivo de datos crudos.
 - Demo: entradas de `en_area_bioinformatica` y `en_analisis` (tomado por `bioinformatico@exoma.test`) en `DATOS_POR_ESTADO`.
 
 **Cambios de estado y reglas**
 
-- `en_viaje_corea` → `en_area_bioinformatica` al cargar los datos crudos; `en_viaje_corea` → `requiere_nueva_extraccion` por ADN insuficiente; `en_laboratorio_central` → `requiere_nueva_extraccion` por volumen (la función; la pantalla es de #18); `en_area_bioinformatica` → `en_analisis` al tomarlo.
-- Datos crudos: `.txt` con solo A, C, T, G y saltos de línea, no vacío, hasta 20 MB (G12). Se guardan en Storage; `estudios.datos_crudos_*` y `analisis.disponible_en` del análisis abierto.
-- Nueva extracción: motivo `volumen` o `adn`; marca la muestra (`insuficiente_motivo`, `insuficiente_en`); mismo estudio y sin cobro.
+- `en_viaje_corea → en_area_bioinformatica` al cargar los datos crudos; `en_viaje_corea → requiere_nueva_extraccion` cuando Corea avisa que la muestra no sirve (**[16/11]** ya no hay transición por volumen desde En laboratorio central); `en_area_bioinformatica → en_analisis` al tomarlo.
+- Datos crudos: .txt con solo A, C, T, G y saltos de línea, no vacío, hasta 20 MB (G12). Se guardan en Storage; `estudios.datos_crudos_*` y `analisis.disponible_en` del análisis abierto.
+- Nueva extracción: motivo `adn`, `volumen` u `otro`, informado por Corea (**[16/11]** el sistema no mide el volumen, G14); el detalle va en el motivo del historial de estados; marca la muestra (`insuficiente_motivo`, `insuficiente_en`); mismo estudio y sin cobro. Avisa por mail al paciente y al médico tratante.
 - Aviso a todos los bioinformáticos activos (`listar_activos_por_rol`).
+- **[16/11]** Cargar los datos crudos, tomar el estudio y devolverlo a nueva extracción llaman a `auditoria.registrar` (#22, entidad `estudio`) en la misma transacción.
 - Pendientes: análisis con `disponible_en` y sin bioinformático, Pompe urgente primero y después por `disponible_en`.
 - Tomar: `update ... where bioinformatico_id is null`; si no actualiza ninguna fila, "ya lo tomó otro bioinformático".
 
 **Tests mínimos**
 
 - Carga válida → archivo en Storage, En área de bioinformática y aviso a dos bioinformáticos; archivo con una X → 400; estudio en otro estado → error.
-- ADN insuficiente → Requiere nueva extracción, muestra marcada y avisos al paciente y al médico; por volumen desde En laboratorio central → igual; desde un estado inválido → error.
+- **[16/11]** Corea avisa que la muestra no sirve (motivo `adn` o `volumen`) → desde En viaje a Corea pasa a Requiere nueva extracción, muestra marcada, avisos al paciente y al médico y registro del motivo; desde En laboratorio central o cualquier otro estado → error.
 - Lista: un Pompe urgente reciente aparece antes que uno común más viejo; uno tomado no aparece.
 - Tomar → En análisis; dos bioinformáticos toman el mismo → el segundo falla.
 - El paciente entra a `/bioinformatica/pendientes` → 403; el administrativo intenta tomar → 403.
 
-**Fuera de alcance y supuestos:** registrar variantes y finalizar (#20); O5, G12.
+**Fuera de alcance y supuestos:** registrar variantes y finalizar (#20); O5, G12 y G14 (el aviso de Corea llega por mail, fuera del sistema: no hay API ni pantalla para recibirlo).
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E27 E32 E33
-Issue #15; #8 ya está en develop. Leé src/core/estudios (Estudio, Analisis, cambiar_estado),
+Issue #15; #8 y #22 ya están en develop. Leé src/core/estudios (Estudio, Analisis, cambiar_estado),
 core/muestras, storage.py, listar_activos_por_rol de core/usuarios, la tabla analisis de
 @docs/modelo-datos.md (lista de pendientes y la regla para tomar) y O5 de @docs/decisiones.md.
 Sin migración.
-solicitar_nueva_extraccion va en core/muestras/nueva_extraccion.py: la usa este issue por ADN
-insuficiente y #18 por volumen menor a 2 ml. Dejá su firma clara y probala desde los dos estados.
+solicitar_nueva_extraccion va en core/muestras/nueva_extraccion.py: solo desde en_viaje_corea, cuando
+el laboratorio de Corea avisa por mail que la muestra no sirve (G14 de @docs/guia-issues.md). El
+motivo es adn, volumen u otro, con un detalle opcional. El sistema no mide el volumen.
 La lista y la toma van en core/analisis; #20 y #21 le agregan funciones después.
 Reglas con test: datos crudos .txt solo con A, C, T, G y saltos de línea, hasta 20 MB (G12 de
 @docs/guia-issues.md); aviso a todos los bioinformáticos activos; Pompe urgente primero y después
-por disponible_en; tomar con update where bioinformatico_id is null.
+por disponible_en; tomar con update where bioinformatico_id is null. Cargar los datos crudos, tomar y
+devolver a nueva extracción llaman a auditoria.registrar (#22, entidad estudio).
 Transiciones: en_viaje_corea → en_area_bioinformatica o requiere_nueva_extraccion;
-en_laboratorio_central → requiere_nueva_extraccion; en_area_bioinformatica → en_analisis.
-Tests: carga válida e inválida, ADN insuficiente, volumen, estado inválido, orden de la lista,
-doble toma y permisos.
+en_area_bioinformatica → en_analisis. Desde en_laboratorio_central no hay salida a nueva extracción.
+Tests: carga válida e inválida, muestra que no sirve desde En viaje a Corea (adn y volumen), estado
+inválido (también En laboratorio central), orden de la lista, doble toma y permisos.
 No toques core/muestras/__init__ ni los modelos de #8.
 Control: pytest en verde; administrativo@exoma.test carga un .txt en el estudio de flask demo
 en_viaje_corea y bioinformatico@exoma.test lo toma.
 ```
-<!-- /issue:15 -->
 
-## #16 · Código de verificación y activación de la cuenta del paciente
+### #16 · Código de verificación y activación de la cuenta del paciente
 
-<!-- issue:16 -->
 **Escenarios:** E04, E05 · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `16-verificacion-activacion` · **Depende de:** #5, #9, #10 · **Milestone:** Entrega (8/12)
 
 **Objetivo.** Proteger los datos genéticos: quien entra desde un dispositivo o una red nuevos confirma un código que llega por mail, y el paciente cambia la contraseña provisoria en su primer ingreso.
@@ -1338,7 +1366,7 @@ en_viaje_corea y bioinformatico@exoma.test lo toma.
 
 - Sin cambios de estado del estudio.
 - Código de 6 dígitos, guardado como hash, vence a los 10 minutos, de un solo uso y con 5 intentos; pedir otro invalida el anterior.
-- La cookie del dispositivo es aleatoria, `HttpOnly` y `Secure` en producción; la huella combina cookie e IP y nunca se guarda en claro.
+- La cookie del dispositivo es aleatoria, HttpOnly y Secure en producción; la huella combina cookie e IP y nunca se guarda en claro.
 - Al validar el código se agrega el dispositivo confiable y se regenera la sesión.
 - Los mensajes siguen sin revelar si el mail existe.
 - Contraseña nueva de al menos 8 caracteres, con confirmación y distinta de la provisoria; al cambiarla, `debe_cambiar_contrasena` pasa a falso.
@@ -1355,7 +1383,7 @@ en_viaje_corea y bioinformatico@exoma.test lo toma.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E04 E05
 Issue #16; #5, #9 y #10 ya están en develop. Sos el único issue de este milestone que toca auth: leé
 helpers/auth.py, controllers/autenticacion.py, templates/autenticacion/, core/usuarios,
@@ -1375,11 +1403,9 @@ provisoria, contraseña igual y credenciales inválidas.
 Control: la suite completa en verde; en el navegador, un paciente nuevo de #10 entra desde una
 ventana privada, recibe el código por consola y cambia la contraseña.
 ```
-<!-- /issue:16 -->
 
-## #17 · Cobertura de obra social y reautorización
+### #17 · Cobertura de obra social y reautorización
 
-<!-- issue:17 -->
 **Escenarios:** E16, E17, E18 · **Área:** presupuesto y pagos · **Puntos:** 5 · **Rama:** `17-obra-social` · **Depende de:** #12 · **Milestone:** Entrega (8/12)
 
 **Objetivo.** El paciente pide que su obra social cubra el estudio; el administrativo registra la respuesta y, si la obra social rechaza, el paciente puede reclamar con una resolución judicial.
@@ -1410,11 +1436,11 @@ ventana privada, recibe el código por consola y cambia la contraseña.
 - Core: `core/coberturas` (`opciones()`, `solicitar`, `autorizar`, `rechazar`, `cargar_demanda`). En `core/pagos`, el pago particular también acepta la diferencia de una cobertura autorizada parcial.
 - Controlador: `coberturas`. Paciente: `GET|POST /estudios/<id>/cobertura`, `GET|POST /estudios/<id>/reautorizacion`. Administrativo: `GET /coberturas`, `POST /coberturas/<id>/autorizar`, `POST /coberturas/<id>/rechazar`.
 - Vistas: `coberturas/elegir.html`, `coberturas/pendientes.html`, `coberturas/reautorizacion.html`; botón "Usar mi obra social" en `pagos/presupuesto.html` y el aviso "falta pagar la diferencia".
-- Integración: `integraciones/obras_sociales.py` con `listar()` (**contrato pendiente**: mock y `docs/apis/obras_sociales.md`); Storage para el PDF de la resolución.
+- Integración: `integraciones/obras_sociales.py` con `listar()` (contrato pendiente: mock y `docs/apis/obras_sociales.md`); Storage para el PDF de la resolución.
 
 **Cambios de estado y reglas**
 
-- `presupuestado` → `pendiente_autorizacion` al elegir; `pendiente_autorizacion` → `habilitado_turno` (100 % o diferencia pagada) o → `rechazado_obra_social`; `rechazado_obra_social` → `pendiente_autorizacion` con la demanda.
+- `presupuestado → pendiente_autorizacion` al elegir; `pendiente_autorizacion → habilitado_turno` (100 % o diferencia pagada) o `→ rechazado_obra_social`; `rechazado_obra_social → pendiente_autorizacion` con la demanda.
 - El porcentaje se copia de la API al elegir; la obra social elegida se guarda en `obras_sociales` (upsert).
 - Autorizar: `importe_cubierto = total × porcentaje`, pago de tipo `obra_social` y asiento `cobertura_obra_social` (una autorización equivale a un pago).
 - Con menos del 100 %, la cobertura queda `autorizada` y el estudio sigue en Pendiente de autorización hasta que el paciente paga la diferencia con el flujo de E14 (O3, O18).
@@ -1423,7 +1449,7 @@ ventana privada, recibe el código por consola y cambia la contraseña.
 
 **Tests mínimos**
 
-- Elegir → Pendiente de autorización, cobertura `pendiente` y aviso a los administrativos; con el estudio fuera de Presupuestado → error.
+- Elegir → Pendiente de autorización, cobertura pendiente y aviso a los administrativos; con el estudio fuera de Presupuestado → error.
 - Autorizar 100 % → Habilitado para turno, pago y asiento; autorizar 70 % → sigue pendiente y pide el 30 %; pagar la diferencia → Habilitado para turno.
 - Rechazar → Rechazado por obra social y aviso al paciente.
 - Demanda con PDF → Pendiente de autorización y aviso; sin PDF, con otro tipo de archivo o desde otro estado → error.
@@ -1434,7 +1460,7 @@ ventana privada, recibe el código por consola y cambia la contraseña.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E16 E17 E18
 Issue #17; #12 ya está en develop. Leé core/pagos (con el cupón de #12), core/finanzas,
 controllers/pagos.py y pagos/presupuesto.html, las tablas coberturas, demandas_reautorizacion y
@@ -1454,14 +1480,12 @@ API caída y permisos.
 Control: pytest en verde; el paciente de flask demo presupuestado elige la obra social al 70 %,
 administrativo@exoma.test autoriza y el paciente paga la diferencia.
 ```
-<!-- /issue:17 -->
 
-## #18 · Seguimiento y llegada de las muestras al laboratorio central
+### #18 · Seguimiento y llegada de las muestras al laboratorio central
 
-<!-- issue:18 -->
-**Escenarios:** E25, E26 · **Área:** turnos y logística · **Puntos:** 5 · **Rama:** `18-llegada-muestras` · **Depende de:** #13, #14, #15 · **Milestone:** Entrega (8/12)
+**Escenarios:** E25, E26 · **Área:** turnos y logística · **Puntos:** 3 · **Rama:** `18-llegada-muestras` · **Depende de:** #13, #14 · **Milestone:** Entrega (8/12)
 
-**Objetivo.** El administrativo ve en un mapa por dónde va una muestra en traslado; al llegar al laboratorio central se registra su volumen y la muestra sigue sola a un sample set o a una nueva extracción.
+**Objetivo.** El administrativo ve en un mapa por dónde va una muestra en traslado; al llegar al laboratorio central, las muestras pasan solas al sample set en armado. **[16/11]** Ya no se registra el volumen: si una muestra no sirve, lo detecta el laboratorio de Corea y el administrativo devuelve el estudio desde #15 (G14 y G15).
 
 **Criterios de aceptación**
 
@@ -1472,64 +1496,61 @@ administrativo@exoma.test autoriza y el paciente paga la diferencia.
 - E26.1 El transportista entrega las muestras en el laboratorio central (fuera del sistema).
 - E26.2 El transportista registra la llegada con todas las muestras recolectadas.
 - E26.3 El sistema cambia esos estudios a En laboratorio central.
-- E26.4 El administrativo registra el volumen de cada muestra.
-- E26.5 Si una muestra tiene menos de 2 ml, el administrativo realiza SOLICITAR NUEVA EXTRACCIÓN (función de #15).
-- E26.6 El sistema realiza ARMAR SAMPLE SET con las muestras válidas (`agregar_muestra` de #14).
+- E26.4 El sistema realiza ARMAR SAMPLE SET con las muestras recibidas (`agregar_muestra` de #14). **[16/11]** Reemplaza a los episodios 4 y 5 anteriores (registrar el volumen y pedir una nueva extracción si era menor a 2 ml).
 
 **Qué toca por capa**
 
 - Migración: ninguna.
-- Core: `core/logistica` (`informar_ubicacion`, `ubicar_muestra(busqueda)`, `registrar_llegada(orden, transportista)`, `registrar_volumen(muestra, ml, administrativo)`; si `agregar_muestra` cerró el sample set, después del commit llama a `solicitar_autorizacion` de #14).
-- Controlador: `logistica`. Transportista: `POST /orden-del-dia/ubicacion` (fetch con JSON y `X-CSRFToken`), `POST /orden-del-dia/llegada`. Administrativo: `GET /seguimiento?q=` (código de estudio o DNI), `GET /recepcion`, `POST /recepcion/muestras/<id>/volumen`.
-- Vistas: script de ubicación en `logistica/orden_del_dia.html` (geolocalización del navegador cada 2 minutos, G9); `logistica/seguimiento.html` con el macro del mapa de #7; `logistica/recepcion.html`.
-- Integración: ninguna nueva; usa las funciones de #14 y #15.
+- Core: `core/logistica` (`informar_ubicacion`, `ubicar_muestra(busqueda)`, `registrar_llegada(orden, transportista)`; si `agregar_muestra` cerró el sample set, después del commit llama a `solicitar_autorizacion` de #14).
+- Controlador: `logistica`. Transportista: `POST /orden-del-dia/ubicacion` (fetch con JSON y `X-CSRFToken`), `POST /orden-del-dia/llegada`. Administrativo: `GET /seguimiento?q=` (código de estudio o DNI).
+- Vistas: script de ubicación en `logistica/orden_del_dia.html` (geolocalización del navegador cada 2 minutos, G9); `logistica/seguimiento.html` con el macro del mapa de #7.
+- Integración: ninguna nueva; usa las funciones de #14.
 
 **Cambios de estado y reglas**
 
-- `en_camino_laboratorio` → `en_laboratorio_central` al registrar la llegada. Después, `registrar_volumen` lleva a `requiere_nueva_extraccion` (vía #15) o a un sample set (vía #14).
+- `en_camino_laboratorio → en_laboratorio_central` al registrar la llegada.
+- Después, `agregar_muestra` de #14 incluye cada muestra en el sample set en armado, en la misma transacción.
 - Ubicación: solo del transportista con una orden de hoy en curso (sin llegada), con latitud y longitud válidas.
 - La búsqueda muestra la última ubicación y su hora; si el estudio no está En camino, dice en qué estado está.
 - La llegada solo se registra con todas las paradas retiradas, y lleva todas las muestras de la orden (se asume que toda muestra retirada llega).
-- Volumen entre 0,1 y 99,9 ml, una sola vez por muestra; menos de 2 ml → nueva extracción con motivo `volumen`; 2 ml o más → al sample set en armado.
+- **[16/11]** No hay registro de volumen ni nueva extracción desde acá (G15).
 
 **Tests mínimos**
 
 - Ubicación guardada; sin orden en curso → 409; otro rol → 403.
 - Búsqueda de un estudio En camino → posición del transportista; de uno que no está En camino → mensaje con su estado.
-- Llegada con paradas pendientes → error; llegada completa → estudios En laboratorio central.
-- Volumen 1,5 → Requiere nueva extracción y avisos; volumen 2,0 → en el sample set en armado; la décima muestra cierra el sample set; volumen registrado dos veces → error.
+- Llegada con paradas pendientes → error; llegada completa → estudios En laboratorio central y sus muestras en el sample set en armado.
+- **[16/11]** La décima muestra cierra el sample set y llama a la autorización; no existen las rutas de recepción ni de volumen.
 
-**Fuera de alcance y supuestos:** el historial de ubicaciones (se guarda solo la última); O4, G9.
+**Fuera de alcance y supuestos:** el historial de ubicaciones (se guarda solo la última); el registro de volumen y la nueva extracción por volumen (se quitaron el 16/11: G14, G15); G9.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E25 E26
-Issue #18; #13, #14 y #15 ya están en develop. Leé core/logistica y logistica/orden_del_dia.html
-(#13), agregar_muestra de core/sample_sets (#14), solicitar_nueva_extraccion de
-core/muestras/nueva_extraccion.py (#15), el macro de mapa de #7, el modelo Transportista y la tabla
-muestras de @docs/modelo-datos.md.
+Issue #18; #13 y #14 ya están en develop. Leé core/logistica y logistica/orden_del_dia.html (#13),
+agregar_muestra de core/sample_sets (#14), el macro de mapa de #7, el modelo Transportista y la
+tabla muestras de @docs/modelo-datos.md.
 Sin migración.
-E26.5 y E26.6 llaman a las funciones de #14 y #15 sin modificarlas; si agregar_muestra cierra el
-sample set, llamá a solicitar_autorizacion después del commit.
+E26.4 llama a agregar_muestra de #14 sin modificarla; si cierra el sample set, llamá a
+solicitar_autorizacion después del commit. No hay registro de volumen ni nueva extracción en este
+issue (cambio del 16/11, G14 y G15 de @docs/guia-issues.md): una muestra que no sirve la detecta
+Corea y se devuelve desde #15.
 La ubicación sale del navegador del celular del transportista (geolocalización) cada 2 minutos
-mientras la orden de hoy no tiene llegada (G9 de @docs/guia-issues.md), por fetch con X-CSRFToken.
-Se guarda solo la última, en transportistas.
+mientras la orden de hoy no tiene llegada (G9), por fetch con X-CSRFToken. Se guarda solo la
+última, en transportistas.
 Reglas con test: llegada solo con todas las paradas retiradas y para todas las muestras de la orden;
-volumen entre 0,1 y 99,9 ml una sola vez; menos de 2 ml → nueva extracción; 2 ml o más →
-agregar_muestra.
+cada muestra de la llegada entra al sample set en armado.
 Transición propia: en_camino_laboratorio → en_laboratorio_central.
 Tests: ubicación con y sin orden en curso, búsqueda en camino y en otro estado, llegada incompleta y
-completa, volumen 1,5 y 2,0, décima muestra y volumen repetido, permisos.
+completa, décima muestra y permisos.
 Control: pytest en verde; con flask demo listo_para_retirar y su orden del día,
-transportista@exoma.test registra el retiro y la llegada, y
-administrativo@exoma.test lo sigue en el mapa y registra los volúmenes.
+transportista@exoma.test registra el retiro y la llegada, y administrativo@exoma.test lo sigue en
+el mapa y ve la muestra en el sample set.
 ```
-<!-- /issue:18 -->
 
-## #19 · Retiro de FedEx y despacho del sample set
+### #19 · Retiro de FedEx y despacho del sample set
 
-<!-- issue:19 -->
 **Escenarios:** E30, E31 · **Área:** envío a Corea · **Puntos:** 3 · **Rama:** `19-retiro-fedex` · **Depende de:** #14 · **Milestone:** Entrega (8/12)
 
 **Objetivo.** El administrativo programa con FedEx el retiro de cada sample set; cuando FedEx lo retira, invoca una URL y los estados cambian solos.
@@ -1551,11 +1572,12 @@ administrativo@exoma.test lo sigue en el mapa y registra los volúmenes.
 - Core: `core/sample_sets/retiro.py` (`programar_retiro(sample_set, fecha_hora, administrativo)`, `despachar(token)`).
 - Controlador: `sample_sets` (administrativo): `GET /sample-sets?estado=pendiente_retiro`, `POST /sample-sets/<id>/retiro`. `fedex`: `POST /fedex/retiros/<token>`, sin sesión y exento de CSRF; el token secreto es la autenticación.
 - Vistas: formulario de retiro en `sample_sets/detalle.html`.
-- Integración: `integraciones/fedex.py` con `programar_retiro(dia, hora, url)` (**contrato pendiente**: mock y `docs/apis/fedex.md`).
+- Integración: `integraciones/fedex.py` con `programar_retiro(dia, hora, url)` (contrato pendiente: mock y `docs/apis/fedex.md`).
 
 **Cambios de estado y reglas**
 
-- Sample set: `pendiente_retiro` → `retiro_programado` → `despachado`. Estudios: `pendiente_envio` → `en_viaje_corea`, con historial sin usuario (lo dispara FedEx).
+- **[16/11]** Programar el retiro y el despacho del sample set llaman a `auditoria.registrar` (#22, entidad `sample_set`) en la misma transacción.
+- Sample set: `pendiente_retiro → retiro_programado → despachado`. Estudios: `pendiente_envio → en_viaje_corea`, con historial sin usuario (lo dispara FedEx).
 - Día hábil y futuro: de lunes a viernes, de 9 a 18, fuera de `feriados`.
 - Cada sample set es un paquete aparte: un retiro por sample set.
 - `token_retiro` aleatorio (`secrets.token_urlsafe`) y la URL absoluta con `url_for(..., _external=True)`.
@@ -1564,16 +1586,17 @@ administrativo@exoma.test lo sigue en el mapa y registra los volúmenes.
 
 **Tests mínimos**
 
+- **[16/11]** El retiro programado y el despacho dejan un registro en `auditoria`.
 - Programar un retiro válido → token, Retiro programado y FedEx llamado con la URL.
 - Sábado, 19 h, feriado o fecha pasada → error; sample set en otro estado → error; FedEx caído → sin cambios.
-- Despachar → Despachado y sus estudios En viaje a Corea con historial sin usuario; token inválido → 404; repetido → 200 sin cambios; `GET` → 405.
+- Despachar → Despachado y sus estudios En viaje a Corea con historial sin usuario; token inválido → 404; repetido → 200 sin cambios; GET → 405.
 - El transportista intenta programar → 403.
 
 **Fuera de alcance y supuestos:** el seguimiento del envío a Corea; G11.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E30 E31
 Issue #19; #14 ya está en develop. Leé core/sample_sets y controllers/sample_sets.py, la tabla
 sample_sets de @docs/modelo-datos.md (token_retiro y fechas), la tabla feriados, la decisión S6 de
@@ -1590,14 +1613,14 @@ cambios (G11 de @docs/guia-issues.md); todo en una transacción.
 Transiciones: pendiente_envio → en_viaje_corea para todos los estudios del sample set.
 Tests: programación válida, sábado, 19 h, feriado, pasado, FedEx caído, despacho, token inválido,
 repetido, GET y permisos.
+Cada cambio del sample set (programar el retiro, despachar) llama a auditoria.registrar de #22 en la
+misma transacción (entidad sample_set).
 Control: pytest en verde; administrativo@exoma.test programa el retiro del sample set de flask demo
 pendiente_envio y, con curl, la URL lo despacha.
 ```
-<!-- /issue:19 -->
 
-## #20 · Variantes y resultado del estudio
+### #20 · Variantes y resultado del estudio
 
-<!-- issue:20 -->
 **Escenarios:** E34, E35 · **Área:** análisis y resultados · **Puntos:** 5 · **Rama:** `20-variantes-resultado` · **Depende de:** #5, #11, #15 · **Milestone:** Entrega (8/12)
 
 **Objetivo.** El bioinformático registra las variantes que encontró en los genes pedidos, y al finalizar el sistema calcula el resultado con Apigen, arma el PDF y avisa al médico y al paciente.
@@ -1626,9 +1649,10 @@ pendiente_envio y, con curl, la URL lo despacha.
 
 **Cambios de estado y reglas**
 
-- `en_analisis` → `finalizado`.
+- **[16/11]** Registrar las variantes y finalizar el análisis llaman a `auditoria.registrar` (#22, entidad `estudio`) en la misma transacción; el cambio de estado ya queda en `historial_estados`.
+- `en_analisis → finalizado`.
 - Solo el bioinformático que tomó el análisis registra y finaliza.
-- El gen tiene que estar en el análisis (o en la lista ACMG si evalúa hallazgos); la variante tiene que ser de ese gen según Apigen. Clasificación copiada de Apigen; `copias` 1 o 2 (homocigota); una vez por análisis.
+- El gen tiene que estar en el análisis (o en la lista ACMG si evalúa hallazgos); la variante tiene que ser de ese gen según Apigen. Clasificación copiada de Apigen; copias 1 o 2 (homocigota); una vez por análisis.
 - Resultado (ver `analisis` en el modelo): por patología con el endpoint 7; genes agregados a mano: positivo si hay una patogénica, si no negativo (O19); el del análisis es el peor en el orden positivo, portador, negativo; sin variantes, negativo.
 - Hallazgos secundarios con el endpoint 8, excluyendo las patologías del análisis.
 - `fecha_reevaluacion` a un año si no hay variantes patogénicas pero sí alguna VUS o probablemente patogénica (las benignas no cambian nada), como dice el contrato de Apigen.
@@ -1636,6 +1660,7 @@ pendiente_envio y, con curl, la URL lo despacha.
 
 **Tests mínimos**
 
+- **[16/11]** Registrar variantes y finalizar dejan un registro en `auditoria`.
 - Registrar una patogénica en GAA → fila con su clasificación; variante de otro gen, gen no pedido o repetida → error; otro bioinformático → 404.
 - Finalizar Pompe con una patogénica (mock: portador) → portador; con dos → positivo; sin variantes → negativo; gen a mano con una patogénica → positivo.
 - Un hallazgo secundario aparece en el PDF; una VUS y una benigna, sin patogénicas → `fecha_reevaluacion`.
@@ -1646,7 +1671,7 @@ pendiente_envio y, con curl, la URL lo despacha.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E34 E35
 Issue #20; #5, #11 y #15 ya están en develop. Leé core/analisis y controllers/bioinformatica.py
 (#15), integraciones/apigen.py y apigen/contrato.md (endpoints 4, 5, 7 y 8), helpers/pdf.py (#7),
@@ -1663,14 +1688,13 @@ resultado y finalizado_en en el análisis, en_analisis → finalizado y avisos a
 Tests: registro válido e inválido, otro bioinformático, portador, positivo, negativo, gen a mano,
 hallazgo secundario, reevaluación, Apigen caído y permisos.
 No toques la toma ni la lista de pendientes de #15.
+Registrar variantes y finalizar llaman a auditoria.registrar de #22 (entidad estudio).
 Control: pytest en verde; con flask demo en_analisis, bioinformatico@exoma.test registra dos
 variantes en GAA y finaliza, y ese paciente descarga el PDF.
 ```
-<!-- /issue:20 -->
 
-## #21 · Reanálisis
+### #21 · Reanálisis
 
-<!-- issue:21 -->
 **Escenarios:** E12 · **Área:** análisis y resultados · **Puntos:** 2 · **Rama:** `21-reanalisis` · **Depende de:** #5, #11, #20 · **Milestone:** Entrega (8/12)
 
 **Objetivo.** El médico tratante pide analizar otros genes del mismo exoma, sin nueva extracción ni nueva lectura del ADN.
@@ -1679,8 +1703,8 @@ variantes en GAA y finaliza, y ese paciente descarga el PDF.
 
 - E12.1 El médico tratante realiza CONSULTAR HISTORIAL DE ESTUDIOS (pantalla de #5).
 - E12.2 El médico tratante selecciona un estudio finalizado.
-- E12.3 El médico tratante elige la nueva patología lisosomal o los nuevos genes a analizar.
-- E12.4 El sistema obtiene de la API de bioinformática los genes de la nueva patología lisosomal.
+- E12.3 El médico tratante elige la nueva patología lisosómica o los nuevos genes a analizar.
+- E12.4 El sistema obtiene de la API de bioinformática los genes de la nueva patología lisosómica.
 - E12.5 El sistema devuelve el estudio a En área de bioinformática, con los mismos datos crudos.
 - E12.6 El sistema notifica a los bioinformáticos.
 
@@ -1689,12 +1713,13 @@ variantes en GAA y finaliza, y ese paciente descarga el PDF.
 - Migración: ninguna.
 - Core: `core/analisis/reanalisis.py` (`solicitar_reanalisis(estudio, medico, patologia=None, genes=(), evalua_hallazgos=False)`): análisis número n+1 de tipo `reanalisis`, `analisis_patologias` si hay patología, `analisis_genes` con `genes_para` de #11 más los genes a mano, `disponible_en` ahora.
 - Controlador: `historial` (médico tratante): `GET|POST /historial/estudios/<id>/reanalisis`.
-- Vistas: `historial/reanalisis.html`; botón "Solicitar reanálisis" en `historial/detalle.html` (#5).
+- Vistas: `historial/reanalisis.html`; botón "Solicitar reanálisis" en `historial/detalle.html` (#5) y, **[16/11]**, el enlace «Historial de cambios» a `/auditoria/estudio/<id>` (#22).
 - Integración: Apigen endpoints 1 y 3 (a través de `genes_para` y del buscador de genes de #11).
 
 **Cambios de estado y reglas**
 
-- `finalizado` → `en_area_bioinformatica`.
+- **[16/11]** El reanálisis llama a `auditoria.registrar` (#22, entidad `estudio`, campo `genes`) con los genes agregados, en la misma transacción.
+- `finalizado → en_area_bioinformatica`.
 - Solo con el estudio Finalizado y solo el médico tratante del paciente.
 - Hace falta una patología o al menos un gen.
 - Mismos datos crudos: no se piden ni se cambian. Sin costo (O8): no hay presupuesto ni asiento.
@@ -1702,6 +1727,7 @@ variantes en GAA y finaliza, y ese paciente descarga el PDF.
 
 **Tests mínimos**
 
+- **[16/11]** El reanálisis deja un registro en `auditoria` con los genes agregados.
 - Reanálisis por patología → análisis 2 con los genes de Apigen, En área de bioinformática, aviso a los bioinformáticos y datos crudos sin cambios.
 - Reanálisis solo por genes → `analisis_patologias` vacía y genes `agregado_a_mano`.
 - Estudio no finalizado o sin patología ni genes → error; médico ajeno → 404; paciente → 403.
@@ -1711,7 +1737,7 @@ variantes en GAA y finaliza, y ese paciente descarga el PDF.
 
 **Prompt de referencia**
 
-```text
+```
 /implementar-escenario E12
 Issue #21; #5, #11 y #20 ya están en develop. Leé genes_para en core/estudios/alta.py (#11),
 core/analisis (#15 y #20), controllers/historial.py e historial/detalle.html (#5), la tabla
@@ -1727,35 +1753,171 @@ Agregá el botón "Solicitar reanálisis" en el detalle de #5, visible solo para
 con el estudio Finalizado.
 Tests: por patología, por genes, estudio no finalizado, sin patología ni genes, médico ajeno,
 paciente, sin asientos nuevos e historial con dos análisis. No toques genes_para ni la toma de #15.
+El reanálisis llama a auditoria.registrar de #22 (entidad estudio, campo genes). Agregá también el
+enlace «Historial de cambios» a /auditoria/estudio/<id> en el detalle de #5.
 Control: pytest en verde; medico@exoma.test pide un reanálisis del estudio de flask demo finalizado y
 bioinformatico@exoma.test lo ve en sus pendientes.
 ```
-<!-- /issue:21 -->
 
-# 6. Cronograma por sprint
+### #22 · Registro de cambios (auditoría) y su consulta
 
-Cada sprint termina el día anterior al control: ese día se mergea lo terminado en `develop`, Integrante 1 abre el PR `develop` → `main`, aplica las migraciones y corre los seeds. En el control se muestra `main`.
+**Issue nuevo del 16/11.** **Escenarios:** E43 (nuevo) · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `22-auditoria` · **Depende de:** #3 · **Milestone:** Control 2 (24/11)
+
+**Objetivo.** Todo cambio sobre un paciente, un estudio o un sample set queda registrado con qué cambió, quién lo hizo y cuándo (fecha y hora), y se puede consultar. Es la pieza que usan #10, #14, #15, #19, #20, #21 y #23 para registrar sus cambios, y por eso va en el Control 2, antes que ellos.
+
+**Criterios de aceptación** (escenario nuevo: agregarlo a `docs/escenarios.md`)
+
+- E43.1 Cada vez que el sistema o un usuario da de alta, modifica o da de baja un dato de un paciente, un estudio o un sample set, el sistema registra el cambio con la fecha y la hora, el usuario (o "sistema" si fue una tarea automática), el campo, el valor anterior y el valor nuevo.
+- E43.2 El usuario autorizado selecciona un paciente, un estudio o un sample set y consulta su historial de cambios, del más nuevo al más viejo.
+- E43.3 El administrador general consulta la lista de todos los cambios y la filtra por entidad, usuario y rango de fechas.
+
+**Qué toca por capa**
+
+- Migración: `auditoria` (`id`, `entidad`, `entidad_id`, `accion`, `campo`, `valor_anterior`, `valor_nuevo`, `usuario_id` nulo, `creado_en` timestamptz con default `now()`, `detalle` opcional). RLS activado y sin políticas, e índice por (`entidad`, `entidad_id`, `creado_en`). Sin clave foránea a las entidades: `entidad` vale `paciente`, `estudio` o `sample_set`.
+- Core: `core/auditoria` (`registrar(entidad, entidad_id, usuario, accion, cambios)`, que guarda una fila por campo y no hace commit; `diferencias(antes, despues, campos)`, que devuelve solo lo que cambió; `historial_de(entidad, id)`; `listar(filtros, pagina)`). Para un estudio, `historial_de` mezcla las filas de `historial_estados` (acción `estado`) con las de `auditoria`.
+- Controlador: `auditoria`: `GET /auditoria` (administrador general) y `GET /auditoria/<entidad>/<id>`.
+- Vistas: `auditoria/lista.html` (tabla paginada con filtros por entidad, usuario y fechas) y `auditoria/historial.html` (línea de tiempo con fecha y hora de Argentina, usuario, campo, valor anterior y valor nuevo).
+- Tests y docs: fábrica de registros en `tests/fabricas.py`; `CLAUDE.md` y `.claude/agents/revisor-escenario.md` con la regla nueva (ver abajo).
+- Integraciones: ninguna.
+
+**Cambios de estado y reglas**
+
+- Sin cambios de estado. `cambiar_estado` no se modifica: sus cambios ya quedan en `historial_estados` y el historial del estudio los muestra junto con los demás (G16).
+- `registrar` no hace commit: queda en la transacción de quien lo llama, así que si el cambio se revierte, no queda registro. Si no hubo diferencias, no guarda nada.
+- Los valores se guardan como texto. Nunca se guardan contraseñas, códigos de verificación ni claves. El registro no se edita ni se borra.
+- Quién ve qué (G17): el historial de un paciente, su médico tratante y el administrador general; el de un estudio, el médico tratante del paciente, el administrativo y el administrador general; el de un sample set, el administrativo y el administrador general. La lista completa es solo del administrador general. Lo ajeno responde 404.
+- Regla para todos los issues, que queda en `CLAUDE.md` y en el revisor: toda función de `core` que cambie datos de un paciente, de un estudio (aparte del estado) o de un sample set llama a `auditoria.registrar` en la misma transacción.
+
+**Tests mínimos**
+
+- `registrar` guarda fecha y hora, usuario, campo y valores; con el mismo valor antes y después no guarda nada; si la transacción se revierte, no queda fila; con usuario nulo se muestra "sistema".
+- `historial_de` de un estudio mezcla los cambios de estado con los de datos, ordenados por fecha.
+- La lista filtra por entidad, usuario y fechas, y pagina.
+- Médico de otro paciente → 404; el paciente entra a `/auditoria/...` → 403; el administrativo entra a `/auditoria` → 403; el administrador general entra a todo.
+- No se guardan contraseñas ni códigos.
+
+**Fuera de alcance y supuestos:** no se auditan usuarios, pagos ni cupones, solo las tres entidades del pedido; el borrado del registro; G16 y G17.
+
+**Prompt de referencia**
+
+```
+/implementar-escenario E43
+Issue #22 (escenario nuevo del 16/11: agregalo a docs/escenarios.md y el símbolo "Registro de
+cambios" a docs/lel.md); #3 ya está en develop. Leé core/estudios (HistorialEstado y
+cambiar_estado: no se modifican), core/usuarios, core/pacientes, la tabla historial_estados de
+@docs/modelo-datos.md y G16 y G17 de @docs/guia-issues.md.
+Migración: auditoria (id, entidad, entidad_id, accion, campo, valor_anterior, valor_nuevo, usuario_id
+nulo, creado_en con default now(), detalle), con RLS sin políticas y el índice por (entidad,
+entidad_id, creado_en). Sin claves foráneas a las entidades: entidad es paciente, estudio o sample_set.
+core/auditoria: registrar(entidad, entidad_id, usuario, accion, cambios) guarda una fila por campo
+sin hacer commit (queda en la transacción de quien la llama); diferencias(antes, despues, campos)
+devuelve solo los campos que cambiaron; historial_de(entidad, id) y listar(filtros, pagina). Para un
+estudio, historial_de mezcla las filas de historial_estados (acción estado) con las de auditoria.
+Pantallas: GET /auditoria (administrador general, filtros por entidad, usuario y fechas, paginada) y
+GET /auditoria/<entidad>/<id> (línea de tiempo con fecha y hora de Argentina, usuario, campo, valor
+anterior y valor nuevo). Permisos de G17; lo ajeno responde 404.
+Reglas con test: registrar no hace commit (si se revierte, no queda nada); sin cambios no guarda
+nada; nunca guarda contraseñas ni códigos; no hay forma de editar ni borrar.
+Agregá a CLAUDE.md y a revisor-escenario.md la regla: toda función de core que cambie datos de un
+paciente, un estudio (aparte del estado) o un sample set llama a auditoria.registrar en la misma
+transacción. No toques core/estudios.
+Tests: registrar con y sin cambios, rollback, historial mezclado de un estudio, orden, filtros,
+permisos y 404. Dejá una fábrica de registros en tests/fabricas.py.
+Control: pytest en verde; admin@exoma.test ve la lista y filtra por usuario.
+```
+
+### #23 · Modificación de los datos del paciente y de sus familiares
+
+**Issue nuevo del 16/11.** **Escenarios:** E42 (nuevo) · **Área:** acceso y alta clínica · **Puntos:** 3 · **Rama:** `23-modificar-paciente` · **Depende de:** #10, #22 · **Milestone:** Entrega (8/12)
+
+**Objetivo.** El médico tratante corrige los datos de un paciente (por ejemplo, una fecha de nacimiento mal escrita) y agrega o quita familiares después del alta, y cada cambio queda en el registro de cambios.
+
+**Criterios de aceptación** (escenario nuevo: agregarlo a `docs/escenarios.md`)
+
+- E42.1 El médico tratante abre los datos de uno de sus pacientes y modifica nombre, apellido, fecha de nacimiento, teléfono, mail o DNI.
+- E42.2 El sistema valida los datos como en el alta (E06) y guarda los cambios.
+- E42.3 El médico tratante agrega o quita un familiar del paciente, con sus síntomas y diagnósticos como en E09.
+- E42.4 Si cambian los familiares, el sistema vincula los que ya son pacientes (E09.7 y E09.8) y vuelve a pedir el familiograma.
+- E42.5 El sistema registra cada cambio con `auditoria.registrar` (valor anterior, valor nuevo, usuario, fecha y hora) y el médico lo ve en el historial de cambios del paciente.
+
+**Qué toca por capa**
+
+- Migración: ninguna.
+- Core: `core/pacientes/modificacion.py` (`modificar_datos(paciente, datos, medico)`, `agregar_familiar(...)`, `quitar_familiar(...)`), que reutiliza las validaciones del alta y `vincular_familiares` de #10. Después del commit, si cambiaron los familiares, `reintentar_familiograma`.
+- Controlador: `pacientes` (médico tratante): `GET|POST /pacientes/<id>/editar`, `POST /pacientes/<id>/familiares`, `POST /pacientes/<id>/familiares/<fid>/quitar`.
+- Vistas: `pacientes/editar.html` y, en `pacientes/detalle.html`, el alta y la baja de familiares; el historial de cambios es el enlace de #10.
+- Integración: familiograma (ya creada en #10).
+
+**Cambios de estado y reglas**
+
+- Sin cambios de estado.
+- Solo el médico tratante del paciente (otro → 404). Se pueden corregir nombre, apellido, fecha de nacimiento (no futura), teléfono, mail y DNI (G18).
+- DNI único (7 u 8 dígitos) y mail único (O10). Si cambia el mail, cambia también el de ingreso del usuario paciente; si cambia el DNI, se vuelven a vincular sus familiares (G13).
+- Cambiar la fecha de nacimiento no recalcula `pompe_urgente`: se mide al dar de alta el estudio (O14).
+- Un guardado sin diferencias no registra nada. Todo cambio y toda baja de un familiar llama a `auditoria.registrar` en la misma transacción (acciones `modificacion`, `alta` y `baja`).
+
+**Tests mínimos**
+
+- Cada campo editable: cambia y deja un registro con el valor anterior y el nuevo.
+- Fecha futura, DNI o mail repetido → error y no queda registro.
+- Cambio de mail → cambia también el del usuario; sin cambios → no se registra nada.
+- Agregar un familiar con el DNI de un paciente existente → queda vinculado; quitar un familiar → baja registrada; el familiograma se vuelve a pedir y, si la API cae, el reintento sigue disponible.
+- `pompe_urgente` no cambia al corregir la fecha de nacimiento.
+- Médico ajeno → 404; paciente → 403; administrativo → 403.
+
+**Fuera de alcance y supuestos:** modificar usuarios de otros roles (restricción de E03); modificar estudios o sample sets a mano; G13, G18, O10, O14.
+
+**Prompt de referencia**
+
+```
+/implementar-escenario E42
+Issue #23 (escenario nuevo del 16/11: agregalo a docs/escenarios.md); #10 y #22 ya están en develop.
+Leé core/pacientes (dar_de_alta, vincular_familiares, reintentar_familiograma), core/auditoria
+(registrar, diferencias), el formulario y el detalle de pacientes (#10), core/usuarios y las tablas
+pacientes, familiares y usuarios de @docs/modelo-datos.md. Sin migración.
+La lógica va en core/pacientes/modificacion.py: modificar_datos(paciente, datos, medico),
+agregar_familiar(...) y quitar_familiar(...). Reutilizá las validaciones del alta y
+vincular_familiares: no copies ese código. Cada cambio llama a auditoria.registrar en la misma
+transacción, con el valor anterior y el nuevo. Después del commit, si cambiaron los familiares,
+reintentar_familiograma.
+Reglas con test: solo el médico tratante del paciente; nombre, apellido, fecha de nacimiento (no
+futura), teléfono, mail y DNI; DNI y mail únicos (O10); si cambia el mail, cambia el del usuario
+paciente; cambiar la fecha de nacimiento no recalcula pompe_urgente (O14, G18 de
+@docs/guia-issues.md); un guardado sin diferencias no registra nada.
+Pantallas: GET|POST /pacientes/<id>/editar, POST /pacientes/<id>/familiares y
+POST /pacientes/<id>/familiares/<fid>/quitar; el detalle muestra el enlace al historial de cambios.
+Tests: cada campo, valores inválidos, duplicados, rollback sin registro, familiar agregado con el DNI
+de un paciente (queda vinculado), familiar quitado, médico ajeno → 404 y paciente → 403.
+No toques core/patologias ni core/estudios.
+Control: pytest en verde; medico@exoma.test corrige la fecha de nacimiento de un paciente, agrega un
+familiar y ve las dos filas en el historial de cambios.
+```
+
+## 6. Cronograma por sprint
+
+Cada sprint termina el día anterior al control: ese día se mergea lo terminado en `develop`, Integrante 1 abre el PR `develop → main`, aplica las migraciones y corre los seeds. En el control se muestra `main`.
 
 | Sprint | Fechas | Issues que cierran | Qué se muestra en el control |
 |---|---|---|---|
 | 1 | 13/11 – 16/11 | #2, #3 | Login con cada rol y menú por rol; alta de usuarios (E03) con la grilla y el mail; "Mis avisos"; la máquina de estados con sus tests; el cliente de Apigen con mock; la Action en verde. Integrantes 2 a 4 muestran el plan de su primer issue y el borrador del contrato que les toca |
-| 2 | 17/11 – 23/11 | #4, #5, #6, #7, #8 | El gerente define una patología con sus síntomas SNOMED; el administrativo emite el presupuesto y el paciente paga; el paciente reserva un turno en el mapa y recibe la orden; el bot marca la muestra lista; el paciente ve su estudio y consulta al chatbot. Los estados de partida salen de los seeds |
-| 3 | 24/11 – 30/11 | #9, #10, #11, #12, #13, #14, #15 | El circuito desde el principio: registro del médico, alta del paciente con validación y familiograma, alta del estudio con genes de Apigen, pago con cupón, orden del día y retiro, sample set con CCB y autorización, carga de datos crudos y toma del estudio |
-| 4 | 1/12 – 7/12 | #16, #17, #18, #19, #20, #21 | El circuito de punta a punta sin seeds intermedios: código de verificación, obra social, llegada con volumen y sample set, despacho con FedEx, variantes y resultado en PDF, reanálisis. Es la entrega y la defensa del 8/12 |
+| 2 | 17/11 – 23/11 | #4, #5, #6, #7, #8, #22 | El gerente define una patología con sus síntomas SNOMED; el administrativo emite el presupuesto y el paciente paga; el paciente reserva un turno en el mapa y recibe la orden; el bot marca la muestra lista; el paciente ve su estudio y consulta al chatbot. Los estados de partida salen de los seeds. El administrador general consulta el registro de cambios (#22) |
+| 3 | 24/11 – 30/11 | #9, #10, #11, #12, #13, #14, #15 | El circuito desde el principio: registro del médico, alta del paciente con validación, familiograma y vínculo con los familiares que ya son pacientes, alta del estudio con genes de Apigen, pago con cupón, orden del día y retiro, sample set con CCB y autorización, carga de datos crudos y toma del estudio |
+| 4 | 1/12 – 7/12 | #16, #17, #18, #19, #20, #21, #23 | El circuito de punta a punta sin seeds intermedios: código de verificación, obra social, llegada al laboratorio central y sample set, despacho con FedEx, variantes y resultado en PDF, reanálisis, corrección de los datos del paciente con su historial de cambios. Es la entrega y la defensa del 8/12 |
 | Después | 9/12 – 22/12 | Tablero de BI | Fuera de esta guía: usa `historial_estados`, `asientos_financieros` y las fechas de `sample_sets` |
 
-**Riesgos y cómo cubrirlos**
+### Riesgos y cómo cubrirlos
 
 - **El sprint 1 son cuatro días.** Si #3 no llega completo al 16/11, se mergea por partes en `develop`: primero las sesiones 5 y 6, que es lo que necesitan los primeros issues de los demás (estados, fábricas, `notificar`, cliente base y Storage), y después E03. El 17/11 se muestra lo que esté.
 - **El sprint 3 tiene dependencias internas.** #11 espera a #10 (mismo sprint). Integrante 2 empieza por #10, y #9 queda para después. Mientras tanto, Integrante 3 avanza con #12.
 - **#13, #14 y #15 esperan a #8, que espera a #7.** #7 mergea primero un PR parcial con la migración, los modelos y `tareas.py`, para que Integrante 1 empiece #8 a mitad del sprint 2. Así #8 está en `develop` el 24/11.
+- **#10, #14 y #15 esperan a #22**, porque todos llaman a `auditoria.registrar`. #22 es chico y depende solo de #3: Integrante 3 lo hace al principio del sprint 2, y un PR parcial (migración y `registrar`) alcanza para destrabar a los demás. Sus números son mayores que los de esos issues porque #2 a #21 ya existían en GitHub.
 - **El sprint 4 termina el día de la defensa.** #21 es el último eslabón (#15 → #20 → #21) y vale 2 puntos: si se atrasa, se recorta antes que cualquier otro.
 
-# 7. Consultas para el ayudante
+## 7. Consultas para el ayudante
 
-Marcá cada una cuando tenga respuesta y actualizá [decisiones.md](decisiones.md) con la fecha.
+Marcá cada una cuando tenga respuesta y actualizá `decisiones.md` con la fecha.
 
-**Observaciones del LEL y del modelo**
+### Observaciones del LEL y del modelo
 
 - [ ] O2: ¿la sospecha familiar se valida con un familiar diagnosticado en lugar de los síntomas?
 - [ ] O3 y O18: con cobertura parcial, ¿el paciente paga la diferencia antes del turno? ¿Hace falta un estado nuevo?
@@ -1771,8 +1933,12 @@ Marcá cada una cuando tenga respuesta y actualizá [decisiones.md](decisiones.m
 - [ ] G2: con varias patologías en el diagnóstico presuntivo, ¿tienen que cumplir todas la regla de E08?
 - [ ] G6: ¿el cupón se puede usar en la diferencia de una cobertura parcial?
 - [ ] E34: ¿se puede quitar una variante registrada por error antes de finalizar? (el modelo no tiene bajas)
+- [ ] G13: ¿el vínculo entre un familiar y un paciente alcanza con el DNI? ¿El médico del paciente original puede ver el código y el estado del estudio del familiar aunque lo atienda otro médico?
+- [ ] G14: cuando Corea avisa por mail que la muestra no sirve, ¿el administrativo devuelve el estudio solo desde En viaje a Corea o también desde En área de bioinformática? ¿Alcanza con los tres motivos (`adn`, `volumen`, `otro`)?
+- [ ] G16 y G17: ¿el registro de cambios se muestra bien como historial por entidad más una lista para el administrador general? ¿Qué rol ve cada historial?
+- [ ] G18: ¿qué datos del paciente se pueden corregir y quién? ¿Cambiar la fecha de nacimiento tiene que recalcular el Pompe urgente?
 
-**Contratos de APIs**
+### Contratos de APIs
 
 - [ ] Quién provee y cuándo llegan los contratos de SNOMED, familiograma, obras sociales, cupones, optimización de recorridos, Ministerio de Salud, FedEx y chatbot.
 - [ ] La transcripción del audio del resumen de historia clínica: ¿es un módulo de otro grupo o un servicio que elegimos nosotros?
@@ -1781,7 +1947,7 @@ Marcá cada una cuando tenga respuesta y actualizá [decisiones.md](decisiones.m
 - [ ] ¿Alcanza con mocks para las APIs que no lleguen antes del 8/12?
 - [ ] Apigen v1 sacó MPS 2 (O11): ¿se deja así?
 
-**Deploy y entrega**
+### Deploy y entrega
 
 - [ ] ¿Dónde se despliega la app (servidor de la cátedra u otro) y con qué URL pública? FedEx y Telegram necesitan llamarla.
 - [ ] APScheduler necesita un solo proceso: ¿el deploy lo permite, o las tareas se disparan con un cron externo?
@@ -1789,9 +1955,9 @@ Marcá cada una cuando tenga respuesta y actualizá [decisiones.md](decisiones.m
 - [ ] ¿Las teselas de OpenStreetMap se pueden usar en la demo?
 - [ ] ¿Qué se entrega el 8/12 además del repositorio (manual, informe, video)?
 
-# 8. Preparación del coloquio
+## 8. Preparación del coloquio
 
-El criterio es el de [guia-agentes.md](guia-agentes.md): cada uno tiene que poder explicar cualquier parte del sistema, aunque la haya escrito otro agente. Por eso el reparto mezcla áreas y la revisión de PR rota.
+El criterio es el de `guia-agentes.md`: cada uno tiene que poder explicar cualquier parte del sistema, aunque la haya escrito otro agente. Por eso el reparto mezcla áreas y la revisión de PR rota.
 
 | Tema | Qué hay que poder explicar | Dónde verlo |
 |---|---|---|
@@ -1803,23 +1969,26 @@ El criterio es el de [guia-agentes.md](guia-agentes.md): cada uno tiene que pode
 | Integraciones y mocks | El cliente base (timeout, `IntegracionError`, `USE_MOCKS`), cómo se prueba sin la API, qué pasa si la API no responde en cada escenario, y por qué los contratos pendientes tienen un borrador | #3 y todos los `integracion` |
 | Sample sets y Pompe urgente | Por qué 10 (envío gratis), por qué un Pompe urgente cierra antes, cómo se calcula la marca (O14), CCB y PDF del Ministerio, y por qué el Pompe urgente va primero en la lista de bioinformática | #11, #14, #15 |
 | Resultado del estudio | Patogénica, portador y negativo con Apigen; genes agregados a mano (O19); hallazgos secundarios; reanálisis sobre los mismos datos crudos | #20, #21 |
-| Trabajo con agentes | `CLAUDE.md`, plan mode, skills, el subagente revisor, permisos y por qué las reglas de negocio están en código con test | [guia-agentes.md](guia-agentes.md) |
+| Registro de cambios | Qué se guarda por cada cambio (G16), por qué `registrar` no hace commit y queda en la transacción de quien lo llama, cómo se mezcla con `historial_estados` y quién ve cada historial (G17) | #22, #23 |
+| Trabajo con agentes | `CLAUDE.md`, plan mode, skills, el subagente revisor, permisos y por qué las reglas de negocio están en código con test | `guia-agentes.md` |
 
-**Recordatorio.** Por cada issue terminado, antes del PR, corré `/guia-estudio` con sus escenarios (por ejemplo `/guia-estudio E07-E08-E36`). Deja `docs/estudio/<escenarios>.md` con el recorrido del código, las reglas, los tests y una guía de estudio. Antes del 8/12, cada uno lee las guías de los issues que **no** hizo, empezando por los que revisó en los PR.
+**Recordatorio.** Por cada issue terminado, antes del PR, corré `/guia-estudio` con sus escenarios (por ejemplo `/guia-estudio E07-E08-E36`). Deja `docs/estudio/<escenarios>.md` con el recorrido del código, las reglas, los tests y una guía de estudio. Antes del 8/12, cada uno lee las guías de los issues que no hizo, empezando por los que revisó en los PR.
 
-# 9. Script para cargar los issues
+## 9. Script para cargar los issues
 
-`scripts/crear_issues.ps1` lee este archivo y carga todo en GitHub con `gh`. No duplica el contenido: toma la tabla de la sección 3 (entre las marcas `tabla-issues`) y el cuerpo de cada issue de la sección 5 (entre las marcas `issue:N`). Si se cambia la guía antes de correrlo, el script usa la versión nueva.
+`scripts/crear_issues.ps1` lee la guía y carga todo en GitHub con `gh`. No duplica el contenido: toma la tabla de la sección 3 (entre las marcas `tabla-issues`) y el cuerpo de cada issue de la sección 5 (entre las marcas `issue:N`). Si se cambia la guía antes de correrlo, el script usa la versión nueva.
 
 Qué hace:
 
 1. Crea o actualiza los 11 labels (`gh label create --force`).
 2. Crea los 4 milestones que falten, con su fecha (`gh api repos/{owner}/{repo}/milestones`).
-3. Crea los 20 issues en orden, sin asignar, con su título, sus labels, su milestone y el cuerpo. Si ya existe un issue con el mismo título, lo saltea.
+3. Crea los 22 issues en orden, sin asignar, con su título, sus labels, su milestone y el cuerpo. Si ya existe un issue con el mismo título, lo saltea.
 4. Si GitHub asignó números distintos de los de la guía, reescribe las referencias `#N` de cada cuerpo con los números reales.
 5. Deja la correspondencia en `scripts/issues-creados.csv`.
 
-Se corre desde la raíz del repo, con `gh auth login` hecho y **antes de abrir otro issue o PR**, para que los números coincidan:
+**Cambio del 16/11.** #2 a #21 ya existen en GitHub y el script los saltea (mismo título), así que solo crea #22 y #23. Los cuerpos de los issues existentes que cambiaron (#3, #8, #10, #14, #15, #18, #19, #20 y #21) hay que actualizarlos a mano, con el texto que está entre sus marcas `issue:N`: `gh issue edit <n> --body-file <archivo>`. En la tabla de la sección 3 cambiaron además las dependencias de #10, #14 y #15, los puntos de #18 y su dependencia (ya no depende de #15), y el milestone de los dos nuevos.
+
+Se corre desde la raíz del repo, con `gh auth login` hecho y antes de abrir otro issue o PR, para que los números coincidan:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/crear_issues.ps1

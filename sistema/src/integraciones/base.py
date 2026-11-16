@@ -176,13 +176,16 @@ class ClienteApi:
 
 
 def _mensaje_de(respuesta: httpx.Response) -> str | None:
-    """El campo `message` del cuerpo de error, como lo devuelve PostgREST."""
+    """El texto del cuerpo de error: `message` (PostgREST) o `detail` cuando es un texto (chatbot)."""
     try:
         cuerpo = respuesta.json()
     except ValueError:
         return None
-    if isinstance(cuerpo, dict) and isinstance(cuerpo.get("message"), str):
-        return cuerpo["message"]
+    if not isinstance(cuerpo, dict):
+        return None
+    for clave in ("message", "detail"):
+        if isinstance(cuerpo.get(clave), str):
+            return cuerpo[clave]
     return None
 
 

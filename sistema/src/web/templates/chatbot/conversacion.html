@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% from "macros/formularios.html" import atributos_de_error, error_de %}
+
+{% block title %}Chatbot{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <h1 class="h3">Chatbot de pacientes</h1>
+      <div class="alert alert-info" id="aviso-asistente">
+        Es un <strong>asistente automático</strong> que responde dudas sobre los estudios genéticos y
+        las patologías lisosomales. <strong>No reemplaza a tu médico</strong>: no da diagnósticos, no
+        interpreta resultados ni habla de tratamientos. No escribas tu nombre, DNI, mail, teléfono ni
+        tus resultados.
+      </div>
+
+      {% if error_del_chatbot %}
+        <div class="alert alert-warning" role="alert" id="chatbot-no-disponible">{{ error_del_chatbot }}</div>
+      {% endif %}
+
+      {% if respuesta %}
+        <div class="card shadow-sm mb-3" id="ultima-respuesta">
+          <div class="card-body">
+            <p class="small text-body-secondary mb-1">Preguntaste</p>
+            <p class="mb-3">{{ pregunta_enviada }}</p>
+            <p class="small text-body-secondary mb-1">El chatbot responde</p>
+            {# El contrato pide mostrar la respuesta tal cual, sea cual sea su tipo. #}
+            <p class="mb-0" style="white-space: pre-line">{{ respuesta.texto }}</p>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('chatbot.preguntar') }}" data-validar novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="pregunta" class="form-label">
+          {{ "Seguí preguntando" if hay_conversacion else "Tu pregunta" }}
+          <span class="text-danger" aria-hidden="true">*</span>
+        </label>
+        <textarea class="form-control{% if 'pregunta' in errores %} is-invalid{% endif %}" id="pregunta"
+                  name="pregunta" rows="3" required maxlength="{{ largo_maximo }}"
+                  placeholder="Por ejemplo, ¿qué es la enfermedad de Pompe?"
+                  {{ atributos_de_error("pregunta", errores) }}>{{ pregunta }}</textarea>
+        {{ error_de("pregunta", errores) }}
+        <div class="form-text">Hasta {{ largo_maximo }} caracteres.</div>
+        <button type="submit" class="btn btn-primary mt-2">Preguntar</button>
+      </form>
+
+      {% if hay_conversacion %}
+        <form method="post" action="{{ url_for('chatbot.nueva_conversacion') }}" class="mt-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-link px-0">Empezar una conversación nueva</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/formularios.js') }}"></script>
+{% endblock %}

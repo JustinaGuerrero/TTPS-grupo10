@@ -1,3 +1,4 @@
+
 -- Roles y usuarios del sistema.
 -- Los 7 roles salen del símbolo Usuario del LEL (docs/lel.md).
 

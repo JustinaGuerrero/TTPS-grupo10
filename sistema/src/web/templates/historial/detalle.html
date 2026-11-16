@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+
+{% set es_paciente = g.usuario.tiene_rol("paciente") %}
+{% set nombres_de_resultado = {"positivo": "Positivo", "portador": "Portador", "negativo": "Negativo"} %}
+{% block title %}Estudio {{ estudio.codigo }}{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('historial.listar') }}">{{ "Mi estudio" if es_paciente else "Estudios" }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ estudio.codigo }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Estudio {{ estudio.codigo }}</h1>
+    <span class="badge text-bg-primary fs-6" id="estado-actual">{{ estudio.estado.nombre }}</span>
+    {% if estudio.pompe_urgente %}<span class="badge text-bg-danger">Pompe urgente</span>{% endif %}
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-5">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h2 class="h5 card-title">Datos del estudio</h2>
+          <dl class="row mb-0">
+            <dt class="col-5">Paciente</dt>
+            <dd class="col-7">{{ estudio.paciente.usuario.nombre_completo }}</dd>
+            <dt class="col-5">DNI</dt>
+            <dd class="col-7">{{ estudio.paciente.dni }}</dd>
+            <dt class="col-5">Médico tratante</dt>
+            <dd class="col-7">{{ estudio.medico_tratante.usuario.nombre_completo }}</dd>
+            <dt class="col-5">Alta</dt>
+            <dd class="col-7 mb-0">{{ estudio.creado_en | fecha_hora }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 card-title">Línea de tiempo</h2>
+          <ol class="list-unstyled mb-0" id="linea-de-tiempo">
+            {% for cambio in estudio.historial | reverse %}
+              <li class="border-start border-2 {{ 'border-primary' if loop.first else '' }} ps-3 pb-3 position-relative">
+                <div class="fw-semibold">{{ cambio.estado_nuevo.nombre }}</div>
+                <div class="small text-body-secondary">{{ cambio.creado_en | fecha_hora }}</div>
+                {% if cambio.motivo %}<div class="small">{{ cambio.motivo }}</div>{% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+      <h2 class="h5">Análisis</h2>
+      {% for analisis in estudio.analisis | reverse %}
+        <div class="card shadow-sm mb-3" id="analisis-{{ analisis.numero }}">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+              <div>
+                <h3 class="h6 mb-1">
+                  {{ "Análisis inicial" if analisis.tipo == "inicial" else "Reanálisis " ~ (analisis.numero - 1) }}
+                </h3>
+                <div class="small text-body-secondary">Solicitado el {{ analisis.solicitado_en | fecha_hora }}</div>
+              </div>
+              {% if analisis.resultado %}
+                <span class="badge text-bg-success">Resultado: {{ nombres_de_resultado.get(analisis.resultado, analisis.resultado) }}</span>
+              {% else %}
+                <span class="badge text-bg-secondary">Sin resultado todavía</span>
+              {% endif %}
+            </div>
+
+            <div class="mt-2 small">
+              <span class="text-body-secondary">Genes analizados:</span>
+              {% for gen in analisis.genes %}
+                <span class="badge text-bg-light border">{{ gen.gen_simbolo }}{% if gen.agregado_a_mano %} *{% endif %}</span>
+              {% endfor %}
+              {% if analisis.genes | selectattr("agregado_a_mano") | list %}
+                <div class="text-body-secondary mt-1">* Agregado por el médico tratante.</div>
+              {% endif %}
+            </div>
+
+            {% if analisis.resultado %}
+              <div class="mt-3">
+                {% if analisis.resultado_path %}
+                  <a class="btn btn-primary btn-sm" id="descargar-resultado-{{ analisis.numero }}"
+                     href="{{ url_for('historial.descargar_resultado', analisis_id=analisis.id) }}">
+                    Descargar resultado (PDF)
+                  </a>
+                {% else %}
+                  <span class="small text-body-secondary">El PDF del resultado todavía no está disponible.</span>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

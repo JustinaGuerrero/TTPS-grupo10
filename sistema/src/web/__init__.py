@@ -11,7 +11,7 @@ from src.core import database
 from src.integraciones import mail
 from src.web import comandos, errores
 from src.web.config import CONFIGS
-from src.web.controllers import autenticacion, avisos, inicio, usuarios
+from src.web.controllers import autenticacion, avisos, chatbot, historial, inicio, usuarios
 from src.web.helpers import auth, formato, menu
 from src.web.helpers.csrf import csrf
 
@@ -40,6 +40,8 @@ def create_app(env: str | None = None) -> Flask:
     app.register_blueprint(inicio.bp)
     app.register_blueprint(avisos.bp)
     app.register_blueprint(usuarios.bp)
+    app.register_blueprint(historial.bp)
+    app.register_blueprint(chatbot.bp)
     errores.registrar(app)
 
     return app

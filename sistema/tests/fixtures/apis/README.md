@@ -21,3 +21,14 @@ completo de ClinVar ni de la lista ACMG.
 | `resultado_diagnostico("POMPE", …)` | `resultado_diagnostico_POMPE.json` (no mira las variantes) | `resultado_diagnostico.json`: `"negativo"` |
 
 `genes_por_patologia_MPS2.error.json` simula la patología que Apigen sacó en la v1.
+
+## Chatbot de pacientes (`chatbot/`)
+
+Contrato en `docs/apis/chatbot.md`. Respuesta fija: no depende de la pregunta.
+
+| Función | Archivo | Si no hay archivo |
+| --- | --- | --- |
+| `preguntar(texto)` | `respuesta.json` (tipo `respuesta`) | Error: "el chatbot no está disponible" |
+
+Para simular el chatbot apagado, crear `respuesta.error.json` con `{"status": 503, "message": "..."}`.
+Los tests de los demás errores (401, 429, 500, timeout) usan un `httpx.MockTransport`.
