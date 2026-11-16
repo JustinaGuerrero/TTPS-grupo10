@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}Mis cupones{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Mis cupones</h1>
+
+  {% if not cupones %}
+    <p class="text-body-secondary" id="sin-resultados">No tenés cupones de descuento disponibles.</p>
+  {% else %}
+    <ul class="list-group shadow-sm mb-3" style="max-width: 32rem;">
+      {% for cupon in cupones %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            <strong>{{ cupon.codigo }}</strong> — {{ cupon.descuento_porcentaje }}% de descuento
+          </span>
+          <a href="{{ url_for('cupones.pdf', cupon_id=cupon.id) }}">PDF</a>
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="small text-body-secondary">Los usás al pagar tu estudio, sobre el total del presupuesto.</p>
+  {% endif %}
+{% endblock %}
