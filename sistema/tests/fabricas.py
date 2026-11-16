@@ -199,3 +199,44 @@ def crear_obra_social():
         return obra_social
 
     return _crear
+
+
+@pytest.fixture
+def crear_registro_de_cambio():
+    """Fábrica: `crear_registro_de_cambio(Entidad.PACIENTE, 7, "dni", "1", "2")` agrega una fila
+    al registro de cambios y la devuelve (E43).
+
+    `creado_en` fija la fecha para los casos de orden y de filtros por fecha (por defecto, la de
+    la transacción). `usuario` None es un cambio del sistema. Inserta la fila a mano, sin pasar
+    por registrar(), y no hace commit. Llamarla dentro de un app_context.
+    """
+    from src.core.auditoria import Accion, RegistroDeCambio
+
+    def _crear(
+        entidad,
+        entidad_id: int,
+        campo: str = "campo",
+        valor_anterior: str | None = "antes",
+        valor_nuevo: str | None = "después",
+        usuario: Usuario | None = None,
+        accion: Accion = Accion.MODIFICACION,
+        creado_en=None,
+        detalle: str | None = None,
+    ) -> RegistroDeCambio:
+        registro = RegistroDeCambio(
+            entidad=entidad,
+            entidad_id=entidad_id,
+            accion=accion,
+            campo=campo,
+            valor_anterior=valor_anterior,
+            valor_nuevo=valor_nuevo,
+            usuario_id=usuario.id if usuario is not None else None,
+            detalle=detalle,
+        )
+        if creado_en is not None:
+            registro.creado_en = creado_en
+        db.session.add(registro)
+        db.session.flush()
+        return registro
+
+    return _crear

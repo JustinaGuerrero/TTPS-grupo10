@@ -4,7 +4,7 @@ Nov 12, 2026
 
 # Introducción
 
-El modelo tiene 39 tablas: las 2 de la migración inicial (`roles` y `usuarios`), que se respetan tal cual, y 37 nuevas que salen de los símbolos de [lel.md](lel.md) y de los episodios de [escenarios.md](escenarios.md). Es el esquema de referencia para que las migraciones de cada escenario no choquen entre sí. Este documento no crea migraciones: cada tabla la crea la migración del primer escenario que la necesita (ver [Orden sugerido de las migraciones](#orden-sugerido-de-las-migraciones)).
+El modelo tiene 40 tablas: las 2 de la migración inicial (`roles` y `usuarios`), que se respetan tal cual, y 38 nuevas que salen de los símbolos de [lel.md](lel.md) y de los episodios de [escenarios.md](escenarios.md). Es el esquema de referencia para que las migraciones de cada escenario no choquen entre sí. Este documento no crea migraciones: cada tabla la crea la migración del primer escenario que la necesita (ver [Orden sugerido de las migraciones](#orden-sugerido-de-las-migraciones)).
 
 Convenciones usadas:
 
@@ -844,6 +844,29 @@ Lo que guarda `notificar(usuario, asunto, mensaje, link)` (decisión S11). Cada 
 
 **Escenarios:** E39 y todos los que notifican.
 
+## auditoria
+
+**LEL:** Registro de cambios.
+
+Lo que guarda `registrar(entidad, entidad_id, usuario, accion, cambios)` de `src/core/auditoria`: una fila por cada campo que cambia en un paciente, un estudio o un sample set (G16). No lleva claves foráneas a las entidades: `entidad` dice a cuál apunta `entidad_id`. El cambio de estado del estudio no se duplica acá: está en `historial_estados`, y el historial de un estudio mezcla las dos tablas. Solo se insertan filas: un trigger impide modificarlas o borrarlas. Los valores se guardan como texto y nunca se guardan contraseñas, códigos de verificación ni claves.
+
+| Atributo | Tipo | Clave | Descripción |
+|---|---|---|---|
+| id | bigint | PK | |
+| entidad | text | | `paciente`, `estudio` o `sample_set` |
+| entidad_id | bigint | | Id de la fila de esa entidad |
+| accion | text | | `alta`, `modificacion`, `baja` o `estado` (esta última solo se muestra, viene de `historial_estados`) |
+| campo | text | | Nombre del campo que cambió |
+| valor_anterior | text | | Nulo en un alta |
+| valor_nuevo | text | | Nulo en una baja |
+| usuario_id | bigint | FK → usuarios | Nulo cuando el cambio lo hace el sistema |
+| creado_en | timestamptz | | |
+| detalle | text | | Opcional |
+
+**Índices:** (`entidad`, `entidad_id`, `creado_en`), para el historial de una entidad; `usuario_id` y `creado_en`, para la lista del administrador general.
+
+**Escenarios:** E43 y todos los que cambian datos de un paciente, un estudio o un sample set.
+
 # Lo que no se guarda
 
 | Símbolo del LEL | Dónde está |
@@ -883,6 +906,7 @@ Cada tabla la crea completa, según este documento, la migración del primer esc
 | 6 | `estudios`, `historial_estados`, `analisis`, `analisis_patologias`, `analisis_genes` | Sesión 5 de la guía, E10 |
 | 7 | `cupones`, `presupuestos`, `coberturas`, `demandas_reautorizacion`, `pagos`, `asientos_financieros` | E13–E18, E37 |
 | 8 | `centros_extraccion`, `turnos_extraccion`, `mensajes_bot` | E19–E22 |
+| 9 | `auditoria` | E43 |
 | 9 | `ordenes_del_dia`, `paradas_orden_del_dia`, `sample_sets`, `muestras` | E22–E28 |
 | 10 | `variantes_encontradas` | E34 |
 

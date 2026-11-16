@@ -50,8 +50,11 @@ apigen/ es nuestra API de bioinformática (módulo 5): no se modifica desde el s
 
 ## Reglas del dominio
 - Los nombres salen del LEL (docs/lel.md): estudio, muestra, sample set, turno de extracción…
-- Los escenarios están en docs/escenarios.md (E01–E41): cada episodio es un criterio de aceptación.
+- Los escenarios están en docs/escenarios.md (E01–E43): cada episodio es un criterio de aceptación.
 - El estado de un estudio cambia SOLO con cambiar_estado() de src/core/estudios.
+- Toda función de core que cambie datos de un paciente, un estudio (aparte del estado) o un sample set
+  llama a auditoria.registrar() de src/core/auditoria en la misma transacción (E43): arma los cambios con
+  diferencias(antes, despues, campos) y registrar() no hace commit. No se auditan usuarios, pagos ni cupones.
 - Toda ruta lleva @login_required y @rol_requerido(...), salvo las rutas sin sesión, que son solo estas:
   - /login y el registro (E01, E02): públicas.
   - POST /bot/telegram (E22): @csrf.exempt; valida el secreto del header X-Telegram-Bot-Api-Secret-Token.
