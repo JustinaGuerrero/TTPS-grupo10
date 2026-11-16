@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 import sqlalchemy as sa
 
+from src.core.cupones import ErrorDeCupon, calcular_descuento, consumir_cupon, resolver_cupon
 from src.core.database import db
 from src.core.estudios import EstadoEstudio, cambiar_estado
 from src.core.estudios.modelos import Estudio
@@ -110,11 +111,19 @@ def emitir_presupuesto(estudio: Estudio, administrativo: Usuario) -> Presupuesto
     return presupuesto
 
 
-def pagar_particular(estudio: Estudio, paciente: Usuario, importe: Decimal | str) -> Pago:
+def pagar_particular(
+    estudio: Estudio, paciente: Usuario, importe: Decimal | str, cupon_codigo: str | None = None
+) -> Pago:
     """E14.4 a E14.6: pago único y simulado por el importe final; pasa a Habilitado para turno.
 
+    Con `cupon_codigo` (E15, solo en el pago particular del total, G6) el importe final es el
+    total menos el descuento del cupón: el pago guarda el cupón y el descuento, se registra el
+    asiento descuento_cupon y se vence el cupón en el módulo antes de seguir.
+
     Lanza ErrorDePago si quien paga no es el paciente del estudio, si el estudio no está
-    Presupuestado, si ya hay un pago particular o si el importe no es exactamente el final.
+    Presupuestado, si ya hay un pago particular, si el cupón se rechaza o si el importe no es
+    exactamente el final. Si el módulo de cupones falla, lanza ErrorDeIntegracion; en los dos
+    casos el controlador hace rollback y no queda ningún pago.
     """
     if not paciente.tiene_rol(roles.PACIENTE) or estudio.paciente.usuario_id != paciente.id:
         raise ErrorDePago("Solo el paciente del estudio puede pagarlo.")
@@ -134,13 +143,33 @@ def pagar_particular(estudio: Estudio, paciente: Usuario, importe: Decimal | str
     except InvalidOperation:
         raise ErrorDePago("El importe no es un número.") from None
     final = importe_final(presupuesto)
+    cupon = None
+    descuento = Decimal("0.00")
+    if cupon_codigo:
+        try:
+            cupon = resolver_cupon(paciente, cupon_codigo)
+        except ErrorDeCupon as error:
+            raise ErrorDePago(str(error)) from None
+        descuento = calcular_descuento(presupuesto.total_usd, cupon)
+        final = presupuesto.total_usd - descuento
+        if final <= 0:
+            raise ErrorDePago("Un cupón que cubre todo el importe todavía no se puede usar.")
     if importe != final:
         raise ErrorDePago(f"El pago es único: tiene que ser por el importe final, {final} USD.")
 
-    pago = Pago(estudio_id=estudio.id, tipo=TipoPago.PARTICULAR, importe_usd=final)
+    pago = Pago(
+        estudio_id=estudio.id,
+        tipo=TipoPago.PARTICULAR,
+        importe_usd=final,
+        cupon_id=cupon.id if cupon is not None else None,
+        descuento_usd=descuento,
+    )
     db.session.add(pago)
     db.session.flush()
     registrar_asiento(TipoAsiento.PAGO_PARTICULAR, estudio, final, pago=pago)
+    if cupon is not None:
+        registrar_asiento(TipoAsiento.DESCUENTO_CUPON, estudio, descuento, pago=pago)
+        consumir_cupon(cupon)
     cambiar_estado(estudio, EstadoEstudio.HABILITADO_TURNO, paciente)
     notificar(
         paciente,

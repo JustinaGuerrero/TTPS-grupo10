@@ -8,11 +8,11 @@ from decimal import Decimal
 from enum import StrEnum
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-import src.core.pacientes.modelos
-import src.core.usuarios.modelos  # noqa: F401  (tablas usuarios y medicos, referenciadas)
 from src.core.database import Base, enum_de_texto
+from src.core.pacientes.modelos import Paciente
+from src.core.usuarios.modelos import Medico
 
 
 class EstadoCupon(StrEnum):
@@ -36,6 +36,8 @@ class Cupon(Base):
     )
     medico_tratante_id: Mapped[int | None] = mapped_column(sa.ForeignKey("medicos.usuario_id"))
     asignado_a_medico_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    medico_tratante: Mapped[Medico | None] = relationship()
     paciente_id: Mapped[int | None] = mapped_column(sa.ForeignKey("pacientes.id"))
+    paciente: Mapped[Paciente | None] = relationship()
     asignado_a_paciente_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     utilizado_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
