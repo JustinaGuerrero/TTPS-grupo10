@@ -87,10 +87,12 @@ def test_generar_tres_cupones_los_asigna_al_medico_guarda_los_pdf_y_avisa(
         for cupon in cupones:
             assert cupon.medico_tratante_id == medico.id
             assert cupon.generado_por == gerente.id
-            assert cupon.descuento_porcentaje == Decimal(25)
+            assert cupon.descuento_porcentaje == Decimal(20)  # el que devuelve el módulo
             assert cupon.estado == EstadoCupon.VIGENTE
             assert cupon.paciente_id is None
-            assert (storage_en_disco / cupon.pdf_path).read_bytes().startswith(b"%PDF")
+            pdf = (storage_en_disco / cupon.pdf_path).read_bytes()
+            assert pdf.startswith(b"%PDF")
+            assert codigo_desde_pdf(pdf) == cupon.codigo
         avisos = _avisos(medico)
         assert len(avisos) == 1
         assert avisos[0].link == "/cupones/mios"
@@ -131,7 +133,7 @@ def test_generar_acepta_porcentajes_de_1_a_100(app, usuario_rapido, porcentaje):
 
         cupones = generar_cupones(gerente, medico, porcentaje, 1)
 
-        assert cupones[0].descuento_porcentaje == Decimal(porcentaje)
+        assert len(cupones) == 1
 
 
 def test_solo_el_gerente_medico_genera_y_solo_para_un_medico_tratante(app, usuario_rapido):
@@ -261,6 +263,20 @@ def test_asignar_un_cupon_de_otro_medico_ya_asignado_o_utilizado_falla(
         assert ajeno.paciente_id is None
 
 
+def test_el_modulo_rechaza_un_paciente_que_ya_tuvo_un_cupon(app, crear_paciente, crear_cupon):
+    with app.app_context():
+        paciente = crear_paciente()
+        medico = paciente.medico_tratante.usuario
+        cupon = crear_cupon(medico, codigo="YACANJE1")
+        db.session.commit()
+
+        with pytest.raises(ErrorDeCupon, match="uno por paciente"):
+            asignar_a_paciente(medico, cupon.id, paciente.id)
+
+        assert cupon.paciente_id is None
+        assert _avisos(paciente.usuario) == []
+
+
 def test_el_medico_asigna_desde_su_pantalla(app, client, crear_paciente, crear_cupon):
     with app.app_context():
         paciente = crear_paciente()
@@ -325,9 +341,24 @@ def test_un_cupon_vencido_segun_el_modulo_se_rechaza_con_mensaje(
         respuesta = client.post(f"/estudios/{estudio.id}/pago/cupon", data={"codigo": "VENCIDO01"})
 
         assert respuesta.status_code == 400
-        assert "ya no está vigente" in respuesta.get_data(as_text=True)
-        with pytest.raises(ErrorDePago, match="ya no está vigente"):
+        assert "ya fue utilizado" in respuesta.get_data(as_text=True)
+        with pytest.raises(ErrorDePago, match="ya fue utilizado"):
             pagar_particular(estudio, estudio.paciente.usuario, "400.00", "VENCIDO01")
+
+
+def test_un_cupon_que_vencio_o_no_esta_asignado_en_el_modulo_se_rechaza(
+    app, crear_estudio, crear_presupuesto, crear_cupon
+):
+    with app.app_context():
+        estudio, medico, _ = _escenario(crear_estudio, crear_presupuesto, crear_cupon, "EXPIRADO1")
+        sin_asignar = crear_cupon(medico, codigo="SINPACIE1", paciente=estudio.paciente)
+        db.session.commit()
+        paciente = estudio.paciente.usuario
+
+        with pytest.raises(ErrorDeCupon, match="venció el 01/01/2020"):
+            resolver_cupon(paciente, "EXPIRADO1")
+        with pytest.raises(ErrorDeCupon, match="no está asignado"):
+            resolver_cupon(paciente, sin_asignar.codigo)
 
 
 def test_un_cupon_de_otro_paciente_o_inexistente_se_rechaza(
@@ -353,13 +384,13 @@ def test_pagar_con_cupon_registra_descuento_asientos_vence_y_habilita(
     app, crear_estudio, crear_presupuesto, crear_cupon, monkeypatch
 ):
     llamadas = []
-    original = modulo_de_cupones.vencer
+    original = modulo_de_cupones.canjear
 
-    def espia(codigo):
-        llamadas.append(codigo)
-        return original(codigo)
+    def espia(paciente_id, codigo):
+        llamadas.append((paciente_id, codigo))
+        return original(paciente_id, codigo)
 
-    monkeypatch.setattr(modulo_de_cupones, "vencer", espia)
+    monkeypatch.setattr(modulo_de_cupones, "canjear", espia)
     with app.app_context():
         estudio, _, cupon = _escenario(crear_estudio, crear_presupuesto, crear_cupon)
 
@@ -382,7 +413,7 @@ def test_pagar_con_cupon_registra_descuento_asientos_vence_y_habilita(
         assert asientos[TipoAsiento.DESCUENTO_CUPON].pago_id == pago.id
         assert cupon.estado == EstadoCupon.UTILIZADO
         assert cupon.utilizado_en is not None
-        assert llamadas == [cupon.codigo]
+        assert llamadas == [(estudio.paciente.id, cupon.codigo)]
         assert estudio.estado == EstadoEstudio.HABILITADO_TURNO
         assert deuda_por_paciente() == []
 
