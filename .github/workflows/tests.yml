@@ -1,10 +1,10 @@
 name: Tests
 
-# Corre los tests del sistema en cada PR (y en main, para ver que siguen en verde después de mergear).
+# Corre los tests del sistema en cada PR (a development y a main) y después de cada merge.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, development]
   workflow_dispatch:
 
 # Un PR con push nuevo cancela la corrida anterior del mismo PR.
