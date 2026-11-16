@@ -121,6 +121,10 @@ def asignar(cupon_id: int):
         db.session.rollback()
         flash(str(error), "error")
         return redirect(url_for("cupones.mios")), 303
+    except ErrorDeIntegracion as error:
+        db.session.rollback()
+        flash(f"No se asignó el cupón. {error.mensaje}", "error")
+        return redirect(url_for("cupones.mios")), 303
     db.session.commit()
     flash(f"Asignaste el cupón {cupon.codigo} al paciente.", "exito")
     return redirect(url_for("cupones.mios"))
