@@ -17,7 +17,6 @@ Cualquier escenario que tenga que avisarle algo a un usuario llama a notificar()
 from src.core.notificaciones.modelos import Aviso
 from src.core.notificaciones.servicios import (
     AVISOS_POR_PAGINA,
-    PaginaDeAvisos,
     avisos_de,
     contar_sin_leer,
     marcar_leido,
@@ -27,7 +26,6 @@ from src.core.notificaciones.servicios import (
 __all__ = [
     "AVISOS_POR_PAGINA",
     "Aviso",
-    "PaginaDeAvisos",
     "avisos_de",
     "contar_sin_leer",
     "marcar_leido",

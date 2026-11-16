@@ -147,11 +147,11 @@ def test_avisos_de_pagina_los_mas_nuevos_primero(app, usuario_rapido):
         segunda = avisos_de(usuario, pagina=2)
 
     assert primera.total == AVISOS_POR_PAGINA + 1
-    assert len(primera.avisos) == AVISOS_POR_PAGINA
-    assert primera.avisos[0].asunto == f"Aviso {AVISOS_POR_PAGINA + 1}"
+    assert len(primera.items) == AVISOS_POR_PAGINA
+    assert primera.items[0].asunto == f"Aviso {AVISOS_POR_PAGINA + 1}"
     assert not primera.hay_anterior
     assert primera.hay_siguiente
-    assert [aviso.asunto for aviso in segunda.avisos] == ["Aviso 1"]
+    assert [aviso.asunto for aviso in segunda.items] == ["Aviso 1"]
     assert segunda.hay_anterior
     assert not segunda.hay_siguiente
 

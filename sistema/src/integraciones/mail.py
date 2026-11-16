@@ -10,10 +10,42 @@ Uso:
     enviado = mail.enviar("ana@x.com", "Asunto", "Cuerpo en texto plano")
 """
 
-from flask import Flask, current_app
-from flask_mail import Mail, Message
+import smtplib
 
-mail = Mail()
+from flask import Flask, current_app
+from flask_mail import Connection, Mail, Message
+
+from src.integraciones.base import TIMEOUT_EN_SEGUNDOS
+
+
+class _ConexionConTimeout(Connection):
+    """Conexión SMTP con el timeout de las integraciones (5 s).
+
+    Flask-Mail 0.10 abre smtplib.SMTP sin timeout: un servidor que no responde dejaría colgado el
+    request, y en E03 también la transacción del alta, que espera al mail antes del commit.
+    Repite configure_host() de Flask-Mail agregando solo el timeout.
+    """
+
+    def configure_host(self) -> smtplib.SMTP | smtplib.SMTP_SSL:
+        estado = self.mail
+        if estado.use_ssl:
+            host = smtplib.SMTP_SSL(estado.server, estado.port, timeout=TIMEOUT_EN_SEGUNDOS)
+        else:
+            host = smtplib.SMTP(estado.server, estado.port, timeout=TIMEOUT_EN_SEGUNDOS)
+        host.set_debuglevel(int(estado.debug))
+        if estado.use_tls:
+            host.starttls()
+        if estado.username and estado.password:
+            host.login(estado.username, estado.password)
+        return host
+
+
+class _MailConTimeout(Mail):
+    def connect(self) -> Connection:
+        return _ConexionConTimeout(current_app.extensions["mail"])
+
+
+mail = _MailConTimeout()
 
 
 def init_app(app: Flask) -> None:

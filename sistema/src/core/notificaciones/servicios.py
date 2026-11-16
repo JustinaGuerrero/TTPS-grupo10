@@ -5,32 +5,17 @@ función hace commit: lo decide quien llama, como en src/core/usuarios.
 """
 
 from datetime import UTC, datetime
-from typing import NamedTuple
 
 import sqlalchemy as sa
 
 from src.core.database import db
 from src.core.estudios.modelos import Estudio
 from src.core.notificaciones.modelos import Aviso
+from src.core.paginacion import Pagina, paginar
 from src.core.usuarios.modelos import Usuario
 from src.integraciones import mail
 
 AVISOS_POR_PAGINA = 20
-
-
-class PaginaDeAvisos(NamedTuple):
-    avisos: list[Aviso]
-    pagina: int
-    por_pagina: int
-    total: int
-
-    @property
-    def hay_anterior(self) -> bool:
-        return self.pagina > 1
-
-    @property
-    def hay_siguiente(self) -> bool:
-        return self.pagina * self.por_pagina < self.total
 
 
 def notificar(
@@ -74,20 +59,14 @@ def notificar(
     return aviso
 
 
-def avisos_de(usuario: Usuario, pagina: int = 1) -> PaginaDeAvisos:
+def avisos_de(usuario: Usuario, pagina: int = 1) -> Pagina[Aviso]:
     """Avisos del usuario, los más nuevos primero, de a AVISOS_POR_PAGINA."""
-    pagina = max(pagina, 1)
-    filtro = Aviso.usuario_id == usuario.id
-    total = db.session.scalar(sa.select(sa.func.count()).select_from(Aviso).where(filtro))
     consulta = (
         sa.select(Aviso)
-        .where(filtro)
+        .where(Aviso.usuario_id == usuario.id)
         .order_by(Aviso.creada_en.desc(), Aviso.id.desc())
-        .limit(AVISOS_POR_PAGINA)
-        .offset((pagina - 1) * AVISOS_POR_PAGINA)
     )
-    avisos = list(db.session.scalars(consulta))
-    return PaginaDeAvisos(avisos, pagina, AVISOS_POR_PAGINA, total or 0)
+    return paginar(consulta, pagina, AVISOS_POR_PAGINA)
 
 
 def contar_sin_leer(usuario: Usuario) -> int:

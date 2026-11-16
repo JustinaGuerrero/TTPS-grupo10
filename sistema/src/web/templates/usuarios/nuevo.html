@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+{% from "macros/formularios.html" import campo, error_de, atributos_de_error %}
+
+{% block title %}Dar de alta usuario{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('usuarios.listar') }}">Usuarios</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Dar de alta</li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <div class="col-12 col-lg-9 col-xl-7">
+      <h1 class="h3 mb-1">Dar de alta usuario</h1>
+      <p class="text-body-secondary mb-4">
+        El sistema crea una contraseña provisoria y se la envía por mail al nuevo usuario.
+      </p>
+
+      {# novalidate: los errores los muestra static/js/formularios.js con el estilo de Bootstrap. #}
+      <form method="post" action="{{ url_for('usuarios.crear') }}" class="card shadow-sm"
+            data-validar novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card-body p-4">
+          {# Episodio 1: el rol. Los campos de abajo dependen de él. #}
+          <div class="mb-4">
+            <label for="rol_codigo" class="form-label">
+              Rol <span class="text-danger" aria-hidden="true">*</span>
+            </label>
+            <select class="form-select{% if 'rol_codigo' in errores %} is-invalid{% endif %}"
+                    id="rol_codigo" name="rol_codigo" required
+                    {{ atributos_de_error("rol_codigo", errores) }}>
+              <option value="">Elegí un rol</option>
+              {% for rol in roles_de_alta %}
+                <option value="{{ rol.codigo }}" {% if rol.codigo == datos.rol_codigo %}selected{% endif %}>
+                  {{ rol.nombre }}
+                </option>
+              {% endfor %}
+            </select>
+            {{ error_de("rol_codigo", errores) }}
+          </div>
+
+          {# Episodio 2: los datos que corresponden al rol. #}
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              {{ campo("nombre", "Nombre", datos.nombre, errores,
+                       maxlength=largo_maximo.nombre, autocomplete="off") }}
+            </div>
+            <div class="col-12 col-sm-6">
+              {{ campo("apellido", "Apellido", datos.apellido, errores,
+                       maxlength=largo_maximo.apellido, autocomplete="off") }}
+            </div>
+            <div class="col-12 col-sm-6">
+              {{ campo("email", "Mail", datos.email, errores, tipo="email",
+                       maxlength=largo_maximo.email, autocomplete="off",
+                       ayuda="Es su usuario y adonde le llegan las credenciales.") }}
+            </div>
+            <div class="col-12 col-sm-6">
+              {{ campo("telefono", "Teléfono", datos.telefono, errores, tipo="tel",
+                       maxlength=largo_maximo.telefono, autocomplete="off", inputmode="tel",
+                       pattern="\\+?[0-9 \\(\\)\\-]{6,}",
+                       ayuda="Por ejemplo, +54 9 221 555-1234.") }}
+            </div>
+
+            {# Médico tratante y gerente médico (E01): matrícula. #}
+            <div class="col-12 col-sm-6" data-segun="rol_codigo"
+                 data-valores="{{ roles_con_matricula | join(' ') }}">
+              {{ campo("matricula", "Matrícula", datos.matricula, errores,
+                       requerido=false, requerido_si_se_ve=true,
+                       maxlength=largo_maximo.matricula, autocomplete="off",
+                       ayuda="Solo para médico tratante y gerente médico.") }}
+            </div>
+
+            {# Transportista: su provincia. Hay un transportista por provincia. #}
+            <div class="col-12 col-sm-6" data-segun="rol_codigo" data-valores="transportista">
+              <label for="provincia_id" class="form-label">
+                Provincia <span class="text-danger" aria-hidden="true">*</span>
+              </label>
+              <select class="form-select{% if 'provincia_id' in errores %} is-invalid{% endif %}"
+                      id="provincia_id" name="provincia_id" data-requerido
+                      {{ atributos_de_error("provincia_id", errores, ayuda=true) }}>
+                <option value="">Elegí una provincia</option>
+                {% for provincia in provincias %}
+                  {% set ocupada = provincia.id in provincias_ocupadas %}
+                  <option value="{{ provincia.id }}"
+                          {% if provincia.id | string == datos.provincia_id %}selected{% endif %}
+                          {% if ocupada %}disabled{% endif %}>
+                    {{ provincia.nombre }}{% if ocupada %} (ya tiene transportista){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="form-text" id="provincia_id-ayuda">Solo para transportista.</div>
+              {{ error_de("provincia_id", errores) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer bg-body d-flex flex-wrap justify-content-end gap-2 p-3">
+          <a class="btn btn-outline-secondary" href="{{ url_for('usuarios.listar') }}">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Dar de alta y enviar credenciales</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/formularios.js') }}"></script>
+{% endblock %}

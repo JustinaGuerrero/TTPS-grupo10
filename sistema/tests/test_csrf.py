@@ -123,3 +123,24 @@ def test_todos_los_formularios_post_llevan_el_token():
 
     assert formularios >= 2, "No encontró los formularios de login y logout: revisar la búsqueda"
     assert not sin_token, f"Formularios POST sin csrf_token(): {sin_token}"
+
+
+def test_dar_de_alta_usuario_sin_token_responde_400_y_no_crea_nada(
+    app, client, crear_usuario, csrf_activo
+):
+    _login_con_token(client, crear_usuario(roles.ADMINISTRADOR_GENERAL))
+    datos = {
+        "rol_codigo": roles.ADMINISTRATIVO,
+        "nombre": "Ana",
+        "apellido": "Gómez",
+        "email": "sin.token@exoma.test",
+        "telefono": "221 555 1234",
+    }
+
+    sin_token = client.post("/usuarios/nuevo", data=datos)
+    formulario = client.get("/usuarios/nuevo").text
+    con_token = client.post("/usuarios/nuevo", data={**datos, "csrf_token": _token(formulario)})
+
+    assert sin_token.status_code == 400
+    assert MENSAJE_DE_RECHAZO in sin_token.text
+    assert con_token.status_code == 302

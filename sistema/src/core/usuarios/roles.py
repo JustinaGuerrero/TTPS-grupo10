@@ -20,3 +20,16 @@ TODOS = (
     GERENTE_MEDICO,
     ADMINISTRADOR_GENERAL,
 )
+
+# Roles que da de alta el administrador general (E03, episodio 1). El paciente lo da de alta el
+# médico tratante (E06) y el administrador general no se da de alta desde el sistema.
+DE_ALTA_POR_ADMINISTRADOR = (
+    MEDICO_TRATANTE,
+    GERENTE_MEDICO,
+    ADMINISTRATIVO,
+    BIOINFORMATICO,
+    TRANSPORTISTA,
+)
+
+# Roles con perfil de médico, que se registran con matrícula (E01, tabla medicos).
+CON_MATRICULA = (MEDICO_TRATANTE, GERENTE_MEDICO)

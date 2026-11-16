@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "macros/paginacion.html" import paginacion %}
 
 {% block title %}Mis avisos{% endblock %}
 
@@ -9,7 +10,7 @@
     <p class="text-body-secondary">No tenés avisos.</p>
   {% else %}
     <div class="list-group mb-3">
-      {% for aviso in pagina.avisos %}
+      {% for aviso in pagina.items %}
         <form method="post" action="{{ url_for('avisos.abrir', aviso_id=aviso.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit"
@@ -29,17 +30,6 @@
       {% endfor %}
     </div>
 
-    {% if pagina.hay_anterior or pagina.hay_siguiente %}
-      <nav aria-label="Páginas de avisos">
-        <ul class="pagination">
-          <li class="page-item{% if not pagina.hay_anterior %} disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('avisos.listar', pagina=pagina.pagina - 1) }}">Anteriores</a>
-          </li>
-          <li class="page-item{% if not pagina.hay_siguiente %} disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('avisos.listar', pagina=pagina.pagina + 1) }}">Siguientes</a>
-          </li>
-        </ul>
-      </nav>
-    {% endif %}
+    {{ paginacion(pagina, "avisos.listar", etiqueta="Páginas de avisos") }}
   {% endif %}
 {% endblock %}

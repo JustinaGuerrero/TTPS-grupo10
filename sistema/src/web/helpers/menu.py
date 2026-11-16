@@ -1,9 +1,8 @@
 """Menú del layout según el rol del usuario logueado.
 
 "Inicio" y "Mis avisos" los muestra el layout a todos. Cada módulo nuevo agrega acá la entrada de su pantalla
-principal en los roles que la usan, con el endpoint de su blueprint. Por ejemplo, E03:
-
-    roles.ADMINISTRADOR_GENERAL: [ItemDeMenu("Usuarios", "usuarios.listar")],
+principal en los roles que la usan, con el endpoint de su blueprint, como "Usuarios" (E03). La entrada
+queda marcada en todas las pantallas de ese blueprint.
 """
 
 from typing import NamedTuple
@@ -27,7 +26,7 @@ MENU_POR_ROL: dict[str, list[ItemDeMenu]] = {
     roles.BIOINFORMATICO: [],
     roles.TRANSPORTISTA: [],
     roles.GERENTE_MEDICO: [],
-    roles.ADMINISTRADOR_GENERAL: [],
+    roles.ADMINISTRADOR_GENERAL: [ItemDeMenu("Usuarios", "usuarios.listar")],
 }
 
 
