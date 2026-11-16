@@ -13,9 +13,11 @@ from src.core.usuarios import (
     BusquedaDeUsuarios,
     DatosDeAlta,
     ErrorDeValidacion,
+    Medico,
     buscar_usuarios,
     dar_de_alta_usuario,
     enviar_credenciales,
+    guardar_especialidades,
     listar_roles,
     provincias_con_transportista,
     roles,
@@ -53,11 +55,18 @@ def nuevo():
 def crear():
     """Episodios 1 a 4: valida, crea las credenciales de acceso y las manda por mail."""
     datos = DatosDeAlta.desde(request.form)
+    especialidades = _leer_especialidades()
     try:
         alta = dar_de_alta_usuario(datos)
+        if datos.rol_codigo in roles.CON_MATRICULA:
+            medico = db.session.get(Medico, alta.usuario.id)
+            if medico is None:
+                raise RuntimeError("El alta del usuario no creó su perfil médico.")
+            guardar_especialidades(medico, especialidades)
     except ErrorDeValidacion as error:
+        db.session.rollback()
         flash("Revisá los datos marcados.", "error")
-        return _formulario(datos, error.errores), 400
+        return _formulario(datos, error.errores, especialidades), 400
 
     if not enviar_credenciales(
         alta.usuario, alta.contrasena, url_for("autenticacion.iniciar_sesion")
@@ -69,7 +78,7 @@ def crear():
             "Probá de nuevo en unos minutos.",
             "error",
         )
-        return _formulario(datos), 503
+        return _formulario(datos, especialidades=especialidades), 503
 
     db.session.commit()
     flash(
@@ -80,7 +89,11 @@ def crear():
     return redirect(url_for("usuarios.listar"))
 
 
-def _formulario(datos: DatosDeAlta, errores: dict[str, str] | None = None) -> str:
+def _formulario(
+    datos: DatosDeAlta,
+    errores: dict[str, str] | None = None,
+    especialidades: list[tuple[str, str]] | None = None,
+) -> str:
     return render_template(
         "usuarios/nuevo.html",
         datos=datos,
@@ -90,4 +103,15 @@ def _formulario(datos: DatosDeAlta, errores: dict[str, str] | None = None) -> st
         provincias=listar_provincias(),
         provincias_ocupadas=provincias_con_transportista(),
         largo_maximo=LARGO_MAXIMO,
+        especialidades=especialidades or [],
     )
+
+
+def _leer_especialidades() -> list[tuple[str, str]]:
+    especialidades = []
+    for valor in request.form.getlist("especialidad"):
+        if not valor.strip():
+            continue
+        codigo, _, termino = valor.partition("|")
+        especialidades.append((codigo.strip(), termino.strip()))
+    return especialidades

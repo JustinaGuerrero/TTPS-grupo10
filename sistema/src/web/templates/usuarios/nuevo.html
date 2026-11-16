@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% from "macros/formularios.html" import campo, error_de, atributos_de_error %}
+{% from "snomed/_buscador.html" import buscador %}
 
 {% block title %}Dar de alta usuario{% endblock %}
 
@@ -72,6 +73,16 @@
                        ayuda="Solo para médico tratante y gerente médico.") }}
             </div>
 
+            <div class="col-12" data-segun="rol_codigo"
+                 data-valores="{{ roles_con_matricula | join(' ') }}">
+              {{ buscador("buscar-especialidades", "especialidad", "Especialidades",
+                          especialidades, url_for("registro.especialidades"), multiple=True,
+                          ayuda="Buscá y elegí una o más especialidades.") }}
+              {% if "especialidades" in errores %}
+                <div class="text-danger small" role="alert">{{ errores.especialidades }}</div>
+              {% endif %}
+            </div>
+
             {# Transportista: su provincia. Hay un transportista por provincia. #}
             <div class="col-12 col-sm-6" data-segun="rol_codigo" data-valores="transportista">
               <label for="provincia_id" class="form-label">
@@ -107,4 +118,5 @@
 
 {% block scripts %}
   <script src="{{ url_for('static', filename='js/formularios.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/buscador_snomed.js') }}" defer></script>
 {% endblock %}
