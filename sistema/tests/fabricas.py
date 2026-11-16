@@ -163,3 +163,39 @@ def crear_patologia(usuario_rapido):
         return patologia
 
     return _crear
+
+
+@pytest.fixture
+def crear_presupuesto(usuario_rapido):
+    """Fábrica: `crear_presupuesto(estudio)` emite el presupuesto de un estudio en Creado.
+
+    Usa emitir_presupuesto() de core con un administrativo: deja al estudio Presupuestado, con su
+    asiento y su aviso. Hace commit. Llamarla dentro de un app_context.
+    """
+    from src.core.pagos import emitir_presupuesto
+
+    def _crear(estudio: Estudio):
+        administrativo = usuario_rapido(roles.ADMINISTRATIVO)
+        db.session.flush()
+        presupuesto = emitir_presupuesto(estudio, administrativo)
+        db.session.commit()
+        return presupuesto
+
+    return _crear
+
+
+@pytest.fixture
+def crear_obra_social():
+    """Fábrica: `crear_obra_social()` guarda una obra social y la devuelve. No hace commit."""
+    from src.core.obras_sociales import ObraSocial
+
+    numeros = itertools.count(1)
+
+    def _crear(nombre: str | None = None) -> ObraSocial:
+        numero = next(numeros)
+        obra_social = ObraSocial(codigo=f"OS-{numero}", nombre=nombre or f"Obra social {numero}")
+        db.session.add(obra_social)
+        db.session.flush()
+        return obra_social
+
+    return _crear
