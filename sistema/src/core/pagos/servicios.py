@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 import sqlalchemy as sa
 
+from src.core.coberturas.modelos import Cobertura, EstadoCobertura
 from src.core.cupones import ErrorDeCupon, calcular_descuento, consumir_cupon, resolver_cupon
 from src.core.database import db
 from src.core.estudios import EstadoEstudio, cambiar_estado
@@ -70,8 +71,16 @@ def presupuesto_de(estudio: Estudio) -> Presupuesto | None:
 
 
 def importe_final(presupuesto: Presupuesto) -> Decimal:
-    """Lo que paga el paciente. Hoy es el total; el issue de cupones le resta el descuento."""
-    return presupuesto.total_usd
+    """Lo que paga el paciente de forma particular: el total o, si la obra social autorizó una
+    cobertura parcial, la diferencia (supuestos O3 y O18). El cupón se resta aparte y solo sobre
+    el total (G6)."""
+    cubierto = db.session.scalar(
+        sa.select(Cobertura.importe_cubierto_usd).where(
+            Cobertura.estudio_id == presupuesto.estudio_id,
+            Cobertura.estado == EstadoCobertura.AUTORIZADA,
+        )
+    )
+    return presupuesto.total_usd - (cubierto or 0)
 
 
 def emitir_presupuesto(estudio: Estudio, administrativo: Usuario) -> Presupuesto:
@@ -116,6 +125,9 @@ def pagar_particular(
 ) -> Pago:
     """E14.4 a E14.6: pago único y simulado por el importe final; pasa a Habilitado para turno.
 
+    Si la obra social autorizó una cobertura parcial (E17), el importe final es la diferencia y el
+    estudio pasa de Pendiente de autorización a Habilitado para turno.
+
     Con `cupon_codigo` (E15, solo en el pago particular del total, G6) el importe final es el
     total menos el descuento del cupón: el pago guarda el cupón y el descuento, se registra el
     asiento descuento_cupon y se vence el cupón en el módulo antes de seguir.
@@ -128,10 +140,16 @@ def pagar_particular(
     if not paciente.tiene_rol(roles.PACIENTE) or estudio.paciente.usuario_id != paciente.id:
         raise ErrorDePago("Solo el paciente del estudio puede pagarlo.")
     presupuesto = presupuesto_de(estudio)
-    if presupuesto is None or estudio.estado != EstadoEstudio.PRESUPUESTADO:
+    # Con una cobertura parcial autorizada, el paciente paga la diferencia con el estudio todavía
+    # en Pendiente de autorización (O3, O18).
+    paga_diferencia = presupuesto is not None and importe_final(presupuesto) < presupuesto.total_usd
+    estado_esperado = (
+        EstadoEstudio.PENDIENTE_AUTORIZACION if paga_diferencia else EstadoEstudio.PRESUPUESTADO
+    )
+    if presupuesto is None or estudio.estado != estado_esperado:
         raise ErrorDePago(
             f"El estudio {estudio.codigo} está {estudio.estado.nombre}: "
-            "solo se paga un estudio Presupuestado."
+            "solo se paga un estudio Presupuestado o la diferencia de una cobertura autorizada."
         )
     ya_pagado = db.session.scalar(
         sa.select(Pago.id).where(Pago.estudio_id == estudio.id, Pago.tipo == TipoPago.PARTICULAR)
@@ -145,6 +163,11 @@ def pagar_particular(
     final = importe_final(presupuesto)
     cupon = None
     descuento = Decimal("0.00")
+    if cupon_codigo and paga_diferencia:
+        raise ErrorDePago(
+            "El cupón se usa solo en el pago particular del total, no en la diferencia de la "
+            "cobertura."
+        )
     if cupon_codigo:
         try:
             cupon = resolver_cupon(paciente, cupon_codigo)
