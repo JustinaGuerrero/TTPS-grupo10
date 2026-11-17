@@ -69,6 +69,8 @@ class Config:
         self.FAMILIOGRAMA_URL = os.getenv("FAMILIOGRAMA_URL")
         self.CUPONES_URL = os.getenv("CUPONES_URL")
         self.CUPONES_KEY = os.getenv("CUPONES_KEY")
+        self.OBRAS_SOCIALES_URL = os.getenv("OBRAS_SOCIALES_URL")
+        self.OBRAS_SOCIALES_KEY = os.getenv("OBRAS_SOCIALES_KEY")
         self.USE_MOCKS = _bool("USE_MOCKS")
         self.SEEDS_CONTRASENA = os.getenv("SEEDS_CONTRASENA")
 
