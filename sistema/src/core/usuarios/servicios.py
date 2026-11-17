@@ -104,3 +104,25 @@ def validar_credenciales(email: str, contrasena: str) -> Usuario | None:
     if not usuario.activo:
         return None
     return usuario
+
+
+def cambiar_contrasena_provisoria(
+    usuario: Usuario, nueva: str, confirmacion: str
+) -> dict[str, str]:
+    """Valida y actualiza la contraseña provisoria. No hace commit."""
+    if not usuario.debe_cambiar_contrasena:
+        raise ValueError("El usuario no tiene una contraseña provisoria pendiente.")
+
+    errores: dict[str, str] = {}
+    if len(nueva) < 8:
+        errores["contrasena"] = "La contraseña debe tener al menos 8 caracteres."
+    if nueva != confirmacion:
+        errores["confirmacion"] = "Las contraseñas no coinciden."
+    if check_password_hash(usuario.hash_contrasena, nueva):
+        errores["contrasena"] = "La contraseña nueva no puede ser igual a la provisoria."
+    if errores:
+        return errores
+
+    usuario.hash_contrasena = hashear_contrasena(nueva)
+    usuario.debe_cambiar_contrasena = False
+    return {}

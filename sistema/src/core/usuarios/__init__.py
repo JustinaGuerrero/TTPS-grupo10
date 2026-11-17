@@ -30,7 +30,14 @@ from src.core.usuarios.busqueda import (
     buscar_usuarios,
 )
 from src.core.usuarios.especialidades import MedicoEspecialidad
-from src.core.usuarios.modelos import Medico, Rol, Transportista, Usuario
+from src.core.usuarios.modelos import (
+    CodigoVerificacion,
+    DispositivoConfiable,
+    Medico,
+    Rol,
+    Transportista,
+    Usuario,
+)
 from src.core.usuarios.registro import (
     ROLES_DE_REGISTRO,
     DatosDeRegistro,
@@ -42,6 +49,7 @@ from src.core.usuarios.registro import (
 from src.core.usuarios.servicios import (
     buscar_por_email,
     buscar_por_id,
+    cambiar_contrasena_provisoria,
     crear_perfil_medico,
     crear_usuario,
     hashear_contrasena,
@@ -57,8 +65,10 @@ __all__ = [
     "USUARIOS_POR_PAGINA",
     "Alta",
     "BusquedaDeUsuarios",
+    "CodigoVerificacion",
     "DatosDeAlta",
     "DatosDeRegistro",
+    "DispositivoConfiable",
     "ErrorDeValidacion",
     "Medico",
     "MedicoEspecialidad",
@@ -68,6 +78,7 @@ __all__ = [
     "buscar_por_email",
     "buscar_por_id",
     "buscar_usuarios",
+    "cambiar_contrasena_provisoria",
     "crear_perfil_medico",
     "crear_usuario",
     "dar_de_alta_usuario",
