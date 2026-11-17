@@ -310,10 +310,10 @@ Los 100 centros del país. No operan el sistema. El horario (lunes a viernes de 
 |---|---|---|---|
 | id | bigint | PK | |
 | nombre | text | | |
-| direccion | text | | Se manda al módulo de optimización de recorridos |
+| direccion | text | | |
 | localidad | text | | |
 | provincia_id | bigint | FK → provincias | Define qué transportista lo visita |
-| latitud | numeric(9,6) | | Para mostrarlo en el mapa (E19) |
+| latitud | numeric(9,6) | | Para mostrarlo en el mapa (E19). Con la longitud, se manda al módulo de optimización de recorridos (E23) |
 | longitud | numeric(9,6) | | |
 | telefono | text | | |
 | telegram_chat_id | text | UK | Chat desde el que el centro escribe al bot de mensajería (E22) |

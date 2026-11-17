@@ -1,7 +1,8 @@
 """E23 Generar orden del día y E24 Retirar muestras, con el módulo de optimización de recorridos.
 
 Con USE_MOCKS=1 el módulo ordena por cercanía (src/integraciones/optimizacion.py). Para probar
-el orden que da el módulo y sus fallas, los tests le pasan un ClienteApi con httpx.MockTransport.
+el orden que da el módulo y sus fallas, los tests le pasan un ClienteApi con httpx.MockTransport
+que responde como el módulo real: las mismas coordenadas, con las del medio reordenadas.
 """
 
 import json
@@ -17,6 +18,7 @@ from src.core.database import db
 from src.core.estudios import EstadoEstudio, Estudio
 from src.core.logistica import OrdenDelDia
 from src.core.logistica.servicios import (
+    LABORATORIO_CENTRAL,
     ErrorDeRetiro,
     buscar_parada,
     generar_ordenes,
@@ -56,15 +58,31 @@ def muestra_lista(crear_estudio, crear_turno, crear_muestra):
 
 
 def _modulo(responder) -> ClienteApi:
-    """Un módulo de recorridos de prueba: `responder(ids_enviados)` devuelve la respuesta."""
+    """Un módulo de recorridos de prueba: `responder(coordenadas)` recibe las coordenadas que se
+    mandaron (partida, centros y llegada) y devuelve la respuesta."""
 
     def handler(pedido: httpx.Request) -> httpx.Response:
-        ids = [punto["id"] for punto in json.loads(pedido.content)["puntos"]]
-        return responder(ids)
+        assert pedido.url.path == "/api/optimizacion"
+        return responder(json.loads(pedido.content)["coordenadas"])
 
     return ClienteApi(
-        optimizacion.NOMBRE, "https://recorridos.test", transport=httpx.MockTransport(handler)
+        optimizacion.NOMBRE,
+        "https://recorridos.test/api",
+        transport=httpx.MockTransport(handler),
     )
+
+
+def _reordenado(orden):
+    """Respuesta del módulo con las coordenadas del medio en `orden` (posiciones desde 0)."""
+
+    def responder(coordenadas):
+        medio = coordenadas[1:-1]
+        return httpx.Response(
+            200,
+            json={"coordenadas": [coordenadas[0], *(medio[i] for i in orden), coordenadas[-1]]},
+        )
+
+    return responder
 
 
 def _avisos_de(usuario):
@@ -101,44 +119,118 @@ def test_el_mock_ordena_por_cercania_desde_el_primero():
     assert optimizacion.por_cercania(puntos) == [1, 3, 4, 2]
 
 
-def test_ordenar_manda_las_direcciones_y_devuelve_el_orden_del_modulo(app):
-    enviados = []
+def test_el_mock_arranca_por_el_mas_cercano_a_la_partida():
+    puntos = [_punto(1, 0, 0), _punto(2, 0, 10), _punto(3, 0, 1), _punto(4, 0, 4)]
+    partida = optimizacion.Coordenada(Decimal(0), Decimal(9))
 
-    def handler(pedido: httpx.Request) -> httpx.Response:
-        enviados.append(json.loads(pedido.content))
-        return httpx.Response(200, json={"orden": [3, 1, 2]})
+    assert optimizacion.por_cercania(puntos, desde=partida) == [2, 4, 3, 1]
 
-    cliente = ClienteApi(
-        "Recorridos", "https://recorridos.test", transport=httpx.MockTransport(handler)
-    )
+
+def test_ordenar_manda_las_coordenadas_y_devuelve_el_orden_del_modulo(app):
+    enviadas = []
+
+    def responder(coordenadas):
+        enviadas.append(coordenadas)
+        return _reordenado([2, 0, 1])(coordenadas)
+
     puntos = [_punto(1, -34.9, -57.9), _punto(2, -34.7, -58.2), _punto(3, -38.0, -57.5)]
+    partida = optimizacion.Coordenada(Decimal("-34.921400"), Decimal("-57.954500"))
 
-    assert optimizacion.ordenar(puntos, cliente=cliente) == [3, 1, 2]
-    (cuerpo,) = enviados
-    assert cuerpo["puntos"][0] == {
-        "id": 1,
-        "direccion": "Dirección 1",
-        "latitud": -34.9,
-        "longitud": -57.9,
-    }
+    with app.app_context():
+        orden = optimizacion.ordenar(puntos, partida=partida, cliente=_modulo(responder))
+
+    assert orden == [3, 1, 2]
+    (coordenadas,) = enviadas
+    assert coordenadas == [
+        {"lat": -34.9214, "lon": -57.9545},
+        {"lat": -34.9, "lon": -57.9},
+        {"lat": -34.7, "lon": -58.2},
+        {"lat": -38.0, "lon": -57.5},
+        {"lat": -34.9214, "lon": -57.9545},
+    ]
+
+
+def test_la_llegada_puede_ser_otra_que_la_partida(app):
+    enviadas = []
+
+    def responder(coordenadas):
+        enviadas.append(coordenadas)
+        return _reordenado([0])(coordenadas)
+
+    partida = optimizacion.Coordenada(Decimal(1), Decimal(1))
+    llegada = optimizacion.Coordenada(Decimal(2), Decimal(2))
+
+    with app.app_context():
+        orden = optimizacion.ordenar(
+            [_punto(7, 0, 0)], partida=partida, llegada=llegada, cliente=_modulo(responder)
+        )
+
+    assert orden == [7]
+    assert enviadas[0][0] == {"lat": 1.0, "lon": 1.0}
+    assert enviadas[0][-1] == {"lat": 2.0, "lon": 2.0}
+
+
+def test_dos_centros_en_el_mismo_lugar_salen_los_dos(app):
+    puntos = [_punto(1, 0, 0), _punto(2, -1, -1), _punto(3, 0, 0)]
+
+    with app.app_context():
+        orden = optimizacion.ordenar(
+            puntos,
+            partida=optimizacion.Coordenada(Decimal(5), Decimal(5)),
+            cliente=_modulo(_reordenado([1, 0, 2])),
+        )
+
+    assert orden == [2, 1, 3]
+
+
+def test_sin_puntos_no_llama_al_modulo(app):
+    def responder(_):
+        raise AssertionError("no tenía que llamar al módulo")
+
+    partida = optimizacion.Coordenada(Decimal(0), Decimal(0))
+
+    assert optimizacion.ordenar([], partida=partida, cliente=_modulo(responder)) == []
+
+
+def _respuesta(cuerpo, status=200):
+    return lambda _: httpx.Response(status, json=cuerpo)
+
+
+PARTIDA = {"lat": 5.0, "lon": 5.0}
+A = {"lat": 0.0, "lon": 0.0}
+B = {"lat": 0.0, "lon": 1.0}
 
 
 @pytest.mark.parametrize(
-    "respuesta",
+    "responder",
     [
-        pytest.param(httpx.Response(200, json={"orden": [1]}), id="falta un centro"),
-        pytest.param(httpx.Response(200, json={"orden": [1, 2, 2]}), id="centro repetido"),
-        pytest.param(httpx.Response(200, json=[1, 2]), id="sin orden"),
-        pytest.param(httpx.Response(500, json={"message": "caído"}), id="error interno"),
+        pytest.param(_respuesta({"coordenadas": [PARTIDA, A, PARTIDA]}), id="falta un centro"),
+        pytest.param(_respuesta({"coordenadas": [PARTIDA, A, A, PARTIDA]}), id="centro repetido"),
+        pytest.param(
+            _respuesta({"coordenadas": [PARTIDA, A, {"lat": 9.0, "lon": 9.0}, PARTIDA]}),
+            id="coordenada que no se mandó",
+        ),
+        pytest.param(_respuesta({"coordenadas": [A, PARTIDA, B, PARTIDA]}), id="cambió la partida"),
+        pytest.param(_respuesta({"coordenadas": [PARTIDA, A, B, B]}), id="cambió la llegada"),
+        pytest.param(
+            _respuesta({"coordenadas": [PARTIDA, A, {"lat": "0", "lon": 1.0}, PARTIDA]}),
+            id="latitud que no es un número",
+        ),
+        pytest.param(_respuesta([PARTIDA, A, B, PARTIDA]), id="sin coordenadas"),
+        pytest.param(
+            _respuesta({"errores_validacion": {"coordenadas": ["Missing data"]}}, 422),
+            id="datos inválidos",
+        ),
+        pytest.param(_respuesta({"error": "OSRM"}, 500), id="error interno"),
     ],
 )
-def test_una_respuesta_invalida_del_modulo_es_un_error(app, respuesta):
-    cliente = ClienteApi(
-        "Recorridos", "https://recorridos.test", transport=httpx.MockTransport(lambda _: respuesta)
-    )
+def test_una_respuesta_invalida_del_modulo_es_un_error(app, responder):
+    partida = optimizacion.Coordenada(Decimal(5), Decimal(5))
 
-    with pytest.raises(ErrorDeIntegracion):
-        optimizacion.ordenar([_punto(1, 0, 0), _punto(2, 0, 1)], cliente=cliente)
+    with app.app_context(), pytest.raises(ErrorDeIntegracion):
+        optimizacion.ordenar(
+            [_punto(1, 0, 0), _punto(2, 0, 1)], partida=partida, cliente=_modulo(responder)
+        )
 
 
 # --- E23 Generar orden del día ---
@@ -229,14 +321,27 @@ def test_las_paradas_respetan_el_orden_del_modulo(
         centros = [crear_centro("Buenos Aires") for _ in range(3)]
         for centro in centros:
             muestra_lista(centro)
+        # En lugares distintos: el módulo solo devuelve coordenadas.
+        for numero, centro in enumerate(centros):
+            centro.latitud = Decimal("-34.900000") - numero
         db.session.commit()
-        invierte = _modulo(lambda ids: httpx.Response(200, json={"orden": ids[::-1]}))
+        enviadas = []
 
-        generar_ordenes(MIERCOLES, cliente=invierte)
+        def invierte(coordenadas):
+            enviadas.append(coordenadas)
+            return _reordenado([2, 1, 0])(coordenadas)
+
+        generar_ordenes(MIERCOLES, cliente=_modulo(invierte))
 
         orden = orden_de(transportista.usuario, MIERCOLES)
         assert [p.centro_id for p in orden.paradas] == [c.id for c in reversed(centros)]
         assert [p.posicion for p in orden.paradas] == [1, 2, 3]
+        # Sale del laboratorio central y vuelve ahí (E26).
+        laboratorio = {
+            "lat": float(LABORATORIO_CENTRAL.latitud),
+            "lon": float(LABORATORIO_CENTRAL.longitud),
+        }
+        assert enviadas[0][0] == enviadas[0][-1] == laboratorio
 
 
 def test_con_el_modulo_caido_no_hay_orden_y_se_avisa(

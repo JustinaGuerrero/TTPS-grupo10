@@ -2,9 +2,10 @@
 
 Cada mañana hábil el sistema reúne, por provincia, los centros de extracción con muestras listas
 para retirar (centros_con_muestras_listas de core/muestras), le pide el orden del recorrido al
-módulo de optimización y le asigna la orden al transportista de la provincia. El transportista
-registra el retiro centro por centro, en el orden que dio el módulo: no se puede saltear una
-parada (G10: cada retiro se lleva todas las muestras listas del centro).
+módulo de optimización y le asigna la orden al transportista de la provincia. El recorrido sale
+del laboratorio central y vuelve ahí con las muestras (E26). El transportista registra el retiro
+centro por centro, en el orden que dio el módulo: no se puede saltear una parada (G10: cada
+retiro se lleva todas las muestras listas del centro).
 
 Ninguna función hace commit: lo decide el controlador o la tarea programada. `ahora` y `cliente`
 son para los tests.
@@ -12,6 +13,7 @@ son para los tests.
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 
 import sqlalchemy as sa
 
@@ -33,6 +35,9 @@ from src.integraciones.base import ClienteApi, ErrorDeIntegracion
 
 LINK_DE_LA_ORDEN = "/orden-del-dia"
 LINK_DE_LAS_ORDENES = "/ordenes-del-dia"
+# Extremos del recorrido que pide el módulo de optimización: el transportista sale del laboratorio
+# central y vuelve ahí con las muestras (E26). El enunciado no da la dirección: se asume La Plata.
+LABORATORIO_CENTRAL = optimizacion.Coordenada(Decimal("-34.921400"), Decimal("-57.954500"))
 
 
 class ErrorDeRetiro(ValueError):
@@ -133,7 +138,8 @@ def _crear_orden(
         optimizacion.Punto(centro.id, centro.direccion_completa, centro.latitud, centro.longitud)
         for centro in centros
     ]
-    recorrido = [por_id[centro_id] for centro_id in optimizacion.ordenar(puntos, cliente=cliente)]
+    ids = optimizacion.ordenar(puntos, partida=LABORATORIO_CENTRAL, cliente=cliente)
+    recorrido = [por_id[centro_id] for centro_id in ids]
 
     orden = OrdenDelDia(transportista_id=transportista.usuario_id, fecha=fecha)
     db.session.add(orden)
