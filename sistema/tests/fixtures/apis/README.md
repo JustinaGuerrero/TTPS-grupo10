@@ -56,3 +56,14 @@ Contrato en `docs/apis/cupones.md`.
 | `asignar_a_paciente(m, p, "X")` | `asignar_a_paciente_X.json` (`YACANJE1`: 409) | `asignar_a_paciente.json`: `true` |
 | `consultar("X")` | `cupones_X.json` | `cupones.json`: listado con los códigos de prueba (`VENCIDO01` usado, `EXPIRADO1` vencido) |
 | `canjear(p, "X")` | `canjear_X.json` (`CAIDO001`: 503) | `canjear.json`: `true` |
+
+## Obras sociales (`obras_sociales/`)
+
+Borrador en `docs/apis/obras_sociales.md`.
+
+| Función | Archivo | Si no hay archivo |
+| --- | --- | --- |
+| `listar()` | `listar.json` (al 100 %, al 70 % y al 40 %) | Error: no hay respuesta simulada |
+| `alta_estudio(...)` | `alta_estudio.json` (`MOD-OS-0001`) | Error: no hay respuesta simulada |
+| `estado_estudio("X")` | `estado_estudio_X.json` | `estado_estudio.json`: `autorizado` |
+
