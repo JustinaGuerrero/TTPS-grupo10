@@ -18,7 +18,7 @@ from src.core.database import db
 from src.core.demo import camino_desde_creado
 from src.core.estudios import EstadoEstudio, Estudio, cambiar_estado
 from src.core.estudios import crear_estudio as crear_estudio_en_core
-from src.core.pacientes import Paciente, TipoSospecha
+from src.core.pacientes import Familiar, Paciente, TipoSospecha
 from src.core.patologias import Patologia
 from src.core.patologias import crear_patologia as crear_patologia_en_core
 from src.core.snomed import SINTOMA, guardar_termino
@@ -39,6 +39,30 @@ def crear_usuario(app):
         with app.app_context():
             usuario = crear_usuario_en_core(email, CONTRASENA_DE_TEST, "Nombre", "De Test", rol)
             usuario.activo = activo
+            db.session.commit()
+        return email
+
+    return _crear
+
+
+@pytest.fixture
+def crear_medico(app):
+    """Fábrica de médico tratante con perfil válido para las rutas de alta clínica."""
+    numeros = itertools.count(1)
+
+    def _crear() -> str:
+        numero = next(numeros)
+        email = f"medico.alta.{numero}@exoma.test"
+        with app.app_context():
+            usuario = crear_usuario_en_core(
+                email,
+                CONTRASENA_DE_TEST,
+                "Médico",
+                f"De Prueba {numero}",
+                roles.MEDICO_TRATANTE,
+                telefono="2215551234",
+            )
+            crear_perfil_medico(usuario, f"MP-ALTA-{numero:04d}")
             db.session.commit()
         return email
 
@@ -92,6 +116,25 @@ def crear_paciente(usuario_rapido):
         db.session.add(paciente)
         db.session.flush()
         return paciente
+
+    return _crear
+
+
+@pytest.fixture
+def crear_familiar():
+    """Fábrica de familiar asociado a un paciente. No hace commit."""
+    numeros = itertools.count(1)
+
+    def _crear(paciente: Paciente, *, dni: str | None = None) -> Familiar:
+        familiar = Familiar(
+            paciente=paciente,
+            parentesco="hermano",
+            nombre=f"Familiar {next(numeros)}",
+            dni=dni,
+        )
+        db.session.add(familiar)
+        db.session.flush()
+        return familiar
 
     return _crear
 
