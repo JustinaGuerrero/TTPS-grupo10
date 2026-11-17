@@ -59,11 +59,13 @@ Contrato en `docs/apis/cupones.md`.
 
 ## Obras sociales (`obras_sociales/`)
 
-Borrador en `docs/apis/obras_sociales.md`.
+Contrato del grupo 9 en `docs/apis/obras_sociales.md`. Las respuestas tienen la forma real del
+módulo, con datos inventados.
 
 | Función | Archivo | Si no hay archivo |
 | --- | --- | --- |
 | `listar()` | `listar.json` (al 100 %, al 70 % y al 40 %) | Error: no hay respuesta simulada |
-| `alta_estudio(...)` | `alta_estudio.json` (`MOD-OS-0001`) | Error: no hay respuesta simulada |
-| `estado_estudio("X")` | `estado_estudio_X.json` | `estado_estudio.json`: `autorizado` |
-
+| `alta_estudio(...)` | `alta_estudio.json` (solicitud pendiente) | Error: no hay respuesta simulada |
+| `estado_estudio("X")` | `estado_estudio_X.json` | `estado_estudio.json`: `autorizada` con el porcentaje de la lista |
+| `presentar_demanda("X", pdf)` | `presentar_demanda.json` (`demanda_en_curso`) | Error: no hay respuesta simulada |
+| `simular_autorizacion` / `simular_rechazo` | `simular_autorizacion.json` / `simular_rechazo.json` | Error: no hay respuesta simulada |

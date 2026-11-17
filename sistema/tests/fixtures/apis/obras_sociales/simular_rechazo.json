@@ -1,0 +1,21 @@
+{
+  "id": "5b1f0c0a-0000-4000-8000-000000000001",
+  "estado": "rechazada",
+  "obra_social": {
+    "id": "0b9e4f8a-0000-4000-8000-000000000070",
+    "rnos_codigo": "OS-070",
+    "nombre": "Obra Social de Prueba Parcial"
+  },
+  "paciente_nombre": "Paciente De Prueba",
+  "fecha": "2026-11-17",
+  "referencia_externa": "EX-2026-00001",
+  "porcentaje_cobertura": null,
+  "motivo_rechazo": "Rechazo simulado",
+  "resuelta_at": "2026-11-17T14:10:00.000Z",
+  "creada_at": "2026-11-17T14:03:21.000Z",
+  "demandas_presentadas": 0,
+  "urls_simulacion": {
+    "autorizar": "https://obras-sociales.test/simulacion/9a8b7c6d-0000-4000-8000-000000000001/autorizar",
+    "rechazar": "https://obras-sociales.test/simulacion/9a8b7c6d-0000-4000-8000-000000000001/rechazar"
+  }
+}
