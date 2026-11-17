@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block title %}Usar mi obra social{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('pagos.presupuesto', estudio_id=estudio.id) }}">Mi presupuesto</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Obra social</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-2">Usar mi obra social</h1>
+  <p class="text-body-secondary">
+    Elegí tu obra social. El laboratorio le pide la autorización y te avisamos cuando responda.
+    Si cubre menos del 100 %, después pagás la diferencia.
+  </p>
+
+  {% if obras is none %}
+    <p class="text-body-secondary" id="api-caida">
+      No pudimos traer la lista de obras sociales. Probá de nuevo en unos minutos.
+    </p>
+  {% elif not obras %}
+    <p class="text-body-secondary" id="sin-obras">No hay obras sociales disponibles.</p>
+  {% else %}
+    <form method="post" action="{{ url_for('coberturas.pedir', estudio_id=estudio.id) }}"
+          class="card shadow-sm" style="max-width: 40rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="list-group list-group-flush" id="obras-sociales">
+        {% for obra in obras %}
+          <label class="list-group-item d-flex justify-content-between align-items-center gap-3">
+            <span>
+              <input class="form-check-input me-2" type="radio" name="codigo" value="{{ obra.codigo }}" required>
+              {{ obra.nombre }}
+            </span>
+            <span class="text-nowrap">
+              <span class="badge text-bg-primary">{{ obra.porcentaje.normalize() }} %</span>
+              {% if presupuesto %}
+                <span class="small text-body-secondary ms-1">
+                  cubre {{ (presupuesto.total_usd * obra.porcentaje / 100) | round(2) }} USD
+                </span>
+              {% endif %}
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="card-body">
+        <button type="submit" class="btn btn-primary">Pedir la cobertura</button>
+        <a class="btn btn-link" href="{{ url_for('pagos.presupuesto', estudio_id=estudio.id) }}">Volver</a>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}
