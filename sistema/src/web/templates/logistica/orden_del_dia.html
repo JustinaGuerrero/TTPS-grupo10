@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block title %}Orden del día{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-1">Orden del día</h1>
+
+  {% if orden is none %}
+    <p class="text-body-secondary" id="sin-orden">
+      Hoy no tenés centros para visitar. Cuando haya muestras listas para retirar en tu provincia,
+      la orden llega a la mañana por mail y en tus avisos.
+    </p>
+  {% else %}
+    <p class="text-body-secondary mb-3">
+      {{ orden.transportista.provincia.nombre }} · {{ orden.fecha.strftime("%d/%m/%Y") }} ·
+      {{ orden.paradas | selectattr("retirado_en") | list | length }} de {{ orden.paradas | length }} centros retirados
+    </p>
+
+    {% if siguiente is none %}
+      <div class="alert alert-success" id="recorrido-completo">
+        Retiraste las muestras de todos los centros. Llevalas al laboratorio central.
+      </div>
+    {% else %}
+      <p class="small text-body-secondary">
+        El orden del recorrido es fijo: registrá el retiro en cada centro cuando te entreguen las muestras.
+      </p>
+    {% endif %}
+
+    <ol class="list-unstyled d-grid gap-3" id="paradas">
+      {% for parada in orden.paradas %}
+        {% set es_siguiente = siguiente is not none and parada.posicion == siguiente.posicion %}
+        <li class="card shadow-sm {% if es_siguiente %}border-primary{% endif %}" id="parada-{{ parada.posicion }}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <h2 class="h5 mb-1">{{ parada.posicion }}. {{ parada.centro.nombre }}</h2>
+              {% if parada.retirado_en %}
+                <span class="badge text-bg-success">Retirado</span>
+              {% elif es_siguiente %}
+                <span class="badge text-bg-primary">Siguiente</span>
+              {% else %}
+                <span class="badge text-bg-secondary">Pendiente</span>
+              {% endif %}
+            </div>
+            <p class="mb-1">{{ parada.centro.direccion_completa }}</p>
+            <p class="small text-body-secondary mb-2">
+              Tel. <a href="tel:{{ parada.centro.telefono }}">{{ parada.centro.telefono }}</a> ·
+              <a href="https://www.google.com/maps/dir/?api=1&destination={{ parada.centro.latitud }},{{ parada.centro.longitud }}"
+                 target="_blank" rel="noopener">Cómo llegar</a>
+            </p>
+
+            {% if parada.retirado_en %}
+              <p class="small mb-0">
+                Retiraste {{ muestras[parada.posicion] }} muestra{{ "s" if muestras[parada.posicion] != 1 }}
+                el {{ parada.retirado_en | fecha_hora }}.
+              </p>
+            {% else %}
+              <p class="small mb-2">
+                {{ muestras[parada.posicion] }} muestra{{ "s" if muestras[parada.posicion] != 1 }} para retirar.
+              </p>
+              {% if es_siguiente %}
+                <form method="post"
+                      action="{{ url_for('logistica.registrar_retiro_de_parada', posicion=parada.posicion) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-primary btn-lg w-100">Registrar el retiro</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+{% endblock %}
