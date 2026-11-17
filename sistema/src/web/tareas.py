@@ -24,6 +24,7 @@ from apscheduler.triggers.cron import CronTrigger
 from flask import Flask
 
 from src.core.calendario import ZONA_HORARIA
+from src.core.coberturas import consultar_respuestas
 from src.core.database import db
 from src.core.logistica.servicios import generar_ordenes
 from src.core.muestras import procesar_inasistencias
@@ -49,6 +50,8 @@ TAREAS: list[Tarea] = [
     ),
     # E23: los días hábiles a las 7, la orden del día de cada provincia con muestras para retirar.
     Tarea("ordenes_del_dia", generar_ordenes, {"day_of_week": "mon-fri", "hour": 7}),
+    # G22: cada 30 minutos, las respuestas que las obras sociales cargaron en su módulo.
+    Tarea("respuestas_obras_sociales", consultar_respuestas, {"minute": "*/30"}),
 ]
 
 _planificador: BackgroundScheduler | None = None

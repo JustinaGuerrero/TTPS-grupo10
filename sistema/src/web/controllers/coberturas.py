@@ -1,12 +1,23 @@
 """Controlador de la cobertura de obra social (E16 Solicitar, E17 Autorizar, E18 Reautorización).
 
 El paciente elige su obra social desde su presupuesto y, si la obra social rechaza, sube la
-resolución judicial. El administrativo registra la respuesta de la obra social. El controlador
-valida la forma del pedido, llama a core, decide el commit y renderiza. Un estudio de otro
-paciente responde 404.
+resolución judicial. Después del commit de cada pedido, el estudio se da de alta en el módulo de
+obras sociales, donde responde la obra social (G22); el administrativo consulta esas respuestas o,
+si el módulo no responde, registra la respuesta a mano. El controlador valida la forma del pedido,
+llama a core, decide el commit y renderiza. Un estudio de otro paciente responde 404.
 """
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from src.core.coberturas import (
     ErrorDeCobertura,
@@ -14,6 +25,8 @@ from src.core.coberturas import (
     buscar_cobertura,
     cargar_demanda,
     cobertura_de,
+    consultar_respuestas,
+    dar_de_alta_en_modulo,
     opciones,
     pendientes,
     rechazar,
@@ -68,6 +81,7 @@ def pedir(estudio_id: int):
         flash(error.mensaje if isinstance(error, ErrorDeIntegracion) else str(error), "error")
         return redirect(url_for("coberturas.elegir", estudio_id=estudio.id))
     db.session.commit()
+    _dar_de_alta_en_el_modulo(cobertura)
     flash(
         f"Pediste la cobertura de {cobertura.obra_social.nombre}. Te avisamos cuando responda.",
         "exito",
@@ -107,6 +121,7 @@ def cargar_reautorizacion(estudio_id: int):
         flash(error.mensaje if isinstance(error, ErrorDeIntegracion) else str(error), "error")
         return redirect(url_for("coberturas.reautorizacion", estudio_id=estudio.id))
     db.session.commit()
+    _dar_de_alta_en_el_modulo(cobertura_de(estudio))
     flash("Cargaste la resolución judicial. Te avisamos cuando responda la obra social.", "exito")
     return redirect(url_for("pagos.presupuesto", estudio_id=estudio.id))
 
@@ -126,6 +141,17 @@ def pendientes_de_respuesta():
         cubriria = round(total * cobertura.porcentaje / 100, 2) if total is not None else None
         filas.append((cobertura, total, cubriria))
     return render_template("coberturas/pendientes.html", filas=filas)
+
+
+@bp.post("/coberturas/consultar")
+@login_required
+@rol_requerido(roles.ADMINISTRATIVO)
+def consultar_modulo():
+    """G22 a mano: consulta ya las respuestas del módulo, sin esperar la tarea de cada 30 min."""
+    consulta = consultar_respuestas()
+    db.session.commit()
+    flash(f"Módulo de obras sociales: {consulta}", "error" if consulta.con_error else "exito")
+    return redirect(url_for("coberturas.pendientes_de_respuesta"))
 
 
 @bp.post("/coberturas/<int:cobertura_id>/autorizar")
@@ -183,6 +209,22 @@ def resolucion_pdf(cobertura_id: int):
 
 
 # --- helpers ---------------------------------------------------------------------------------
+
+
+def _dar_de_alta_en_el_modulo(cobertura) -> None:
+    """G22: después del commit del pedido. Si el módulo falla, el pedido ya quedó guardado y la
+    tarea respuestas_obras_sociales lo da de alta en la próxima corrida."""
+    try:
+        dar_de_alta_en_modulo(cobertura)
+    except ErrorDeIntegracion as error:
+        db.session.rollback()
+        current_app.logger.warning(
+            "El estudio %s no se dio de alta en el módulo de obras sociales: %s",
+            cobertura.estudio.codigo,
+            error.mensaje,
+        )
+        return
+    db.session.commit()
 
 
 def _estudio_propio_o_404(estudio_id: int):

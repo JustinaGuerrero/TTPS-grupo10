@@ -4,14 +4,18 @@ El contrato todavía no está publicado: este cliente asume la interfaz del borr
 provisoria. Cuando llegue el contrato real, cambia solo este archivo.
 
 - listar() → [ObraSocialEnApi(codigo, nombre, porcentaje)]
+- alta_estudio(codigo_obra_social, nombre_paciente, fecha) → id del estudio en el módulo (G22)
+- estado_estudio(id) → RespuestaDelModulo(estado, motivo): pendiente, autorizado o rechazado
 
 Lanza ErrorDeIntegracion (src/integraciones/base.py) con un mensaje para mostrar. Con
-USE_MOCKS=1 responde con tests/fixtures/apis/obras_sociales/listar.json. Acepta `cliente=` para
-los tests.
+USE_MOCKS=1 responde con tests/fixtures/apis/obras_sociales/ (listar.json, alta_estudio.json y
+estado_estudio_<id>.json o, si no hay, estado_estudio.json). Acepta `cliente=` para los tests.
 """
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal, InvalidOperation
+from enum import StrEnum
 
 from flask import current_app
 
@@ -61,3 +65,55 @@ def listar(*, cliente: ClienteApi | None = None) -> list[ObraSocialEnApi]:
     if any(not o.codigo or not 0 <= o.porcentaje <= 100 for o in obras):
         raise cliente.formato_inesperado()
     return sorted(obras, key=lambda obra: obra.nombre)
+
+
+class EstadoEnModulo(StrEnum):
+    PENDIENTE = "pendiente"
+    AUTORIZADO = "autorizado"
+    RECHAZADO = "rechazado"
+
+
+@dataclass(frozen=True)
+class RespuestaDelModulo:
+    estado: EstadoEnModulo
+    # El motivo que cargó la obra social al rechazar, si lo cargó.
+    motivo: str | None = None
+
+
+def alta_estudio(
+    codigo_obra_social: str,
+    nombre_paciente: str,
+    fecha: date,
+    *,
+    cliente: ClienteApi | None = None,
+) -> str:
+    """G22: da de alta el estudio en el módulo, para que la obra social lo autorice o lo rechace
+    en su web. Solo van la obra social, el nombre del paciente y la fecha: ni DNI ni datos
+    clínicos. Devuelve el id del estudio en el módulo."""
+    cliente = cliente or cliente_por_defecto()
+    cuerpo = {
+        "obra_social": codigo_obra_social,
+        "paciente": nombre_paciente,
+        "fecha": fecha.isoformat(),
+    }
+    datos = cliente.post("estudios", mock="alta_estudio", json=cuerpo).datos
+    id_estudio = datos.get("id") if isinstance(datos, dict) else None
+    if not isinstance(id_estudio, str | int) or isinstance(id_estudio, bool) or not str(id_estudio):
+        raise cliente.formato_inesperado()
+    return str(id_estudio)
+
+
+def estado_estudio(id_estudio: str, *, cliente: ClienteApi | None = None) -> RespuestaDelModulo:
+    """G22: la respuesta de la obra social a un estudio dado de alta en el módulo."""
+    cliente = cliente or cliente_por_defecto()
+    datos = cliente.get(
+        f"estudios/{id_estudio}", mock=[f"estado_estudio_{id_estudio}", "estado_estudio"]
+    ).datos
+    if not isinstance(datos, dict):
+        raise cliente.formato_inesperado()
+    try:
+        estado = EstadoEnModulo(datos.get("estado"))
+    except ValueError:
+        raise cliente.formato_inesperado() from None
+    motivo = datos.get("motivo")
+    return RespuestaDelModulo(estado, str(motivo).strip() or None if motivo else None)

@@ -8,17 +8,24 @@ validaciones van antes de escribir.
 Cobertura parcial (supuestos O3 y O18): si la obra social cubre menos del 100 %, la cobertura
 queda autorizada pero el estudio sigue en Pendiente de autorización hasta que el paciente paga la
 diferencia con el pago particular (core/pagos); recién ahí pasa a Habilitado para turno.
+
+Módulo de obras sociales (G22): al elegir la obra social, el controlador da de alta el estudio en
+el módulo después del commit (dar_de_alta_en_modulo). La obra social responde en la web del
+módulo y la tarea programada consultar_respuestas aplica autorizar o rechazar sin usuario. Si el
+módulo no responde, el administrativo registra la respuesta a mano, como antes.
 """
 
-from datetime import datetime
+import logging
+from dataclasses import dataclass, field
+from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 import sqlalchemy as sa
 
-from src.core.calendario import ahora
+from src.core.calendario import ZONA_HORARIA, ahora
 from src.core.coberturas.modelos import Cobertura, DemandaReautorizacion, EstadoCobertura
 from src.core.database import db
-from src.core.estudios import EstadoEstudio, cambiar_estado
+from src.core.estudios import EstadoEstudio, TransicionInvalida, cambiar_estado
 from src.core.estudios.modelos import Estudio
 from src.core.finanzas.modelos import Pago, TipoAsiento, TipoPago
 from src.core.finanzas.servicios import registrar_asiento
@@ -29,12 +36,14 @@ from src.core.usuarios import listar_activos_por_rol, roles
 from src.core.usuarios.modelos import Usuario
 from src.integraciones import obras_sociales as api_de_obras_sociales
 from src.integraciones import storage
-from src.integraciones.base import ClienteApi
-from src.integraciones.obras_sociales import ObraSocialEnApi
+from src.integraciones.base import ClienteApi, ErrorDeIntegracion
+from src.integraciones.obras_sociales import EstadoEnModulo, ObraSocialEnApi
 
 # E18: la resolución judicial se sube en PDF, de hasta 5 MB.
 TAMANO_MAXIMO_DE_LA_RESOLUCION = 5 * 1024 * 1024
 CENTAVOS = Decimal("0.01")
+
+log = logging.getLogger(__name__)
 
 
 class ErrorDeCobertura(ValueError):
@@ -121,8 +130,8 @@ def solicitar(
             administrativo,
             "Cobertura para autorizar",
             f"El paciente del estudio {estudio.codigo} eligió {obra_social.nombre} "
-            f"({_porcentaje(cobertura)} de cobertura). Pedile la autorización a la obra social "
-            "y registrá su respuesta.",
+            f"({_porcentaje(cobertura)} de cobertura). El pedido va al módulo de obras sociales "
+            "y la respuesta se toma de ahí; si el módulo no responde, registrala a mano.",
             "/coberturas",
             estudio=estudio,
         )
@@ -144,12 +153,13 @@ def _guardar_obra_social(elegida: ObraSocialEnApi) -> ObraSocial:
 # --- E17 Autorizar cobertura ------------------------------------------------------------------
 
 
-def autorizar(cobertura: Cobertura, administrativo: Usuario) -> Pago:
+def autorizar(cobertura: Cobertura, administrativo: Usuario | None) -> Pago:
     """E17.1 a E17.3 y E17.6: una autorización equivale a un pago de la obra social.
 
     Registra el pago de tipo obra_social y el asiento cobertura_obra_social por el total del
     presupuesto por el porcentaje. Al 100 % el estudio pasa a Habilitado para turno; con menos,
     sigue en Pendiente de autorización hasta que el paciente paga la diferencia. Avisa al paciente.
+    `administrativo` es None cuando la respuesta llegó del módulo de obras sociales (G22).
     """
     estudio = _pendiente_de_respuesta(cobertura, administrativo)
     importe = (_total(estudio) * cobertura.porcentaje / 100).quantize(CENTAVOS, ROUND_HALF_UP)
@@ -193,8 +203,13 @@ def autorizar(cobertura: Cobertura, administrativo: Usuario) -> Pago:
     return pago
 
 
-def rechazar(cobertura: Cobertura, administrativo: Usuario, motivo: str | None = None) -> Cobertura:
-    """E17.4 a E17.6: pasa el estudio a Rechazado por obra social y avisa al paciente."""
+def rechazar(
+    cobertura: Cobertura, administrativo: Usuario | None, motivo: str | None = None
+) -> Cobertura:
+    """E17.4 a E17.6: pasa el estudio a Rechazado por obra social y avisa al paciente.
+
+    `administrativo` es None cuando la respuesta llegó del módulo de obras sociales (G22).
+    """
     estudio = _pendiente_de_respuesta(cobertura, administrativo)
     motivo = (motivo or "").strip() or None
     cobertura.estado = EstadoCobertura.RECHAZADA
@@ -212,8 +227,8 @@ def rechazar(cobertura: Cobertura, administrativo: Usuario, motivo: str | None =
     return cobertura
 
 
-def _pendiente_de_respuesta(cobertura: Cobertura, administrativo: Usuario) -> Estudio:
-    if not administrativo.tiene_rol(roles.ADMINISTRATIVO):
+def _pendiente_de_respuesta(cobertura: Cobertura, administrativo: Usuario | None) -> Estudio:
+    if administrativo is not None and not administrativo.tiene_rol(roles.ADMINISTRATIVO):
         raise ErrorDeCobertura("Solo un administrativo registra la respuesta de la obra social.")
     estudio = cobertura.estudio
     if (
@@ -227,9 +242,9 @@ def _pendiente_de_respuesta(cobertura: Cobertura, administrativo: Usuario) -> Es
     return estudio
 
 
-def _registrar_respuesta(cobertura: Cobertura, administrativo: Usuario) -> None:
+def _registrar_respuesta(cobertura: Cobertura, administrativo: Usuario | None) -> None:
     cobertura.respondida_en = ahora()
-    cobertura.respondida_por = administrativo.id
+    cobertura.respondida_por = administrativo.id if administrativo is not None else None
     db.session.flush()
 
 
@@ -239,8 +254,9 @@ def _registrar_respuesta(cobertura: Cobertura, administrativo: Usuario) -> None:
 def cargar_demanda(estudio: Estudio, paciente: Usuario, resolucion: bytes) -> DemandaReautorizacion:
     """E18.1 a E18.4: guarda la resolución judicial, vuelve a Pendiente de autorización y avisa.
 
-    La cobertura vuelve a pendiente: el administrativo la autoriza con AUTORIZAR COBERTURA
-    (E18.5). Lanza ErrorDeCobertura si quien la carga no es el paciente, si el estudio no está
+    La cobertura vuelve a pendiente y pierde el id del módulo: el controlador vuelve a dar de
+    alta el estudio en el módulo después del commit (G22), y la respuesta llega de ahí o la carga
+    el administrativo (E18.5). Lanza ErrorDeCobertura si quien la carga no es el paciente, si el estudio no está
     Rechazado por obra social o si el archivo no es un PDF de hasta 5 MB.
     """
     if estudio.paciente.usuario_id != paciente.id:
@@ -268,6 +284,8 @@ def cargar_demanda(estudio: Estudio, paciente: Usuario, resolucion: bytes) -> De
     demanda = DemandaReautorizacion(cobertura=cobertura, resolucion_path=ruta)
     db.session.add(demanda)
     cobertura.estado = EstadoCobertura.PENDIENTE
+    # El alta anterior en el módulo ya tiene el rechazo: la demanda va en un alta nueva.
+    cobertura.id_estudio_modulo = None
     db.session.flush()
     cambiar_estado(
         estudio,
@@ -280,11 +298,104 @@ def cargar_demanda(estudio: Estudio, paciente: Usuario, resolucion: bytes) -> De
             administrativo,
             "Reautorización pendiente",
             f"El paciente del estudio {estudio.codigo} cargó una resolución judicial favorable. "
-            f"Pedile de nuevo la autorización a {cobertura.obra_social.nombre}.",
+            f"El pedido vuelve al módulo de {cobertura.obra_social.nombre}; si el módulo no "
+            "responde, registrá la respuesta a mano.",
             "/coberturas",
             estudio=estudio,
         )
     return demanda
+
+
+# --- G22 Módulo de obras sociales -------------------------------------------------------------
+
+
+@dataclass
+class ConsultaAlModulo:
+    """Lo que dejó una corrida de consultar_respuestas()."""
+
+    dadas_de_alta: int = 0
+    autorizadas: int = 0
+    rechazadas: int = 0
+    sin_respuesta: int = 0
+    # Códigos de los estudios cuya consulta falló: la próxima corrida los vuelve a consultar.
+    con_error: list[str] = field(default_factory=list)
+
+    def __str__(self) -> str:
+        partes = [
+            f"{self.autorizadas} autorizadas",
+            f"{self.rechazadas} rechazadas",
+            f"{self.sin_respuesta} sin respuesta todavía",
+        ]
+        if self.dadas_de_alta:
+            partes.append(f"{self.dadas_de_alta} dadas de alta en el módulo")
+        if self.con_error:
+            partes.append(f"el módulo falló con {', '.join(self.con_error)}")
+        return ", ".join(partes) + "."
+
+
+def dar_de_alta_en_modulo(cobertura: Cobertura, *, cliente: ClienteApi | None = None) -> str:
+    """G22: da de alta el estudio en el módulo de obras sociales y guarda el id que devuelve.
+
+    Van solo la obra social, el nombre del paciente y la fecha del pedido. Se llama después del
+    commit del pedido (o de la demanda): si el módulo falla, lanza ErrorDeIntegracion, la
+    cobertura queda pendiente sin id y consultar_respuestas la vuelve a dar de alta.
+    """
+    estudio = cobertura.estudio
+    id_estudio = api_de_obras_sociales.alta_estudio(
+        cobertura.obra_social_codigo,
+        estudio.paciente.usuario.nombre_completo,
+        _fecha_del_pedido(cobertura),
+        cliente=cliente,
+    )
+    cobertura.id_estudio_modulo = id_estudio
+    db.session.flush()
+    return id_estudio
+
+
+def consultar_respuestas(*, cliente: ClienteApi | None = None) -> ConsultaAlModulo:
+    """G22: aplica las respuestas que las obras sociales cargaron en el módulo.
+
+    Recorre las coberturas pendientes: las que no tienen id las da de alta en el módulo, y a las
+    demás les consulta el estado y aplica autorizar o rechazar sin usuario. Cada cobertura va en
+    su propio punto de guardado: si el módulo falla con una, esa no cambia y se siguen las demás.
+    Una cobertura que ya respondió el administrativo a mano no está pendiente y no se consulta.
+    Corre cada 30 minutos (tarea respuestas_obras_sociales de src/web/tareas.py).
+    """
+    consulta = ConsultaAlModulo()
+    for cobertura in pendientes():
+        codigo = cobertura.estudio.codigo
+        try:
+            with db.session.begin_nested():
+                _consultar(cobertura, consulta, cliente)
+        except (ErrorDeIntegracion, ErrorDeCobertura, TransicionInvalida) as error:
+            log.warning("No se pudo consultar la cobertura del estudio %s: %s", codigo, error)
+            consulta.con_error.append(codigo)
+    return consulta
+
+
+def _consultar(
+    cobertura: Cobertura, consulta: ConsultaAlModulo, cliente: ClienteApi | None
+) -> None:
+    if cobertura.id_estudio_modulo is None:
+        dar_de_alta_en_modulo(cobertura, cliente=cliente)
+        consulta.dadas_de_alta += 1
+        return
+    respuesta = api_de_obras_sociales.estado_estudio(cobertura.id_estudio_modulo, cliente=cliente)
+    if respuesta.estado == EstadoEnModulo.AUTORIZADO:
+        autorizar(cobertura, None)
+        consulta.autorizadas += 1
+    elif respuesta.estado == EstadoEnModulo.RECHAZADO:
+        rechazar(cobertura, None, respuesta.motivo)
+        consulta.rechazadas += 1
+    else:
+        consulta.sin_respuesta += 1
+
+
+def _fecha_del_pedido(cobertura: Cobertura) -> date:
+    """La fecha del pedido: la de la última demanda de reautorización o, si no hay, la de la
+    solicitud."""
+    momento = cobertura.demandas[-1].cargada_en if cobertura.demandas else cobertura.solicitada_en
+    return momento.astimezone(ZONA_HORARIA).date()
 
 
 # --- helpers ----------------------------------------------------------------------------------

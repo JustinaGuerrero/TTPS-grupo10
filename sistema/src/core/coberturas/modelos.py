@@ -41,7 +41,10 @@ class Cobertura(Base):
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
     respondida_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    # Nulo si respondió el módulo de obras sociales (G22) en lugar de un administrativo.
     respondida_por: Mapped[int | None] = mapped_column(sa.ForeignKey("usuarios.id"))
+    # Id del estudio en el módulo de obras sociales; nulo mientras el alta no salió.
+    id_estudio_modulo: Mapped[str | None]
 
     demandas: Mapped[list["DemandaReautorizacion"]] = relationship(
         back_populates="cobertura", order_by=lambda: DemandaReautorizacion.cargada_en
