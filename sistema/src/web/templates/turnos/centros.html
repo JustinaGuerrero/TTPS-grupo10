@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% from "mapa/_mapa.html" import estilos_del_mapa, mapa, scripts_del_mapa %}
+
+{% block title %}Sacar turno{% endblock %}
+
+{% block head %}{{ estilos_del_mapa() }}{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('turnos.mio') }}">Mi turno</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Centros de extracción</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-2">Elegí un centro de extracción</h1>
+  <p class="text-body-secondary">
+    Los turnos son de 15 minutos, de lunes a viernes de 9 a 18. Elegí el centro que te quede más cerca.
+  </p>
+
+  {{ mapa("mapa-centros", puntos) }}
+
+  <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+    <button type="button" class="btn btn-outline-primary btn-sm"
+            data-ubicarme="mapa-centros" data-lista="lista-centros" data-estado="estado-ubicacion">
+      Ordenar por cercanía a mi ubicación
+    </button>
+    <span class="small text-body-secondary" id="estado-ubicacion" aria-live="polite"></span>
+  </div>
+
+  <ul class="list-group shadow-sm" id="lista-centros">
+    {% for centro in centros %}
+      <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2"
+          data-lat="{{ centro.latitud }}" data-lon="{{ centro.longitud }}">
+        <div>
+          <div class="fw-semibold">{{ centro.nombre }}</div>
+          <div class="small text-body-secondary">
+            {{ centro.direccion_completa }} · Tel. {{ centro.telefono }}
+          </div>
+          <div class="small text-primary distancia"></div>
+        </div>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('turnos.franjas', centro_id=centro.id) }}">
+          Ver turnos
+        </a>
+      </li>
+    {% else %}
+      <li class="list-group-item text-body-secondary" id="sin-centros">
+        Todavía no hay centros de extracción cargados.
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
+
+{% block scripts %}{{ scripts_del_mapa() }}{% endblock %}

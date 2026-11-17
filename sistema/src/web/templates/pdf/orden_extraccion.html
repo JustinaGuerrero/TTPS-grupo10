@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Orden de extracción {{ estudio.codigo }}</title>
+  <style>
+    @page { size: a4; margin: 2cm; }
+    body { font-family: Helvetica, sans-serif; font-size: 11pt; color: #222; }
+    h1 { font-size: 18pt; margin: 0 0 4pt 0; }
+    .subtitulo { color: #666; margin-bottom: 16pt; }
+    .codigo { font-size: 22pt; font-weight: bold; border: 1pt solid #222; padding: 8pt; text-align: center; margin: 12pt 0; }
+    table { width: 100%; margin-bottom: 12pt; }
+    td { padding: 4pt 0; vertical-align: top; }
+    td.etiqueta { width: 32%; color: #555; }
+    h2 { font-size: 12pt; margin: 14pt 0 4pt 0; }
+    .pie { margin-top: 24pt; color: #666; font-size: 9pt; }
+  </style>
+</head>
+<body>
+  <h1>Orden de extracción</h1>
+  <div class="subtitulo">Laboratorio central · Exoma clínico</div>
+
+  <div class="codigo">{{ estudio.codigo }}</div>
+  <p>
+    El centro de extracción envía este código al bot de mensajería del laboratorio cuando toma la
+    muestra.
+  </p>
+
+  <table>
+    <tr><td class="etiqueta">Paciente</td><td>{{ estudio.paciente.usuario.nombre_completo }}</td></tr>
+    <tr><td class="etiqueta">DNI</td><td>{{ estudio.paciente.dni }}</td></tr>
+    <tr><td class="etiqueta">Día y hora</td><td><strong>{{ turno.inicio | fecha_hora }}</strong></td></tr>
+    <tr><td class="etiqueta">Centro de extracción</td><td>{{ turno.centro.nombre }}</td></tr>
+    <tr><td class="etiqueta">Dirección</td><td>{{ turno.centro.direccion_completa }}</td></tr>
+    <tr><td class="etiqueta">Teléfono del centro</td><td>{{ turno.centro.telefono }}</td></tr>
+  </table>
+
+  <h2>Indicaciones</h2>
+  <ul>
+    <li>Llegá 10 minutos antes del turno con tu DNI y esta orden.</li>
+    <li>Llevá el consentimiento informado firmado: sin él no se toma la muestra.</li>
+    <li>No hace falta ir en ayunas.</li>
+    <li>Si no podés ir, cancelá el turno desde "Mi turno": no tiene costo.</li>
+  </ul>
+
+  <h2>Para el centro de extracción</h2>
+  <ul>
+    <li>Muestra: sangre entera en tubo con EDTA.</li>
+    <li>Rotular el tubo con el código del estudio.</li>
+    <li>Al tomar la muestra, enviar el código al bot de mensajería del laboratorio.</li>
+  </ul>
+
+  <div class="pie">Laboratorio central · Sistema de exoma clínico</div>
+</body>
+</html>

@@ -63,7 +63,7 @@ def test_demo_de_un_estado_que_necesita_filas_de_otro_issue_lo_dice(app, con_see
     resultado = app.test_cli_runner().invoke(args=["demo", "en_laboratorio_central"])
 
     assert resultado.exit_code != 0
-    assert "falta el turno de extracción (#7), la muestra (#8)" in resultado.output
+    assert "falta la muestra (#8)" in resultado.output
     with app.app_context():
         assert buscar_por_email("demo.1@exoma.test") is None
 

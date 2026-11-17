@@ -4,9 +4,11 @@ Se puede correr más de una vez: crea lo que falta y no toca lo que ya existe.
 """
 
 from datetime import date
+from decimal import Decimal
 
 import sqlalchemy as sa
 
+from src.core.centros import CentroExtraccion
 from src.core.database import db
 from src.core.estudios import Estudio, crear_estudio
 from src.core.pacientes import Paciente, TipoSospecha
@@ -54,6 +56,34 @@ PACIENTE_DE_PRUEBA = {
     "tipo_sospecha": TipoSospecha.CLINICA,
     "resumen_historia_clinica": "Paciente inventado para probar el sistema.",
 }
+
+# Centros de extracción de prueba (E19), inventados: 10 centros en 3 provincias, con coordenadas
+# para el mapa y el chat de Telegram desde el que escriben al bot (E22, `flask bot simular`).
+# fmt: off
+CENTROS_DE_PRUEBA = (
+    # (nombre, dirección, localidad, provincia, latitud, longitud, teléfono, chat de Telegram)
+    ("Centro La Plata", "Calle 7 1234", "La Plata", "Buenos Aires",
+     "-34.921200", "-57.954500", "0221 555-0101", "1000001"),
+    ("Centro Quilmes", "Av. Calchaquí 2500", "Quilmes", "Buenos Aires",
+     "-34.724700", "-58.254300", "011 555-0102", "1000002"),
+    ("Centro Mar del Plata", "Av. Colón 3100", "Mar del Plata", "Buenos Aires",
+     "-38.005500", "-57.552600", "0223 555-0103", "1000003"),
+    ("Centro Bahía Blanca", "Av. Alem 1200", "Bahía Blanca", "Buenos Aires",
+     "-38.718300", "-62.266300", "0291 555-0104", "1000004"),
+    ("Centro Palermo", "Av. Santa Fe 3800", "Palermo", "Ciudad Autónoma de Buenos Aires",
+     "-34.588000", "-58.420000", "011 555-0105", "1000005"),
+    ("Centro Caballito", "Av. Rivadavia 5200", "Caballito", "Ciudad Autónoma de Buenos Aires",
+     "-34.618500", "-58.441000", "011 555-0106", "1000006"),
+    ("Centro Belgrano", "Av. Cabildo 2100", "Belgrano", "Ciudad Autónoma de Buenos Aires",
+     "-34.562000", "-58.456000", "011 555-0107", "1000007"),
+    ("Centro Córdoba", "Av. Colón 800", "Córdoba", "Córdoba",
+     "-31.413500", "-64.191900", "0351 555-0108", "1000008"),
+    ("Centro Villa Carlos Paz", "Av. San Martín 600", "Villa Carlos Paz", "Córdoba",
+     "-31.424100", "-64.497800", "03541 555-0109", "1000009"),
+    ("Centro Río Cuarto", "Constitución 900", "Río Cuarto", "Córdoba",
+     "-33.123300", "-64.349900", "0358 555-0110", "1000010"),
+)
+# fmt: on
 
 # Genes del estudio del paciente de prueba, que queda en Creado. Para otros estados: `flask demo`.
 GENES_DEL_ESTUDIO_DE_PRUEBA = ("GAA",)
@@ -125,6 +155,7 @@ def cargar_usuarios_de_prueba(contrasena: str) -> list[tuple[str, str, bool]]:
         _cargar_transportista_de_prueba(email, provincia)
     _cargar_paciente_de_prueba()
     cargar_patologias_base()
+    cargar_centros_de_prueba()
 
     db.session.commit()
     return resultado
@@ -154,6 +185,37 @@ def cargar_patologias_base() -> int:
         )
         creadas += 1
     return creadas
+
+
+def cargar_centros_de_prueba() -> int:
+    """Crea los centros de extracción de prueba que falten (por su chat). No hace commit.
+
+    Devuelve cuántos creó.
+    """
+    creados = 0
+    for nombre, direccion, localidad, provincia, lat, lon, telefono, chat in CENTROS_DE_PRUEBA:
+        existe = db.session.scalar(
+            sa.select(CentroExtraccion.id).where(CentroExtraccion.telegram_chat_id == chat)
+        )
+        if existe is not None:
+            continue
+        db.session.add(
+            CentroExtraccion(
+                nombre=nombre,
+                direccion=direccion,
+                localidad=localidad,
+                provincia=db.session.scalars(
+                    sa.select(Provincia).where(Provincia.nombre == provincia)
+                ).one(),
+                latitud=Decimal(lat),
+                longitud=Decimal(lon),
+                telefono=telefono,
+                telegram_chat_id=chat,
+            )
+        )
+        creados += 1
+    db.session.flush()
+    return creados
 
 
 def _cargar_paciente_de_prueba() -> None:

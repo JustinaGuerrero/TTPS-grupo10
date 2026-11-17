@@ -25,6 +25,7 @@ MENU_POR_ROL: dict[str, list[ItemDeMenu]] = {
         ItemDeMenu("Chatbot", "chatbot.conversacion"),
         ItemDeMenu("Mi presupuesto", "pagos.mi_presupuesto"),
         ItemDeMenu("Mis cupones", "cupones.mios"),
+        ItemDeMenu("Mi turno", "turnos.mio"),
     ],
     roles.MEDICO_TRATANTE: [
         ItemDeMenu("Estudios", "historial.listar"),

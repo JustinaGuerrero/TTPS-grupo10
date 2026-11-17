@@ -321,3 +321,75 @@ def crear_cupon(usuario_rapido):
         return cupon
 
     return _crear
+
+
+@pytest.fixture
+def crear_centro():
+    """Fábrica: `crear_centro()` agrega un centro de extracción activo y lo devuelve (E19).
+
+    `provincia` es el nombre de una de las 24 de la migración. No hace commit. Llamarla dentro
+    de un app_context.
+    """
+    from decimal import Decimal
+
+    import sqlalchemy as sa
+
+    from src.core.centros import CentroExtraccion
+    from src.core.provincias import Provincia
+
+    numeros = itertools.count(1)
+
+    def _crear(provincia: str = "Buenos Aires", activo: bool = True) -> CentroExtraccion:
+        numero = next(numeros)
+        centro = CentroExtraccion(
+            nombre=f"Centro de test {numero}",
+            direccion=f"Calle de test {numero}",
+            localidad="La Plata",
+            provincia=db.session.scalars(
+                sa.select(Provincia).where(Provincia.nombre == provincia)
+            ).one(),
+            latitud=Decimal("-34.921200"),
+            longitud=Decimal("-57.954500"),
+            telefono="0221 555-0000",
+            telegram_chat_id=f"test-{numero}",
+            activo=activo,
+        )
+        db.session.add(centro)
+        db.session.flush()
+        return centro
+
+    return _crear
+
+
+@pytest.fixture
+def crear_turno(crear_centro):
+    """Fábrica: `crear_turno(estudio)` agrega un turno reservado del estudio y lo devuelve (E19).
+
+    Sin `inicio`, toma una franja libre del próximo día hábil; sin `centro`, crea uno. No cambia
+    el estado del estudio (para eso, crear_estudio(estado="turno_sacado")). No hace commit.
+    Llamarla dentro de un app_context.
+    """
+    from datetime import datetime
+
+    from src.core.calendario import hoy, proximo_dia_habil
+    from src.core.turnos import EstadoTurno, TurnoExtraccion
+    from src.core.turnos.franjas import franjas_del_dia
+
+    def _crear(
+        estudio: Estudio,
+        centro=None,
+        inicio: datetime | None = None,
+        estado: EstadoTurno = EstadoTurno.RESERVADO,
+    ) -> TurnoExtraccion:
+        centro = centro or crear_centro()
+        if inicio is None:
+            inicio = franjas_del_dia(proximo_dia_habil(hoy()))[0]
+        turno = TurnoExtraccion(estudio_id=estudio.id, centro_id=centro.id, inicio=inicio)
+        turno.estado = estado
+        if estado == EstadoTurno.CANCELADO:
+            turno.cancelado_en = inicio
+        db.session.add(turno)
+        db.session.flush()
+        return turno
+
+    return _crear
