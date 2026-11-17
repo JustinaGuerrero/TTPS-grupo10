@@ -1,5 +1,11 @@
-[
-  {"codigo": "OS-100", "nombre": "Obra Social de Prueba Total", "porcentaje_cobertura": 100},
-  {"codigo": "OS-070", "nombre": "Obra Social de Prueba Parcial", "porcentaje_cobertura": 70},
-  {"codigo": "OS-040", "nombre": "Obra Social de Prueba Básica", "porcentaje_cobertura": 40}
-]
+{
+  "datos": [
+    {"id": "0b9e4f8a-0000-4000-8000-000000000100", "rnos_codigo": "OS-100", "nombre": "Obra Social de Prueba Total", "sigla": "OSPT", "porcentaje_cobertura": 100},
+    {"id": "0b9e4f8a-0000-4000-8000-000000000070", "rnos_codigo": "OS-070", "nombre": "Obra Social de Prueba Parcial", "sigla": "OSPP", "porcentaje_cobertura": 70},
+    {"id": "0b9e4f8a-0000-4000-8000-000000000040", "rnos_codigo": "OS-040", "nombre": "Obra Social de Prueba Básica", "sigla": "OSPB", "porcentaje_cobertura": 40}
+  ],
+  "pagina": 1,
+  "por_pagina": 100,
+  "total": 3,
+  "total_paginas": 1
+}

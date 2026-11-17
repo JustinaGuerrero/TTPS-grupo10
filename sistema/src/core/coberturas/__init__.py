@@ -13,7 +13,9 @@ from src.core.coberturas.servicios import (
     diferencia_a_pagar,
     opciones,
     pendientes,
+    presentar_demanda_en_modulo,
     rechazar,
+    simular_respuesta,
     solicitar,
 )
 
@@ -32,6 +34,8 @@ __all__ = [
     "diferencia_a_pagar",
     "opciones",
     "pendientes",
+    "presentar_demanda_en_modulo",
     "rechazar",
+    "simular_respuesta",
     "solicitar",
 ]

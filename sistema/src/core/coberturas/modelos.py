@@ -70,6 +70,8 @@ class DemandaReautorizacion(Base):
     cargada_en: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
+    # Cuándo se subió al módulo de obras sociales; nulo mientras no salió (G22).
+    presentada_en_modulo_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
 
     def __repr__(self) -> str:
         return f"<DemandaReautorizacion {self.id} cobertura {self.cobertura_id}>"

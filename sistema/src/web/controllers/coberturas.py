@@ -29,6 +29,7 @@ from src.core.coberturas import (
     dar_de_alta_en_modulo,
     opciones,
     pendientes,
+    presentar_demanda_en_modulo,
     rechazar,
     solicitar,
 )
@@ -115,13 +116,13 @@ def cargar_reautorizacion(estudio_id: int):
     archivo = request.files.get("resolucion")
     contenido = archivo.read(TAMANO_MAXIMO_DE_LA_RESOLUCION + 1) if archivo else b""
     try:
-        cargar_demanda(estudio, g.usuario, contenido)
+        demanda = cargar_demanda(estudio, g.usuario, contenido)
     except (ErrorDeCobertura, ErrorDeIntegracion, TransicionInvalida) as error:
         db.session.rollback()
         flash(error.mensaje if isinstance(error, ErrorDeIntegracion) else str(error), "error")
         return redirect(url_for("coberturas.reautorizacion", estudio_id=estudio.id))
     db.session.commit()
-    _dar_de_alta_en_el_modulo(cobertura_de(estudio))
+    _presentar_en_el_modulo(demanda, contenido)
     flash("Cargaste la resolución judicial. Te avisamos cuando responda la obra social.", "exito")
     return redirect(url_for("pagos.presupuesto", estudio_id=estudio.id))
 
@@ -240,3 +241,19 @@ def _cobertura_o_404(cobertura_id: int):
     if cobertura is None:
         abort(404)
     return cobertura
+
+
+def _presentar_en_el_modulo(demanda, resolucion: bytes) -> None:
+    """E18 y G22: después del commit de la demanda. Si el módulo falla, la demanda ya quedó
+    guardada y la tarea respuestas_obras_sociales la sube en la próxima corrida."""
+    try:
+        presentar_demanda_en_modulo(demanda, resolucion)
+    except ErrorDeIntegracion as error:
+        db.session.rollback()
+        current_app.logger.warning(
+            "La demanda del estudio %s no se presentó en el módulo de obras sociales: %s",
+            demanda.cobertura.estudio.codigo,
+            error.mensaje,
+        )
+        return
+    db.session.commit()

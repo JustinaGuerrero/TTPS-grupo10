@@ -5,17 +5,21 @@
 - `poetry run flask migrar-local`: aplica supabase/migrations a la base de DATABASE_URL_LOCAL.
 - `poetry run flask tarea <id>`: corre ya una tarea programada de src/web/tareas.py.
 - `poetry run flask bot simular <chat_id> <texto>`: simula un mensaje al bot de mensajería (E22).
+- `poetry run flask obra-social simular <codigo> autorizar|rechazar`: hace de la obra social en el
+  módulo de obras sociales (G22).
 """
 
 import os
+from decimal import Decimal
 
 import click
 import sqlalchemy as sa
 from flask import Flask, current_app
 
-from src.core import demo, migraciones, muestras, seeds
+from src.core import coberturas, demo, migraciones, muestras, seeds
 from src.core.database import db
-from src.core.estudios import EstadoEstudio
+from src.core.estudios import EstadoEstudio, Estudio
+from src.integraciones.base import ErrorDeIntegracion
 from src.web import tareas
 
 
@@ -111,6 +115,40 @@ def registrar(app: Flask) -> None:
                 f"{mensaje.estudio.estado.nombre}."
             )
         click.echo(f"Respuesta al centro: {resultado.respuesta or '(ninguna)'}")
+
+    @app.cli.group("obra-social")
+    def obra_social():
+        """Módulo de obras sociales (módulo 6, G22)."""
+
+    @obra_social.command("simular")
+    @click.argument("codigo")
+    @click.argument("respuesta", type=click.Choice(["autorizar", "rechazar"]))
+    @click.option(
+        "--porcentaje", type=Decimal, help="Porcentaje que autoriza (si no, el de la lista)."
+    )
+    @click.option("--motivo", help="Motivo del rechazo.")
+    def simular_obra_social(
+        codigo: str, respuesta: str, porcentaje: Decimal | None, motivo: str | None
+    ):
+        """Hace de la obra social: autoriza o rechaza en el módulo la solicitud del estudio CODIGO.
+
+        Ejemplo: flask obra-social simular EX-2026-00042 autorizar --porcentaje 70. El sistema
+        toma la respuesta en la próxima corrida de la tarea (o con
+        `flask tarea respuestas_obras_sociales`).
+        """
+        estudio = db.session.scalar(sa.select(Estudio).where(Estudio.codigo == codigo.upper()))
+        if estudio is None:
+            raise click.ClickException(f"No existe el estudio {codigo}.")
+        try:
+            resultado = coberturas.simular_respuesta(
+                estudio, autoriza=respuesta == "autorizar", porcentaje=porcentaje, motivo=motivo
+            )
+        except coberturas.ErrorDeCobertura as error:
+            raise click.ClickException(str(error)) from None
+        except ErrorDeIntegracion as error:
+            raise click.ClickException(error.mensaje) from None
+        click.echo(f"La solicitud del estudio {codigo} quedó {resultado.estado} en el módulo.")
+        click.echo("El sistema la toma con: flask tarea respuestas_obras_sociales")
 
 
 def _contrasena_de_seeds() -> str:
