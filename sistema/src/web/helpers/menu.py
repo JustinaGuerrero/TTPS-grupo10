@@ -37,8 +37,12 @@ MENU_POR_ROL: dict[str, list[ItemDeMenu]] = {
         ItemDeMenu("Coberturas", "coberturas.pendientes_de_respuesta"),
         ItemDeMenu("Mensajes del bot", "bot.mensajes"),
         ItemDeMenu("Órdenes del día", "logistica.ordenes"),
+        ItemDeMenu("Datos crudos", "datos_crudos.listado"),
     ],
-    roles.BIOINFORMATICO: [],
+    roles.BIOINFORMATICO: [
+        ItemDeMenu("Para analizar", "bioinformatica.lista_de_pendientes"),
+        ItemDeMenu("Mis análisis", "bioinformatica.mis"),
+    ],
     roles.TRANSPORTISTA: [ItemDeMenu("Orden del día", "logistica.orden_del_dia")],
     roles.GERENTE_MEDICO: [
         ItemDeMenu("Patologías", "patologias.listar"),

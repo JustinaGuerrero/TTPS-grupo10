@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block title %}Datos crudos{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-2">Estudios en viaje a Corea</h1>
+  <p class="text-body-secondary">
+    Cuando el laboratorio de secuenciación mande los datos crudos de un estudio, cargá el .txt
+    (solo A, C, T, G y saltos de línea, hasta 20 MB). Si avisa por mail que la muestra no sirve,
+    registralo: el paciente tiene que volver a extraerse sangre.
+  </p>
+
+  {% if not estudios %}
+    <p class="text-body-secondary" id="sin-estudios">No hay estudios esperando datos crudos.</p>
+  {% else %}
+    <div class="d-grid gap-3" id="estudios">
+      {% for estudio in estudios %}
+        <div class="card shadow-sm" id="estudio-{{ estudio.id }}">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <h2 class="h5 mb-0">
+                  {{ estudio.codigo }}
+                  {% if estudio.pompe_urgente %}<span class="badge text-bg-danger ms-1">Pompe urgente</span>{% endif %}
+                </h2>
+                <div class="small text-body-secondary">
+                  {{ estudio.paciente.usuario.nombre_completo }} · DNI {{ estudio.paciente.dni }}
+                </div>
+              </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end mb-2"
+                  action="{{ url_for('datos_crudos.cargar', estudio_id=estudio.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="col-sm">
+                <label for="datos-crudos-{{ estudio.id }}" class="form-label small mb-1">Datos crudos (.txt)</label>
+                <input type="file" class="form-control" id="datos-crudos-{{ estudio.id }}" name="datos_crudos"
+                       accept=".txt,text/plain" required>
+              </div>
+              <div class="col-sm-auto">
+                <button type="submit" class="btn btn-primary">Cargar datos crudos</button>
+              </div>
+            </form>
+
+            <details>
+              <summary class="small text-danger">El laboratorio avisó que la muestra no sirve</summary>
+              <form method="post" class="row g-2 align-items-end mt-1"
+                    action="{{ url_for('datos_crudos.nueva_extraccion', estudio_id=estudio.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="col-sm-4">
+                  <label for="motivo-{{ estudio.id }}" class="form-label small mb-1">Motivo</label>
+                  <select class="form-select" id="motivo-{{ estudio.id }}" name="motivo" required>
+                    {% for motivo in motivos %}
+                      <option value="{{ motivo.value }}">{{ motivo.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-sm">
+                  <label for="detalle-{{ estudio.id }}" class="form-label small mb-1">Detalle (opcional)</label>
+                  <input type="text" class="form-control" id="detalle-{{ estudio.id }}" name="detalle" maxlength="200">
+                </div>
+                <div class="col-sm-auto">
+                  <button type="submit" class="btn btn-outline-danger">Pedir nueva extracción</button>
+                </div>
+              </form>
+            </details>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

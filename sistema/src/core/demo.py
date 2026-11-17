@@ -201,6 +201,43 @@ def retirar_muestra_de_demo(estudio: Estudio) -> None:
 
 DATOS_POR_ESTADO[EstadoEstudio.EN_CAMINO_LABORATORIO] = retirar_muestra_de_demo
 
+
+def cargar_datos_crudos_de_demo(estudio: Estudio) -> None:
+    """Datos crudos de prueba cargados por administrativo@exoma.test (E32): el análisis queda
+    disponible para los bioinformáticos."""
+    from src.core.calendario import ahora
+    from src.integraciones import storage
+
+    administrativo = buscar_por_email("administrativo@exoma.test")
+    if administrativo is None:
+        raise DemoImposible("Falta administrativo@exoma.test: corré `flask seeds`.")
+    momento = ahora()
+    estudio.datos_crudos_path = storage.subir(
+        f"estudios/{estudio.id}/datos-crudos-{momento:%Y%m%d%H%M%S}.txt",
+        b"ACGTACGTTAGC\nGGCATTACGATC\n",
+        "text/plain",
+    )
+    estudio.datos_crudos_cargados_en = momento
+    estudio.datos_crudos_cargados_por = administrativo.id
+    estudio.analisis_actual.disponible_en = momento
+    db.session.flush()
+
+
+def tomar_analisis_de_demo(estudio: Estudio) -> None:
+    """bioinformatico@exoma.test tomó el estudio (E33)."""
+    from src.core.calendario import ahora
+
+    bioinformatico = buscar_por_email("bioinformatico@exoma.test")
+    if bioinformatico is None:
+        raise DemoImposible("Falta bioinformatico@exoma.test: corré `flask seeds`.")
+    estudio.analisis_actual.bioinformatico_id = bioinformatico.id
+    estudio.analisis_actual.tomado_en = ahora()
+    db.session.flush()
+
+
+DATOS_POR_ESTADO[EstadoEstudio.EN_AREA_BIOINFORMATICA] = cargar_datos_crudos_de_demo
+DATOS_POR_ESTADO[EstadoEstudio.EN_ANALISIS] = tomar_analisis_de_demo
+
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {
     EstadoEstudio.PENDIENTE_AUTORIZACION: "la cobertura de obra social (#17)",
