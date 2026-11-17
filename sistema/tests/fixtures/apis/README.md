@@ -32,6 +32,19 @@ Contrato en `docs/apis/chatbot.md`. Respuesta fija: no depende de la pregunta.
 
 Para simular el chatbot apagado, crear `respuesta.error.json` con `{"status": 503, "message": "..."}`.
 Los tests de los demás errores (401, 429, 500, timeout) usan un `httpx.MockTransport`.
+
+## Transcripción y familiograma
+
+No tienen contrato publicado; se usan los borradores de `docs/apis/`.
+
+| Función | Archivo | Resultado |
+| --- | --- | --- |
+| `transcribir(audio)` | `transcripcion/transcribir.json` | Texto transcripto |
+| `generar(familiares)` | `familiograma/generar.json` | PDF de ejemplo en Base64 |
+
+Para simular una falla, usar `transcribir.error.json` o `generar.error.json` con un status y un
+mensaje, según el formato de arriba.
+
 ## API de cupones (`cupones/`)
 
 Contrato en `docs/apis/cupones.md`.
