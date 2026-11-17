@@ -133,7 +133,7 @@ Persona registrada con un único rol. Los pacientes también son usuarios: el si
 | creado_en | timestamptz | | |
 | actualizado_en | timestamptz | | |
 | telefono | text | | **Columna nueva propuesta.** La piden E01, E02 y E06. Nula para el administrador general |
-| debe_cambiar_contrasena | boolean | | **Columna nueva propuesta.** `true` mientras el paciente tiene la contraseña provisoria (E05). Por defecto `false` |
+| debe_cambiar_contrasena | boolean | | `true` mientras el paciente tiene la contraseña provisoria (E05). Por defecto `false` |
 
 **Escenarios:** E01–E05.
 
@@ -378,6 +378,9 @@ Una fila por cada patología que el médico tratante sospecha en el paciente. Ca
 | paciente_id | bigint | FK → pacientes | |
 | parentesco | text | | Padre, madre, hermano… (lista cerrada en la vista) |
 | nombre | text | | |
+| dni | text | | Opcional. Permite vincular al familiar con su cuenta de paciente |
+| paciente_vinculado_id | bigint | FK → pacientes | Nulo hasta que exista un paciente con el mismo DNI |
+| vinculado_en | timestamptz | | Fecha del vínculo automático por DNI |
 | creado_en | timestamptz | | |
 
 Los diagnósticos del familiar van en `familiar_patologias`.

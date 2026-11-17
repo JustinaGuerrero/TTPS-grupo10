@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ paciente.usuario.nombre_completo }}{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">{{ paciente.usuario.nombre_completo }}</h1>
+      <p class="text-body-secondary mb-0">DNI {{ paciente.dni }}</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('pacientes.listar') }}">Volver a mis pacientes</a>
+  </div>
+
+  <section class="card shadow-sm mb-3">
+    <div class="card-header">Datos clínicos</div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-3">Fecha de nacimiento</dt>
+        <dd class="col-sm-9">{{ paciente.fecha_nacimiento }}</dd>
+        <dt class="col-sm-3">Teléfono y mail</dt>
+        <dd class="col-sm-9">{{ paciente.usuario.telefono }} · {{ paciente.usuario.email }}</dd>
+        <dt class="col-sm-3">Tipo de sospecha</dt>
+        <dd class="col-sm-9">{{ paciente.tipo_sospecha.value|capitalize }}</dd>
+        <dt class="col-sm-3">Resumen de historia clínica</dt>
+        <dd class="col-sm-9">{{ paciente.resumen_historia_clinica }}</dd>
+        <dt class="col-sm-3">Diagnóstico presuntivo</dt>
+        <dd class="col-sm-9">
+          {% for diagnostico in paciente.diagnosticos_presuntivos %}
+            <span class="badge text-bg-primary">{{ diagnostico.patologia.nombre }}</span>
+          {% endfor %}
+        </dd>
+        <dt class="col-sm-3">Síntomas</dt>
+        <dd class="col-sm-9">
+          {% for sintoma in paciente.sintomas %}
+            <span class="badge text-bg-secondary">{{ sintoma.termino.termino }}</span>
+          {% else %}Sin síntomas cargados.{% endfor %}
+        </dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="card shadow-sm mb-3">
+    <div class="card-header">Familiares</div>
+    <div class="card-body">
+      {% if paciente.familiares %}
+        <div class="list-group list-group-flush">
+          {% for familiar in paciente.familiares %}
+            <article class="list-group-item px-0">
+              <h2 class="h6">{{ familiar.nombre }} · {{ familiar.parentesco|capitalize }}</h2>
+              {% if familiar.dni %}<p class="small text-body-secondary mb-1">DNI {{ familiar.dni }}</p>{% endif %}
+              {% if familiar.paciente_vinculado_id %}
+                {% set estudio = estudios_vinculados.get(familiar.id) %}
+                <p class="mb-1">
+                  Paciente vinculado:
+                  {% if estudio %}
+                    {{ estudio.codigo }} · {{ estudio.estado.value|replace("_", " ")|capitalize }}
+                  {% else %}
+                    Sin estudio registrado.
+                  {% endif %}
+                </p>
+              {% endif %}
+              <p class="small mb-1">
+                Síntomas:
+                {% for sintoma in familiar.sintomas %}{{ sintoma.termino.termino }}{% if not loop.last %}, {% endif %}
+                {% else %}ninguno informado{% endfor %}
+              </p>
+              <p class="small mb-0">
+                Diagnósticos:
+                {% for diagnostico in familiar.patologias %}{{ diagnostico.patologia.nombre }}{% if not loop.last %}, {% endif %}
+                {% else %}ninguno informado{% endfor %}
+              </p>
+            </article>
+          {% endfor %}
+        </div>
+        {% if paciente.familiograma_path %}
+          <a class="btn btn-outline-primary btn-sm mt-3"
+             href="{{ url_for('pacientes.descargar_familiograma', paciente_id=paciente.id) }}">
+            Descargar familiograma PDF
+          </a>
+        {% else %}
+          <form method="post" action="{{ url_for('pacientes.regenerar_familiograma', paciente_id=paciente.id) }}"
+                class="mt-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-primary btn-sm" type="submit">Reintentar familiograma</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <p class="text-body-secondary mb-0">No se informaron familiares.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('auditoria.historial', entidad='paciente', entidad_id=paciente.id) }}">
+    Historial de cambios
+  </a>
+{% endblock %}

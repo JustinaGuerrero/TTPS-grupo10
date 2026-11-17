@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+{% from "macros/formularios.html" import campo %}
+{% from "snomed/_buscador.html" import buscador %}
+
+{% block title %}Alta de paciente{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Dar de alta paciente</h1>
+  {% if errores.get("diagnostico_presuntivo") %}
+    <div class="alert alert-danger" role="alert">
+      No se pudo validar el diagnóstico presuntivo: {{ errores["diagnostico_presuntivo"] }}
+    </div>
+  {% endif %}
+  {% if errores.get("medico") %}
+    <div class="alert alert-danger" role="alert">{{ errores["medico"] }}</div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" data-validar data-pacientes-alta
+        data-url-transcripcion="{{ url_transcripcion }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="card shadow-sm mb-3">
+      <div class="card-header">Datos del paciente</div>
+      <div class="card-body row g-3">
+        <div class="col-12 col-md-4">
+          {{ campo("dni", "DNI", datos.dni, errores, inputmode="numeric", pattern="[0-9]{7,8}",
+                   maxlength=8, ayuda="7 u 8 números, sin puntos.") }}
+        </div>
+        <div class="col-12 col-md-4">{{ campo("nombre", "Nombre", datos.nombre, errores, maxlength=100) }}</div>
+        <div class="col-12 col-md-4">{{ campo("apellido", "Apellido", datos.apellido, errores, maxlength=100) }}</div>
+        <div class="col-12 col-md-4">
+          {{ campo("fecha_nacimiento", "Fecha de nacimiento", datos.fecha_nacimiento, errores, tipo="date") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ campo("telefono", "Teléfono", datos.telefono, errores, tipo="tel", maxlength=30) }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ campo("email", "Mail", datos.email, errores, tipo="email", maxlength=254) }}
+        </div>
+        <div class="col-12 col-md-6">
+          <label for="tipo_sospecha" class="form-label">Tipo de sospecha</label>
+          <select class="form-select{% if errores.get('tipo_sospecha') %} is-invalid{% endif %}"
+                  id="tipo_sospecha" name="tipo_sospecha" required>
+            <option value="">Elegí una opción</option>
+            {% for tipo in ("clinica", "familiar") %}
+              <option value="{{ tipo }}" {% if datos.tipo_sospecha == tipo %}selected{% endif %}>
+                {{ "Clínica" if tipo == "clinica" else "Familiar" }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if errores.get("tipo_sospecha") %}<div class="invalid-feedback d-block">{{ errores["tipo_sospecha"] }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="resumen_historia_clinica">Resumen de historia clínica</label>
+          <textarea class="form-control{% if errores.get('resumen_historia_clinica') %} is-invalid{% endif %}"
+                    id="resumen_historia_clinica" name="resumen_historia_clinica" rows="4"
+                    required>{{ datos.resumen_historia_clinica }}</textarea>
+          {% if errores.get("resumen_historia_clinica") %}
+            <div class="invalid-feedback d-block">{{ errores["resumen_historia_clinica"] }}</div>
+          {% endif %}
+          <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-grabar>Grabar resumen</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-detener disabled>Detener y transcribir</button>
+            <input type="file" name="resumen_audio" accept="audio/webm" hidden data-audio>
+            <span class="small text-body-secondary" aria-live="polite" data-transcripcion-estado></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card shadow-sm mb-3">
+      <div class="card-header">Diagnóstico presuntivo y síntomas</div>
+      <div class="card-body">
+        <label for="patologias" class="form-label">Patologías lisosomales sospechadas</label>
+        <select class="form-select{% if errores.get('patologia') %} is-invalid{% endif %}"
+                id="patologias" name="patologia" multiple required size="5">
+          {% for patologia in patologias_activas %}
+            <option value="{{ patologia.id }}"
+                    {% if patologia.id|string in datos.patologias %}selected{% endif %}>
+              {{ patologia.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if errores.get("patologia") %}<div class="invalid-feedback d-block">{{ errores["patologia"] }}</div>{% endif %}
+        {{ buscador("buscar-sintomas-paciente", "sintoma", "Síntomas del paciente",
+                    datos.sintomas, url_busqueda, multiple=True,
+                    ayuda="Elegí todos los síntomas presentes. La validación E08 se aplica al enviar.") }}
+      </div>
+    </section>
+
+    <section class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center gap-2">
+        <span>Familiares (opcional)</span>
+        <button type="button" class="btn btn-outline-primary btn-sm" data-agregar-familiar>
+          Agregar familiar
+        </button>
+      </div>
+      <div class="card-body" data-familiares>
+        {% for familiar in familiares %}
+          {% set indice = loop.index0 %}
+          {% set persona = familiar %}
+          <fieldset class="border rounded p-3 mb-3" data-familiar>
+            <legend class="float-none w-auto px-2 fs-6">Familiar {{ loop.index }}</legend>
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label for="familiar-parentesco-{{ indice }}" class="form-label">Parentesco</label>
+                <select class="form-select" id="familiar-parentesco-{{ indice }}"
+                        name="familiares_parentesco">
+                  <option value="">Elegí un parentesco</option>
+                  {% for parentesco in parentescos %}
+                    <option value="{{ parentesco }}"
+                            {% if persona and persona.parentesco == parentesco %}selected{% endif %}>
+                      {{ parentesco|capitalize }}
+                    </option>
+                  {% endfor %}
+                </select>
+                {% if errores.get("familiar_" ~ indice ~ "_parentesco") %}
+                  <div class="text-danger small">{{ errores["familiar_" ~ indice ~ "_parentesco"] }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="familiar-nombre-{{ indice }}" class="form-label">Nombre</label>
+                <input class="form-control" id="familiar-nombre-{{ indice }}"
+                       name="familiares_nombre" value="{{ persona.nombre if persona else '' }}">
+                {% if errores.get("familiar_" ~ indice ~ "_nombre") %}
+                  <div class="text-danger small">{{ errores["familiar_" ~ indice ~ "_nombre"] }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="familiar-dni-{{ indice }}" class="form-label">DNI (opcional)</label>
+                <input class="form-control" id="familiar-dni-{{ indice }}"
+                       name="familiares_dni" inputmode="numeric" maxlength="8"
+                       value="{{ persona.dni if persona else '' }}">
+                {% if errores.get("familiar_" ~ indice ~ "_dni") %}
+                  <div class="text-danger small">{{ errores["familiar_" ~ indice ~ "_dni"] }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                {{ buscador("buscar-sintomas-familiares-" ~ indice,
+                            "familiares_sintomas_" ~ indice, "Síntomas",
+                            persona.sintomas if persona else [], url_busqueda, multiple=True) }}
+              </div>
+              <div class="col-12">
+                <label for="familiares-patologias-{{ indice }}" class="form-label">
+                  Patologías con diagnóstico confirmado
+                </label>
+                <select class="form-select" id="familiares-patologias-{{ indice }}"
+                        name="familiares_patologias_{{ indice }}" multiple size="4">
+                  {% for patologia in patologias %}
+                    <option value="{{ patologia.id }}"
+                            {% if persona and patologia.id|string in persona.patologias %}selected{% endif %}>
+                      {{ patologia.nombre }}
+                    </option>
+                  {% endfor %}
+                </select>
+                {% if errores.get("familiar_" ~ indice ~ "_patologias") %}
+                  <div class="text-danger small">{{ errores["familiar_" ~ indice ~ "_patologias"] }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12 text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" data-quitar-familiar>
+                  Quitar familiar
+                </button>
+              </div>
+            </div>
+          </fieldset>
+        {% endfor %}
+      </div>
+    </section>
+
+    <template data-familiar-template>
+      <fieldset class="border rounded p-3 mb-3" data-familiar>
+        <legend class="float-none w-auto px-2 fs-6">Familiar</legend>
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label for="familiar-parentesco-__INDICE__" class="form-label">Parentesco</label>
+            <select class="form-select" id="familiar-parentesco-__INDICE__"
+                    name="familiares_parentesco">
+              <option value="">Elegí un parentesco</option>
+              {% for parentesco in parentescos %}
+                <option value="{{ parentesco }}">{{ parentesco|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="familiar-nombre-__INDICE__" class="form-label">Nombre</label>
+            <input class="form-control" id="familiar-nombre-__INDICE__" name="familiares_nombre">
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="familiar-dni-__INDICE__" class="form-label">DNI (opcional)</label>
+            <input class="form-control" id="familiar-dni-__INDICE__" name="familiares_dni"
+                   inputmode="numeric" maxlength="8">
+          </div>
+          <div class="col-12">
+            {{ buscador("buscar-sintomas-familiares-__INDICE__",
+                        "familiares_sintomas___INDICE__", "Síntomas", [],
+                        url_busqueda, multiple=True) }}
+          </div>
+          <div class="col-12">
+            <label for="familiares-patologias-__INDICE__" class="form-label">
+              Patologías con diagnóstico confirmado
+            </label>
+            <select class="form-select" id="familiares-patologias-__INDICE__"
+                    name="familiares_patologias___INDICE__" multiple size="4">
+              {% for patologia in patologias %}
+                <option value="{{ patologia.id }}">{{ patologia.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm" data-quitar-familiar>
+              Quitar familiar
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </template>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Dar de alta paciente</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('pacientes.listar') }}">Cancelar</a>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/buscador_snomed.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/alta_paciente.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/formularios.js') }}" defer></script>
+{% endblock %}

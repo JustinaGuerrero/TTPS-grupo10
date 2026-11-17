@@ -36,6 +36,7 @@ class Usuario(Base):
     rol_codigo: Mapped[str] = mapped_column(sa.ForeignKey("roles.codigo"))
     rol: Mapped[Rol] = relationship()
     activo: Mapped[bool] = mapped_column(server_default=sa.true())
+    debe_cambiar_contrasena: Mapped[bool] = mapped_column(server_default=sa.false())
     creado_en: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now()
     )
