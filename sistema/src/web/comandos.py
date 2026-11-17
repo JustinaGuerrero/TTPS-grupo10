@@ -4,6 +4,7 @@
 - `poetry run flask demo <estado>`: un paciente de demo nuevo con su estudio en ese estado.
 - `poetry run flask migrar-local`: aplica supabase/migrations a la base de DATABASE_URL_LOCAL.
 - `poetry run flask tarea <id>`: corre ya una tarea programada de src/web/tareas.py.
+- `poetry run flask bot simular <chat_id> <texto>`: simula un mensaje al bot de mensajería (E22).
 """
 
 import os
@@ -12,7 +13,7 @@ import click
 import sqlalchemy as sa
 from flask import Flask, current_app
 
-from src.core import demo, migraciones, seeds
+from src.core import demo, migraciones, muestras, seeds
 from src.core.database import db
 from src.core.estudios import EstadoEstudio
 from src.web import tareas
@@ -84,6 +85,32 @@ def registrar(app: Flask) -> None:
             raise click.ClickException(f"No existe la tarea {tarea_id!r}. Tareas: {disponibles}.")
         resultado = tareas.ejecutar(current_app._get_current_object(), tarea)
         click.echo(f"Tarea {tarea.id}: {resultado}")
+
+    @app.cli.group("bot")
+    def bot():
+        """Bot de mensajería de los centros de extracción (E22)."""
+
+    @bot.command("simular")
+    @click.argument("chat_id")
+    @click.argument("texto")
+    def simular(chat_id: str, texto: str):
+        """Procesa TEXTO como si el chat CHAT_ID lo mandara al bot, sin pasar por Telegram.
+
+        Ejemplo: flask bot simular 1000001 "Muestra tomada EX-2026-00042". Los chats de los
+        centros de prueba son los de `flask seeds` (1000001 a 1000010).
+        """
+        update = muestras.update_simulado(chat_id, texto)
+        resultado = muestras.registrar_toma(update)
+        db.session.commit()
+        mensaje = resultado.mensaje
+        if mensaje.error:
+            click.echo(f"Mensaje {mensaje.id} guardado con error: {mensaje.error}")
+        else:
+            click.echo(
+                f"Mensaje {mensaje.id} procesado: estudio {mensaje.estudio.codigo} en "
+                f"{mensaje.estudio.estado.nombre}."
+            )
+        click.echo(f"Respuesta al centro: {resultado.respuesta or '(ninguna)'}")
 
 
 def _contrasena_de_seeds() -> str:

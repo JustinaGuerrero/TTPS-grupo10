@@ -417,3 +417,62 @@ def crear_cobertura(crear_obra_social):
         return cobertura
 
     return _crear
+
+
+@pytest.fixture
+def crear_muestra(crear_turno):
+    """Fábrica: `crear_muestra(estudio)` agrega la muestra tomada del estudio y la devuelve (E22).
+
+    Sin `turno`, crea uno asistido (y su centro). No cambia el estado del estudio (para eso,
+    crear_estudio(estado="listo_para_retirar")). No hace commit. Llamarla dentro de un
+    app_context.
+    """
+    from datetime import datetime
+
+    from src.core.calendario import ahora
+    from src.core.muestras import Muestra
+    from src.core.turnos import EstadoTurno
+
+    def _crear(estudio: Estudio, turno=None, tomada_en: datetime | None = None) -> Muestra:
+        turno = turno or crear_turno(estudio, estado=EstadoTurno.ASISTIDO)
+        muestra = Muestra(estudio_id=estudio.id, turno_id=turno.id, tomada_en=tomada_en or ahora())
+        db.session.add(muestra)
+        db.session.flush()
+        return muestra
+
+    return _crear
+
+
+@pytest.fixture
+def crear_mensaje_bot():
+    """Fábrica: `crear_mensaje_bot()` agrega un mensaje del bot ya procesado y lo devuelve (E22).
+
+    Con `error`, queda como un mensaje que no se pudo procesar. El update_id es único por
+    llamada. No hace commit. Llamarla dentro de un app_context.
+    """
+    from src.core.calendario import ahora
+    from src.core.muestras import MensajeBot
+
+    numeros = itertools.count(900_000_001)
+
+    def _crear(
+        texto: str = "Muestra tomada",
+        chat_id: str = "test-sin-centro",
+        centro=None,
+        estudio: Estudio | None = None,
+        error: str | None = None,
+    ) -> MensajeBot:
+        mensaje = MensajeBot(
+            telegram_update_id=next(numeros),
+            chat_id=chat_id,
+            texto=texto,
+            centro_id=centro.id if centro is not None else None,
+            estudio_id=estudio.id if estudio is not None else None,
+            procesado_en=ahora(),
+            error=error,
+        )
+        db.session.add(mensaje)
+        db.session.flush()
+        return mensaje
+
+    return _crear
