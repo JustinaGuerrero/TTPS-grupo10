@@ -3,6 +3,7 @@
 - `poetry run flask seeds`: un usuario de prueba por rol, con sus perfiles y el estudio del paciente.
 - `poetry run flask demo <estado>`: un paciente de demo nuevo con su estudio en ese estado.
 - `poetry run flask migrar-local`: aplica supabase/migrations a la base de DATABASE_URL_LOCAL.
+- `poetry run flask tarea <id>`: corre ya una tarea programada de src/web/tareas.py.
 """
 
 import os
@@ -14,6 +15,7 @@ from flask import Flask, current_app
 from src.core import demo, migraciones, seeds
 from src.core.database import db
 from src.core.estudios import EstadoEstudio
+from src.web import tareas
 
 
 def registrar(app: Flask) -> None:
@@ -71,6 +73,17 @@ def registrar(app: Flask) -> None:
         for nombre in aplicadas:
             click.echo(f"aplicada  {nombre}")
         click.echo("Listo. Ahora: `flask seeds` y, si hace falta, `flask demo <estado>`.")
+
+    @app.cli.command("tarea")
+    @click.argument("tarea_id")
+    def correr_tarea(tarea_id: str):
+        """Corre ya la tarea programada TAREA_ID, sin esperar su hora (para probar a mano)."""
+        tarea = tareas.buscar_tarea(tarea_id)
+        if tarea is None:
+            disponibles = ", ".join(t.id for t in tareas.TAREAS) or "ninguna"
+            raise click.ClickException(f"No existe la tarea {tarea_id!r}. Tareas: {disponibles}.")
+        resultado = tareas.ejecutar(current_app._get_current_object(), tarea)
+        click.echo(f"Tarea {tarea.id}: {resultado}")
 
 
 def _contrasena_de_seeds() -> str:

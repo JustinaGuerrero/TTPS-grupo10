@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Consentimiento informado {{ estudio.codigo }}</title>
+  <style>
+    @page { size: a4; margin: 2cm; }
+    body { font-family: Helvetica, sans-serif; font-size: 10.5pt; color: #222; }
+    h1 { font-size: 16pt; margin: 0 0 4pt 0; }
+    .subtitulo { color: #666; margin-bottom: 12pt; }
+    h2 { font-size: 11pt; margin: 10pt 0 2pt 0; }
+    p { margin: 0 0 6pt 0; text-align: justify; }
+    table { width: 100%; margin: 6pt 0 10pt 0; }
+    td { padding: 3pt 0; }
+    td.etiqueta { width: 32%; color: #555; }
+    .firmas td { padding-top: 40pt; width: 50%; }
+    .linea { border-top: 1pt solid #222; padding-top: 3pt; margin-right: 18pt; font-size: 9pt; }
+  </style>
+</head>
+<body>
+  <h1>Consentimiento informado</h1>
+  <div class="subtitulo">Estudio de exoma clínico · Laboratorio central</div>
+
+  <table>
+    <tr><td class="etiqueta">Paciente</td><td>{{ estudio.paciente.usuario.nombre_completo }}</td></tr>
+    <tr><td class="etiqueta">DNI</td><td>{{ estudio.paciente.dni }}</td></tr>
+    <tr><td class="etiqueta">Estudio</td><td>{{ estudio.codigo }}</td></tr>
+  </table>
+
+  <h2>1. Qué es el estudio</h2>
+  <p>
+    El exoma clínico analiza los genes relacionados con la sospecha de una patología lisosomal que
+    indicó tu médico tratante. Busca variantes genéticas que confirmen o descarten esa sospecha.
+  </p>
+
+  <h2>2. Qué se hace con tu muestra</h2>
+  <p>
+    Se toma una muestra de sangre en el centro de extracción. El laboratorio central la envía, junto
+    con otras muestras y con la autorización del Ministerio de Salud, a un laboratorio de
+    secuenciación del exterior. La muestra se usa solo para este estudio.
+  </p>
+
+  <h2>3. Resultados posibles</h2>
+  <p>
+    El resultado puede ser positivo (se confirma la patología), portador (tenés una copia del gen
+    afectado, sin la enfermedad) o negativo. Si aparece una variante de significado incierto, el
+    estudio se vuelve a evaluar más adelante. Si tu médico lo pidió, el informe puede incluir
+    hallazgos secundarios: variantes en otros genes de relevancia médica.
+  </p>
+
+  <h2>4. Confidencialidad</h2>
+  <p>
+    Tus datos genéticos son confidenciales. Solo acceden tu médico tratante y el personal autorizado
+    del laboratorio, y el resultado se entrega a vos y a tu médico.
+  </p>
+
+  <h2>5. Tu decisión</h2>
+  <p>
+    Hacerte el estudio es voluntario. Podés retirar este consentimiento antes de que la muestra salga
+    del laboratorio central, avisándole a tu médico tratante.
+  </p>
+
+  <p>
+    Declaro que leí este consentimiento, que me explicaron el estudio y que acepto realizarlo. Si el
+    paciente es menor de edad, firma su responsable.
+  </p>
+
+  <table class="firmas">
+    <tr>
+      <td><div class="linea">Firma del paciente o responsable</div></td>
+      <td><div class="linea">Aclaración y DNI</div></td>
+    </tr>
+    <tr>
+      <td><div class="linea">Lugar y fecha</div></td>
+      <td><div class="linea">Vínculo con el paciente (si firma el responsable)</div></td>
+    </tr>
+  </table>
+</body>
+</html>

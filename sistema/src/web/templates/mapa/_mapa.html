@@ -1,0 +1,31 @@
+{#
+  Mapa con Leaflet, servido desde static/vendor/leaflet: la app no depende de un CDN (E19; lo
+  reutiliza el seguimiento del transportista, E25).
+
+    {% from "mapa/_mapa.html" import estilos_del_mapa, mapa, scripts_del_mapa %}
+    {% block head %}{{ estilos_del_mapa() }}{% endblock %}
+    {{ mapa("mapa-centros", puntos) }}
+    {% block scripts %}{{ scripts_del_mapa() }}{% endblock %}
+
+  `puntos` es una lista de dicts con lat, lon y titulo, y opcionales texto, url y link (el texto
+  del enlace del globo). Las teselas son de OpenStreetMap: sin conexión el mapa queda gris, así
+  que cada pantalla muestra también la lista.
+
+  Un botón con data-ubicarme="<id del mapa>" y data-lista="<id de una lista>" centra el mapa en
+  la ubicación del navegador y ordena la lista por cercanía (cada <li> lleva data-lat y data-lon).
+  La ubicación no se guarda ni se manda al servidor.
+#}
+
+{% macro estilos_del_mapa() %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+{% endmacro %}
+
+{% macro scripts_del_mapa() %}
+  <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+{% endmacro %}
+
+{% macro mapa(id, puntos, alto="420px") %}
+  <div id="{{ id }}" class="mapa border rounded" style="height: {{ alto }}"
+       data-puntos='{{ puntos | tojson }}' role="region" aria-label="Mapa"></div>
+{% endmacro %}

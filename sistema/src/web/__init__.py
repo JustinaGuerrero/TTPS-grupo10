@@ -9,7 +9,7 @@ from flask_session import Session
 
 from src.core import database
 from src.integraciones import mail
-from src.web import comandos, errores
+from src.web import comandos, errores, tareas
 from src.web.config import CONFIGS
 from src.web.controllers import (
     auditoria,
@@ -25,6 +25,7 @@ from src.web.controllers import (
     patologias,
     registro,
     snomed,
+    turnos,
     usuarios,
 )
 from src.web.helpers import auth, formato, menu
@@ -50,6 +51,7 @@ def create_app(env: str | None = None) -> Flask:
     formato.init_app(app)
     comandos.registrar(app)
     mail.init_app(app)
+    tareas.init_app(app)
 
     app.register_blueprint(autenticacion.bp)
     app.register_blueprint(registro.bp)
@@ -65,6 +67,7 @@ def create_app(env: str | None = None) -> Flask:
     app.register_blueprint(pagos.bp)
     app.register_blueprint(auditoria.bp)
     app.register_blueprint(cupones.bp)
+    app.register_blueprint(turnos.bp)
     app.register_blueprint(estudios.bp)
     errores.registrar(app)
 

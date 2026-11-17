@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block title %}Turnos en {{ centro.nombre }}{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('turnos.mio') }}">Mi turno</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('turnos.centros') }}">Centros de extracción</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ centro.nombre }}</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-1">Turnos en {{ centro.nombre }}</h1>
+  <p class="text-body-secondary">{{ centro.direccion_completa }} · Tel. {{ centro.telefono }}</p>
+
+  <form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-12 col-sm-auto">
+      <label for="fecha" class="form-label">Día</label>
+      <select id="fecha" name="fecha" class="form-select">
+        {% for dia, nombre in dias %}
+          <option value="{{ dia.isoformat() }}"{% if dia == fecha %} selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-auto">
+      <button type="submit" class="btn btn-outline-primary">Ver horarios</button>
+    </div>
+  </form>
+
+  {% if franjas %}
+    <p class="mb-2">Horarios libres del {{ nombre_de_la_fecha }}. Tocá uno para reservarlo:</p>
+    <div class="d-flex flex-wrap gap-2" id="franjas">
+      {% for franja in franjas %}
+        <form method="post" action="{{ url_for('turnos.reservar_turno') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="centro_id" value="{{ centro.id }}">
+          <input type="hidden" name="inicio" value="{{ franja.isoformat() }}">
+          <button type="submit" class="btn btn-outline-primary">{{ franja.strftime("%H:%M") }}</button>
+        </form>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-body-secondary" id="sin-franjas">
+      No quedan turnos libres el {{ nombre_de_la_fecha }} en este centro. Probá con otro día.
+    </p>
+  {% endif %}
+{% endblock %}

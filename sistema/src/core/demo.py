@@ -19,11 +19,15 @@ from datetime import date
 
 import sqlalchemy as sa
 
+from src.core.calendario import hoy, proximo_dia_habil
+from src.core.centros import CentroExtraccion
 from src.core.database import db
 from src.core.estudios import TRANSICIONES, EstadoEstudio, Estudio, cambiar_estado, crear_estudio
 from src.core.finanzas import Pago, TipoAsiento, TipoPago, registrar_asiento
 from src.core.pacientes import Paciente, TipoSospecha
 from src.core.pagos import Presupuesto, calcular_importe, cantidad_de_genes
+from src.core.turnos import EstadoTurno, TurnoExtraccion
+from src.core.turnos.franjas import franjas_del_dia
 from src.core.usuarios import Medico, buscar_por_email, crear_usuario, roles
 
 MEDICO_DE_DEMO = "medico@exoma.test"
@@ -62,8 +66,34 @@ def crear_pago_de_demo(estudio: Estudio) -> None:
     registrar_asiento(TipoAsiento.PAGO_PARTICULAR, estudio, total, pago=pago)
 
 
+def crear_turno_de_demo(estudio: Estudio) -> None:
+    """Turno reservado en el primer centro activo, en la primera franja libre del próximo día
+    hábil (E19)."""
+    centro = db.session.scalar(
+        sa.select(CentroExtraccion).where(CentroExtraccion.activo).order_by(CentroExtraccion.id)
+    )
+    if centro is None:
+        raise DemoImposible("No hay centros de extracción: corré `flask seeds`.")
+    franjas = franjas_del_dia(proximo_dia_habil(hoy()))
+    ocupadas = set(
+        db.session.scalars(
+            sa.select(TurnoExtraccion.inicio).where(
+                TurnoExtraccion.centro_id == centro.id,
+                TurnoExtraccion.estado.in_([EstadoTurno.RESERVADO, EstadoTurno.ASISTIDO]),
+                TurnoExtraccion.inicio.between(franjas[0], franjas[-1]),
+            )
+        )
+    )
+    libre = next((franja for franja in franjas if franja not in ocupadas), None)
+    if libre is None:
+        raise DemoImposible(f"{centro.nombre} no tiene turnos libres el próximo día hábil.")
+    db.session.add(TurnoExtraccion(estudio_id=estudio.id, centro_id=centro.id, inicio=libre))
+    db.session.flush()
+
+
 DATOS_POR_ESTADO[EstadoEstudio.PRESUPUESTADO] = crear_presupuesto_de_demo
 DATOS_POR_ESTADO[EstadoEstudio.HABILITADO_TURNO] = crear_pago_de_demo
+DATOS_POR_ESTADO[EstadoEstudio.TURNO_SACADO] = crear_turno_de_demo
 
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {

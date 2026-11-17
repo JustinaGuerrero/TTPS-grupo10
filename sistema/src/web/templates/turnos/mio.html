@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block title %}Mi turno{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-3">Mi turno de extracción</h1>
+
+  {% if turno %}
+    <div class="card shadow-sm mb-3" id="turno">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3">Día y hora</dt>
+          <dd class="col-sm-9 fw-semibold">{{ turno.inicio | fecha_hora }}</dd>
+          <dt class="col-sm-3">Centro</dt>
+          <dd class="col-sm-9">{{ turno.centro.nombre }}</dd>
+          <dt class="col-sm-3">Dirección</dt>
+          <dd class="col-sm-9">{{ turno.centro.direccion_completa }}</dd>
+          <dt class="col-sm-3">Teléfono</dt>
+          <dd class="col-sm-9">{{ turno.centro.telefono }}</dd>
+          <dt class="col-sm-3">Estudio</dt>
+          <dd class="col-sm-9 mb-0">{{ estudio.codigo }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <p>
+      El día del turno llevá tu DNI, la <strong>orden de extracción</strong> y el
+      <strong>consentimiento informado firmado</strong>. No hace falta ir en ayunas.
+    </p>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+      <a class="btn btn-primary" href="{{ url_for('turnos.orden_pdf', turno_id=turno.id) }}">
+        Orden de extracción (PDF)
+      </a>
+      <a class="btn btn-primary" href="{{ url_for('turnos.consentimiento_pdf') }}">
+        Consentimiento informado (PDF)
+      </a>
+    </div>
+
+    <h2 class="h5">¿No podés ir?</h2>
+    <p class="text-body-secondary">Cancelar no tiene costo. Después podés reservar otro turno.</p>
+    <form method="post" action="{{ url_for('turnos.cancelar_turno', turno_id=turno.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger">Cancelar el turno</button>
+    </form>
+
+  {% elif puede_reservar %}
+    {% if nueva_extraccion %}
+      <div class="alert alert-warning" id="nueva-extraccion">
+        Hace falta una nueva extracción de sangre. Reservá un turno: no tenés que volver a pagar.
+      </div>
+    {% endif %}
+    <p>Tu estudio {{ estudio.codigo }} está <strong>{{ estudio.estado.nombre }}</strong>: ya podés sacar tu turno de extracción.</p>
+    <a class="btn btn-primary" href="{{ url_for('turnos.centros') }}" id="sacar-turno">Sacar turno</a>
+
+  {% else %}
+    <p class="text-body-secondary" id="sin-turno">
+      Tu estudio {{ estudio.codigo }} está <strong>{{ estudio.estado.nombre }}</strong>.
+      {% if estudio.estado.value in ("creado", "presupuestado", "pendiente_autorizacion", "rechazado_obra_social") %}
+        Vas a poder sacar el turno de extracción cuando esté pago o autorizado por tu obra social.
+      {% else %}
+        No tenés un turno de extracción pendiente.
+      {% endif %}
+    </p>
+  {% endif %}
+{% endblock %}
