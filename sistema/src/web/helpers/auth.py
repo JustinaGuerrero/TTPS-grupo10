@@ -13,6 +13,7 @@ Toda ruta lleva los dos decoradores, en este orden:
 En las vistas y plantillas, el usuario logueado está en `g.usuario` (None si no hay sesión).
 """
 
+from dataclasses import dataclass
 from functools import wraps
 from urllib.parse import urlsplit
 
@@ -32,11 +33,47 @@ from flask import (
 from src.core.usuarios import Usuario, buscar_por_id, roles
 
 CLAVE_DE_SESION = "usuario_id"
+CLAVE_USUARIO_PENDIENTE = "verificacion_usuario_id"
+CLAVE_CODIGO_PENDIENTE = "verificacion_codigo_id"
+CLAVE_HUELLA_PENDIENTE = "verificacion_huella_hash"
+CLAVE_COOKIE_PENDIENTE = "verificacion_cookie_dispositivo"
+CLAVE_SIGUIENTE_PENDIENTE = "verificacion_siguiente"
+RUTAS_DE_VERIFICACION_PENDIENTE = {
+    "autenticacion.verificar_codigo",
+    "autenticacion.reenviar_codigo",
+}
+
+
+@dataclass(frozen=True)
+class VerificacionPendiente:
+    usuario_id: int
+    codigo_id: int
+    huella_hash: str
+    cookie_dispositivo: str
+    siguiente: str | None
 
 
 def init_app(app: Flask) -> None:
     app.before_request(cargar_usuario_actual)
     app.after_request(no_guardar_en_el_navegador)
+
+
+def init_guardia_cambio_contrasena(app: Flask) -> None:
+    """Se registra después de CSRF para que todo POST mantenga la validación del token."""
+    app.before_request(exigir_cambio_contrasena)
+
+
+def exigir_cambio_contrasena() -> Response | None:
+    usuario = g.get("usuario")
+    if usuario is None or not usuario.debe_cambiar_contrasena:
+        return None
+    if request.endpoint in {
+        "static",
+        "autenticacion.cerrar_sesion",
+        "autenticacion.cambiar_contrasena",
+    }:
+        return None
+    return redirect(url_for("autenticacion.cambiar_contrasena"))
 
 
 def no_guardar_en_el_navegador(respuesta: Response) -> Response:
@@ -75,6 +112,47 @@ def iniciar_sesion_de(usuario: Usuario) -> None:
     g.usuario = usuario
 
 
+def iniciar_verificacion_pendiente(
+    usuario_id: int,
+    codigo_id: int,
+    huella_hash: str,
+    cookie_dispositivo: str,
+    siguiente: str | None,
+) -> None:
+    """Guarda el desafío sin autenticar al usuario y regenera el id de sesión."""
+    session.clear()
+    session[CLAVE_USUARIO_PENDIENTE] = usuario_id
+    session[CLAVE_CODIGO_PENDIENTE] = codigo_id
+    session[CLAVE_HUELLA_PENDIENTE] = huella_hash
+    session[CLAVE_COOKIE_PENDIENTE] = cookie_dispositivo
+    session[CLAVE_SIGUIENTE_PENDIENTE] = siguiente
+    session.permanent = True
+    current_app.session_interface.regenerate(session)
+
+
+def verificacion_pendiente() -> VerificacionPendiente | None:
+    usuario_id = session.get(CLAVE_USUARIO_PENDIENTE)
+    codigo_id = session.get(CLAVE_CODIGO_PENDIENTE)
+    huella_hash = session.get(CLAVE_HUELLA_PENDIENTE)
+    cookie = session.get(CLAVE_COOKIE_PENDIENTE)
+    siguiente = session.get(CLAVE_SIGUIENTE_PENDIENTE)
+    if (
+        type(usuario_id) is not int
+        or type(codigo_id) is not int
+        or not isinstance(huella_hash, str)
+        or not isinstance(cookie, str)
+        or (siguiente is not None and not isinstance(siguiente, str))
+    ):
+        return None
+    return VerificacionPendiente(usuario_id, codigo_id, huella_hash, cookie, siguiente)
+
+
+def actualizar_codigo_pendiente(codigo_id: int) -> None:
+    if verificacion_pendiente() is None:
+        raise RuntimeError("No hay una verificación pendiente para actualizar.")
+    session[CLAVE_CODIGO_PENDIENTE] = codigo_id
+
+
 def cerrar_sesion() -> None:
     session.clear()
     g.usuario = None
@@ -86,6 +164,11 @@ def login_required(vista):
     @wraps(vista)
     def envoltura(*args, **kwargs):
         if g.get("usuario") is None:
+            pendiente = verificacion_pendiente()
+            if pendiente is not None:
+                if request.endpoint in RUTAS_DE_VERIFICACION_PENDIENTE:
+                    return vista(*args, **kwargs)
+                return redirect(url_for("autenticacion.verificar_codigo"))
             return _redirigir_al_login()
         return vista(*args, **kwargs)
 
@@ -105,8 +188,15 @@ def rol_requerido(*codigos: str):
         def envoltura(*args, **kwargs):
             usuario = g.get("usuario")
             if usuario is None:
-                # Por si alguien olvidó @login_required o invirtió el orden.
-                return _redirigir_al_login()
+                pendiente = verificacion_pendiente()
+                if pendiente is None:
+                    return _redirigir_al_login()
+                if request.endpoint not in RUTAS_DE_VERIFICACION_PENDIENTE:
+                    return redirect(url_for("autenticacion.verificar_codigo"))
+                usuario = buscar_por_id(pendiente.usuario_id)
+                if usuario is None or not usuario.activo:
+                    cerrar_sesion()
+                    return _redirigir_al_login()
             if not usuario.tiene_rol(*codigos):
                 abort(403)
             return vista(*args, **kwargs)
