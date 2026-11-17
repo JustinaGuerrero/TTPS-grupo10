@@ -7,9 +7,10 @@ import re
 from pathlib import Path
 
 import pytest
-from conftest import CONTRASENA_DE_TEST
+from conftest import CONTRASENA_DE_TEST, codigo_de_verificacion
 
 from src.core.usuarios import roles
+from src.integraciones.mail import mail
 
 PLANTILLAS = Path(__file__).resolve().parents[1] / "src" / "web" / "templates"
 APERTURA_DE_FORM_POST = re.compile(r"<form\b[^>]*\bmethod\s*=\s*[\"']?post\b", re.IGNORECASE)
@@ -35,6 +36,18 @@ def _login_con_token(client, email):
     return _login(client, email, csrf_token=_token(client.get("/login").text))
 
 
+def _login_verificado_con_token(client, email):
+    with mail.record_messages() as enviados:
+        respuesta = _login_con_token(client, email)
+    assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/verificar"
+    codigo = codigo_de_verificacion(enviados[0])
+    return client.post(
+        "/verificar",
+        data={"codigo": codigo, "csrf_token": _token(client.get("/verificar").text)},
+    )
+
+
 def test_login_sin_token_no_inicia_sesion_y_vuelve_al_login(client, crear_usuario, csrf_activo):
     email = crear_usuario(roles.ADMINISTRATIVO)
 
@@ -50,9 +63,19 @@ def test_volver_atras_al_login_e_ingresar_con_otra_cuenta(client, crear_usuario,
     paciente = crear_usuario(roles.PACIENTE)
     medico = crear_usuario(roles.MEDICO_TRATANTE)
     login_guardado = client.get("/login").text  # La copia que mostraría el botón Atrás.
-    _login(client, paciente, csrf_token=_token(login_guardado))
+    with mail.record_messages() as enviados:
+        desafio = _login(client, paciente, csrf_token=_token(login_guardado))
+    assert desafio.headers["Location"] == "/verificar"
+    client.post(
+        "/verificar",
+        data={
+            "codigo": codigo_de_verificacion(enviados[0]),
+            "csrf_token": _token(client.get("/verificar").text),
+        },
+    )
 
-    respuesta = _login(client, medico, csrf_token=_token(login_guardado))
+    inicio = client.get("/")
+    respuesta = _login(client, medico, csrf_token=_token(inicio.text))
 
     assert respuesta.status_code == 302
     assert respuesta.headers["Location"] == "/"
@@ -65,7 +88,7 @@ def test_volver_atras_al_login_e_ingresar_con_otra_cuenta(client, crear_usuario,
 def test_login_y_logout_con_token_funcionan(client, crear_usuario, csrf_activo):
     email = crear_usuario(roles.ADMINISTRATIVO)
 
-    assert _login_con_token(client, email).status_code == 302
+    assert _login_verificado_con_token(client, email).status_code == 302
     inicio = client.get("/")
     assert inicio.status_code == 200
 
@@ -76,7 +99,7 @@ def test_login_y_logout_con_token_funcionan(client, crear_usuario, csrf_activo):
 
 
 def test_otro_sitio_no_puede_cerrar_la_sesion(client, crear_usuario, csrf_activo):
-    _login_con_token(client, crear_usuario(roles.PACIENTE))
+    _login_verificado_con_token(client, crear_usuario(roles.PACIENTE))
 
     # Un formulario de otro sitio puede mandar la cookie, pero no conoce el token.
     respuesta = client.post("/logout")
@@ -128,7 +151,7 @@ def test_todos_los_formularios_post_llevan_el_token():
 def test_dar_de_alta_usuario_sin_token_responde_400_y_no_crea_nada(
     app, client, crear_usuario, csrf_activo
 ):
-    _login_con_token(client, crear_usuario(roles.ADMINISTRADOR_GENERAL))
+    _login_verificado_con_token(client, crear_usuario(roles.ADMINISTRADOR_GENERAL))
     datos = {
         "rol_codigo": roles.ADMINISTRATIVO,
         "nombre": "Ana",

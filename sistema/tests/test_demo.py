@@ -42,12 +42,13 @@ def test_demo_habilitado_turno_crea_un_paciente_nuevo_con_el_historial_completo(
     assert estado == EstadoEstudio.HABILITADO_TURNO
     assert historial == ["creado", "presupuestado", "habilitado_turno"]
 
-    # El paciente de demo entra con la contraseña de los seeds.
+    # El paciente de demo llega a la verificación de dispositivo con la contraseña provisoria.
     respuesta = app.test_client().post(
         "/login",
         data={"email": "demo.1@exoma.test", "contrasena": app.config["SEEDS_CONTRASENA"]},
     )
     assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/verificar"
 
 
 def test_cada_demo_es_un_paciente_nuevo(app, con_seeds):

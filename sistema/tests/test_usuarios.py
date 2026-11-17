@@ -9,6 +9,7 @@ import smtplib
 
 import pytest
 import sqlalchemy as sa
+from conftest import codigo_de_verificacion
 
 from src.core.database import db
 from src.core.paginacion import Pagina
@@ -359,10 +360,13 @@ def test_el_nuevo_usuario_inicia_sesion_con_la_contrasena_del_mail(app, admin):
     assert usuario.activo
 
     nuevo = app.test_client()
-    respuesta = nuevo.post(
-        "/login", data={"email": DATOS_VALIDOS["email"], "contrasena": contrasena}
-    )
+    with mail.record_messages() as verificacion:
+        respuesta = nuevo.post(
+            "/login", data={"email": DATOS_VALIDOS["email"], "contrasena": contrasena}
+        )
     assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/verificar"
+    nuevo.post("/verificar", data={"codigo": codigo_de_verificacion(verificacion[0])})
     assert "Ana Gómez" in nuevo.get("/").text
 
 

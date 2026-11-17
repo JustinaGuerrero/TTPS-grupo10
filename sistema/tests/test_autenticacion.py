@@ -4,10 +4,11 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 import sqlalchemy as sa
-from conftest import CONTRASENA_DE_TEST
+from conftest import CONTRASENA_DE_TEST, codigo_de_verificacion
 
 from src.core.database import db
 from src.core.usuarios import Usuario, roles
+from src.integraciones.mail import mail
 from src.web.helpers import menu
 from src.web.helpers.auth import destino_seguro, login_required, rol_requerido
 
@@ -16,6 +17,15 @@ MENSAJE_DE_RECHAZO = "El mail o la contraseña no son correctos."
 
 def _login(client, email, contrasena=CONTRASENA_DE_TEST, **extra):
     return client.post("/login", data={"email": email, "contrasena": contrasena, **extra})
+
+
+def _login_verificado(client, email, contrasena=CONTRASENA_DE_TEST, **extra):
+    with mail.record_messages() as enviados:
+        desafio = _login(client, email, contrasena, **extra)
+    assert desafio.status_code == 302
+    assert urlsplit(desafio.headers["Location"]).path == "/verificar"
+    assert len(enviados) == 1
+    return client.post("/verificar", data={"codigo": codigo_de_verificacion(enviados[0])})
 
 
 def _redireccion(respuesta) -> tuple[str, dict[str, list[str]]]:
@@ -40,7 +50,7 @@ def ruta_solo_administrativos(app):
 def test_login_correcto_entra_a_la_vista_de_su_rol(client, crear_usuario):
     email = crear_usuario(roles.BIOINFORMATICO)
 
-    respuesta = _login(client, email)
+    respuesta = _login_verificado(client, email)
 
     assert respuesta.status_code == 302
     assert respuesta.headers["Location"] == "/"
@@ -74,9 +84,16 @@ def test_login_regenera_el_id_de_sesion(client, crear_usuario):
     client.get("/")  # Sin sesión: el aviso de "Iniciá sesión" crea una sesión anónima.
     id_anonimo = client.get_cookie("session").value
 
-    _login(client, email)
+    with mail.record_messages() as enviados:
+        desafio = _login(client, email)
+    assert desafio.status_code == 302
+    assert urlsplit(desafio.headers["Location"]).path == "/verificar"
+    id_pendiente = client.get_cookie("session").value
+    assert id_pendiente != id_anonimo
 
-    assert client.get_cookie("session").value != id_anonimo
+    client.post("/verificar", data={"codigo": codigo_de_verificacion(enviados[0])})
+
+    assert client.get_cookie("session").value != id_pendiente
 
 
 def test_login_con_sesion_iniciada_va_al_inicio(login_como):
@@ -146,7 +163,7 @@ def test_despues_del_login_vuelve_a_la_pagina_pedida(
     email = crear_usuario(roles.ADMINISTRATIVO)
     _, parametros = _redireccion(client.get("/solo-administrativos?pagina=2"))
 
-    respuesta = _login(client, email, next=parametros["next"][0])
+    respuesta = _login_verificado(client, email, next=parametros["next"][0])
 
     assert respuesta.headers["Location"] == "/solo-administrativos?pagina=2"
 
@@ -154,7 +171,7 @@ def test_despues_del_login_vuelve_a_la_pagina_pedida(
 def test_login_ignora_un_destino_de_otro_sitio(client, crear_usuario):
     email = crear_usuario(roles.ADMINISTRATIVO)
 
-    respuesta = _login(client, email, next="https://otro-sitio.example/")
+    respuesta = _login_verificado(client, email, next="https://otro-sitio.example/")
 
     assert respuesta.headers["Location"] == "/"
 
@@ -270,12 +287,12 @@ def test_el_menu_tiene_una_entrada_por_rol_del_lel():
     assert set(menu.MENU_POR_ROL) == set(roles.TODOS)
 
 
-def test_el_menu_cambia_segun_el_rol(app, client, crear_usuario, monkeypatch):
+def test_el_menu_cambia_segun_el_rol(app, crear_usuario, autenticar_como, monkeypatch):
     item = menu.ItemDeMenu("Patologías de prueba", "inicio.index")
     monkeypatch.setitem(menu.MENU_POR_ROL, roles.GERENTE_MEDICO, [item])
     gerente, paciente = app.test_client(), app.test_client()
-    _login(gerente, crear_usuario(roles.GERENTE_MEDICO))
-    _login(paciente, crear_usuario(roles.PACIENTE))
+    autenticar_como(crear_usuario(roles.GERENTE_MEDICO), gerente)
+    autenticar_como(crear_usuario(roles.PACIENTE), paciente)
 
     assert "Patologías de prueba" in gerente.get("/").text
     assert "Patologías de prueba" not in paciente.get("/").text

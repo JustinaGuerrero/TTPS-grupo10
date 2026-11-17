@@ -3,6 +3,7 @@
 import io
 
 import sqlalchemy as sa
+from conftest import codigo_de_verificacion
 
 from src.core.auditoria import Entidad, RegistroDeCambio
 from src.core.database import db
@@ -14,8 +15,11 @@ from src.integraciones.mail import mail
 
 def _login_medico(client, crear_medico):
     email = crear_medico()
-    respuesta = client.post("/login", data={"email": email, "contrasena": "contrasena-de-test"})
+    with mail.record_messages() as enviados:
+        respuesta = client.post("/login", data={"email": email, "contrasena": "contrasena-de-test"})
     assert respuesta.status_code == 302
+    assert respuesta.headers["Location"] == "/verificar"
+    client.post("/verificar", data={"codigo": codigo_de_verificacion(enviados[0])})
     return email
 
 
@@ -322,7 +326,7 @@ def test_detalle_muestra_solo_codigo_y_estado_del_estudio_vinculado(
 
 
 def test_medico_solo_ve_sus_pacientes_y_administrativo_recibe_403(
-    app, client, crear_medico, crear_paciente, crear_usuario
+    app, client, crear_medico, crear_paciente, crear_usuario, autenticar_como
 ):
     with app.app_context():
         paciente = crear_paciente()
@@ -333,5 +337,5 @@ def test_medico_solo_ve_sus_pacientes_y_administrativo_recibe_403(
 
     client.post("/logout")
     email = crear_usuario(roles.ADMINISTRATIVO)
-    client.post("/login", data={"email": email, "contrasena": "contrasena-de-test"})
+    autenticar_como(email)
     assert client.get("/pacientes").status_code == 403

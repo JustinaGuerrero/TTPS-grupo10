@@ -2,6 +2,7 @@
 
 import pytest
 import sqlalchemy as sa
+from conftest import codigo_de_verificacion
 
 from src.core.database import db
 from src.core.snomed import TerminoSnomed
@@ -13,6 +14,7 @@ from src.core.usuarios import (
     listar_activos_por_rol,
     roles,
 )
+from src.integraciones.mail import mail
 
 DATOS_VALIDOS = {
     "rol_codigo": roles.MEDICO_TRATANTE,
@@ -61,10 +63,13 @@ def test_registra_medico_con_dos_especialidades_y_puede_iniciar_sesion(
         assert db.session.get(TerminoSnomed, "394580004").tipo == "especialidad"
         assert medico.matricula == matricula
 
-    ingreso = client.post(
-        "/login", data={"email": email, "contrasena": DATOS_VALIDOS["contrasena"]}
-    )
+    with mail.record_messages() as enviados:
+        ingreso = client.post(
+            "/login", data={"email": email, "contrasena": DATOS_VALIDOS["contrasena"]}
+        )
     assert ingreso.status_code == 302
+    assert ingreso.headers["Location"] == "/verificar"
+    client.post("/verificar", data={"codigo": codigo_de_verificacion(enviados[0])})
     assert "Ana Gómez" in client.get("/").text
 
 

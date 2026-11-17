@@ -1,11 +1,13 @@
 """`flask seeds`: un usuario de prueba por cada uno de los 7 roles del LEL."""
 
 import sqlalchemy as sa
+from conftest import codigo_de_verificacion
 
 from src.core.database import db
 from src.core.pacientes import Paciente
 from src.core.seeds import USUARIOS_DE_PRUEBA
 from src.core.usuarios import Medico, Rol, Transportista, Usuario, roles
+from src.integraciones.mail import mail
 
 UNO_POR_ROL = {rol: 1 for rol in roles.TODOS}
 
@@ -84,9 +86,12 @@ def test_cada_usuario_de_prueba_inicia_sesion_y_ve_su_rol(app):
 
     for email, nombre, apellido, rol in USUARIOS_DE_PRUEBA:
         client = app.test_client()
-        respuesta = client.post("/login", data={"email": email, "contrasena": contrasena})
+        with mail.record_messages() as enviados:
+            respuesta = client.post("/login", data={"email": email, "contrasena": contrasena})
 
         assert respuesta.status_code == 302, email
+        assert respuesta.headers["Location"] == "/verificar"
+        client.post("/verificar", data={"codigo": codigo_de_verificacion(enviados[0])})
         inicio = client.get("/").text
         assert f"{nombre} {apellido}" in inicio
         assert nombre_del_rol[rol] in inicio

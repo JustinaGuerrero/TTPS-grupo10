@@ -6,7 +6,6 @@ from datetime import date
 
 import pytest
 import sqlalchemy as sa
-from conftest import CONTRASENA_DE_TEST
 
 from src.core.auditoria import Accion, Entidad, RegistroDeCambio
 from src.core.database import db
@@ -227,19 +226,18 @@ def _paciente_del(email: str, paciente_con, usuario_rapido) -> Paciente:
     return paciente
 
 
-def _ingresar(client, email: str) -> None:
-    respuesta = client.post("/login", data={"email": email, "contrasena": CONTRASENA_DE_TEST})
-    assert respuesta.status_code == 302
+def _ingresar(email: str, autenticar_como) -> None:
+    autenticar_como(email)
 
 
 def test_el_medico_da_de_alta_desde_la_pantalla(
-    app, client, crear_medico, paciente_con, usuario_rapido
+    app, client, crear_medico, paciente_con, usuario_rapido, autenticar_como
 ):
     email = crear_medico()
     with app.app_context():
         paciente = _paciente_del(email, paciente_con, usuario_rapido)
         paciente_id = paciente.id
-    _ingresar(client, email)
+    _ingresar(email, autenticar_como)
 
     pantalla = client.get(f"/estudios/nuevo/{paciente_id}")
     assert pantalla.status_code == 200
@@ -264,12 +262,12 @@ def _token(client, ruta: str) -> str:
 
 
 def test_un_gen_inexistente_vuelve_al_formulario_con_el_error(
-    app, client, crear_medico, paciente_con, usuario_rapido
+    app, client, crear_medico, paciente_con, usuario_rapido, autenticar_como
 ):
     email = crear_medico()
     with app.app_context():
         paciente_id = _paciente_del(email, paciente_con, usuario_rapido).id
-    _ingresar(client, email)
+    _ingresar(email, autenticar_como)
 
     respuesta = client.post(
         f"/estudios/nuevo/{paciente_id}",
@@ -286,12 +284,12 @@ def test_un_gen_inexistente_vuelve_al_formulario_con_el_error(
 
 
 def test_con_apigen_caido_la_pantalla_avisa_y_no_crea_nada(
-    app, client, crear_medico, paciente_con, usuario_rapido, monkeypatch
+    app, client, crear_medico, paciente_con, usuario_rapido, monkeypatch, autenticar_como
 ):
     email = crear_medico()
     with app.app_context():
         paciente_id = _paciente_del(email, paciente_con, usuario_rapido).id
-    _ingresar(client, email)
+    _ingresar(email, autenticar_como)
     token = _token(client, f"/estudios/nuevo/{paciente_id}")
 
     def caido(*args, **kwargs):
@@ -307,12 +305,12 @@ def test_con_apigen_caido_la_pantalla_avisa_y_no_crea_nada(
 
 
 def test_los_botones_de_alta_estan_en_la_ficha_y_en_mis_pacientes(
-    app, client, crear_medico, paciente_con, usuario_rapido
+    app, client, crear_medico, paciente_con, usuario_rapido, autenticar_como
 ):
     email = crear_medico()
     with app.app_context():
         paciente_id = _paciente_del(email, paciente_con, usuario_rapido).id
-    _ingresar(client, email)
+    _ingresar(email, autenticar_como)
     ruta = f"/estudios/nuevo/{paciente_id}"
 
     assert ruta in client.get(f"/pacientes/{paciente_id}").get_data(as_text=True)
@@ -326,11 +324,11 @@ def test_los_botones_de_alta_estan_en_la_ficha_y_en_mis_pacientes(
 
 
 def test_el_paciente_de_otro_medico_responde_404(
-    app, client, crear_medico, paciente_con, usuario_rapido
+    app, client, crear_medico, paciente_con, usuario_rapido, autenticar_como
 ):
     with app.app_context():
         paciente_id = paciente_con("FABRY").id
-    _ingresar(client, crear_medico())
+    _ingresar(crear_medico(), autenticar_como)
 
     assert client.get(f"/estudios/nuevo/{paciente_id}").status_code == 404
     assert client.post(f"/estudios/nuevo/{paciente_id}").status_code in (400, 404)
