@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}Órdenes del día{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h1 class="h3 mb-0">Órdenes del día</h1>
+    <form method="get" class="d-flex gap-2" action="{{ url_for('logistica.ordenes') }}">
+      <label for="fecha" class="visually-hidden">Fecha</label>
+      <input type="date" class="form-control" id="fecha" name="fecha" value="{{ fecha.isoformat() }}">
+      <button type="submit" class="btn btn-outline-primary">Ver</button>
+    </form>
+  </div>
+  <p class="text-body-secondary">
+    Se generan solas cada mañana hábil a las 7, una por provincia con muestras listas para retirar.
+    Si el módulo de recorridos falló o faltaba un transportista, generá las que faltan.
+  </p>
+
+  {% if fecha == hoy %}
+    <form method="post" action="{{ url_for('logistica.generar') }}" class="mb-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">Generar las órdenes de hoy que falten</button>
+    </form>
+  {% endif %}
+
+  {% if ordenes %}
+    <div class="table-responsive">
+      <table class="table align-middle bg-body shadow-sm" id="ordenes">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Provincia</th>
+            <th scope="col">Transportista</th>
+            <th scope="col">Recorrido</th>
+            <th scope="col">Avance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for orden in ordenes %}
+            {% set retiradas = orden.paradas | selectattr("retirado_en") | list | length %}
+            <tr>
+              <td>{{ orden.transportista.provincia.nombre }}</td>
+              <td>{{ orden.transportista.usuario.nombre_completo }}</td>
+              <td>
+                <ol class="mb-0 ps-3">
+                  {% for parada in orden.paradas %}
+                    <li>
+                      {{ parada.centro.nombre }}
+                      {% if parada.retirado_en %}
+                        <span class="small text-success">· retirado {{ parada.retirado_en | fecha_hora }}</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ol>
+              </td>
+              <td class="text-nowrap">
+                {% if retiradas == orden.paradas | length %}
+                  <span class="badge text-bg-success">Completa</span>
+                {% else %}
+                  {{ retiradas }} de {{ orden.paradas | length }}
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-body-secondary" id="sin-ordenes">No hay órdenes del día para el {{ fecha.strftime("%d/%m/%Y") }}.</p>
+  {% endif %}
+{% endblock %}
