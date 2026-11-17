@@ -99,8 +99,8 @@ def test_las_opciones_vienen_de_la_api_con_su_porcentaje(app):
 
 def test_una_obra_social_que_no_cubre_nada_no_se_ofrece(app, monkeypatch):
     lista = [
-        api_de_obras_sociales.ObraSocialEnApi("OS-000", "Sin cobertura", Decimal(0)),
-        api_de_obras_sociales.ObraSocialEnApi("OS-050", "A medias", Decimal(50)),
+        api_de_obras_sociales.ObraSocialEnApi("OS-000", "Sin cobertura", Decimal(0), "id-0"),
+        api_de_obras_sociales.ObraSocialEnApi("OS-050", "A medias", Decimal(50), "id-50"),
     ]
     monkeypatch.setattr(api_de_obras_sociales, "listar", lambda cliente=None: lista)
 
