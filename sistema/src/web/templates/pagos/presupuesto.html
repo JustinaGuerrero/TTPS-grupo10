@@ -31,9 +31,34 @@
     </p>
 
     {% if estudio.estado.value == "presupuestado" %}
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{{ url_for('pagos.pagar', estudio_id=estudio.id) }}">
+          Pagar de forma particular
+        </a>
+        <a class="btn btn-outline-primary" href="{{ url_for('coberturas.elegir', estudio_id=estudio.id) }}">
+          Usar mi obra social
+        </a>
+      </div>
+    {% elif diferencia %}
+      <div class="alert alert-warning" id="falta-diferencia">
+        {{ cobertura.obra_social.nombre }} autorizó el {{ cobertura.porcentaje.normalize() }} %
+        ({{ cobertura.importe_cubierto_usd }} USD). Falta que pagues la diferencia:
+        <strong>{{ diferencia }} USD</strong>.
+      </div>
       <a class="btn btn-primary" href="{{ url_for('pagos.pagar', estudio_id=estudio.id) }}">
-        Pagar de forma particular
+        Pagar la diferencia
       </a>
+    {% elif cobertura and cobertura.estado.value == "pendiente" %}
+      <p class="mb-0" id="cobertura-pendiente">
+        Pediste la cobertura de {{ cobertura.obra_social.nombre }} ({{ cobertura.porcentaje.normalize() }} %).
+        El laboratorio le está pidiendo la autorización: te avisamos cuando responda.
+      </p>
+    {% elif cobertura and cobertura.estado.value == "rechazada" %}
+      <div class="alert alert-danger" id="cobertura-rechazada">
+        {{ cobertura.obra_social.nombre }} rechazó la cobertura de tu estudio. Si tenés una
+        resolución judicial favorable, podés
+        <a href="{{ url_for('coberturas.reautorizacion', estudio_id=estudio.id) }}">pedir la reautorización</a>.
+      </div>
     {% else %}
       <p class="text-body-secondary mb-0">Este estudio ya no está pendiente de pago.</p>
     {% endif %}
