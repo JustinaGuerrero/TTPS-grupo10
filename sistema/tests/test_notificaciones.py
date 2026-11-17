@@ -4,7 +4,6 @@ import smtplib
 
 import pytest
 import sqlalchemy as sa
-from conftest import CONTRASENA_DE_TEST
 
 from src.core.database import db
 from src.core.notificaciones import (
@@ -160,13 +159,12 @@ def test_avisos_de_pagina_los_mas_nuevos_primero(app, usuario_rapido):
 
 
 @pytest.fixture
-def entrar(client, crear_usuario, app):
+def entrar(crear_usuario, app, autenticar_como):
     """Fábrica: `entrar(rol)` loguea a un usuario nuevo de ese rol y devuelve su id."""
 
     def _entrar(rol: str = roles.PACIENTE) -> int:
         email = crear_usuario(rol)
-        respuesta = client.post("/login", data={"email": email, "contrasena": CONTRASENA_DE_TEST})
-        assert respuesta.status_code == 302
+        autenticar_como(email)
         with app.app_context():
             return buscar_por_email(email).id
 

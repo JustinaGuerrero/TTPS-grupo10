@@ -55,6 +55,46 @@ class Usuario(Base):
         return f"<Usuario {self.id} {self.email}>"
 
 
+class DispositivoConfiable(Base):
+    """Combinación de navegador y red verificada por el usuario (E04)."""
+
+    __tablename__ = "dispositivos_confiables"
+    __table_args__ = (
+        sa.UniqueConstraint("usuario_id", "huella_hash", name="dispositivos_usuario_huella_key"),
+    )
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(always=True), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(sa.ForeignKey("usuarios.id", ondelete="CASCADE"))
+    huella_hash: Mapped[str]
+    creado_en: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+    ultimo_ingreso_en: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class CodigoVerificacion(Base):
+    """Código de un solo uso, vinculado al usuario y a la huella que inició sesión (E04)."""
+
+    __tablename__ = "codigos_verificacion"
+    __table_args__ = (
+        sa.CheckConstraint("intentos between 0 and 5", name="codigo_verificacion_intentos_check"),
+        sa.Index("codigos_usuario_huella_creado_idx", "usuario_id", "huella_hash", "creado_en"),
+    )
+
+    id: Mapped[int] = mapped_column(sa.BigInteger, sa.Identity(always=True), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(sa.ForeignKey("usuarios.id", ondelete="CASCADE"))
+    codigo_hash: Mapped[str]
+    huella_hash: Mapped[str]
+    intentos: Mapped[int] = mapped_column(sa.SmallInteger, server_default=sa.text("0"))
+    expira_en: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    usado_en: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    creado_en: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
 class Medico(Base):
     """Perfil 1:1 de un usuario con rol médico tratante o gerente médico (E01): su matrícula.
 

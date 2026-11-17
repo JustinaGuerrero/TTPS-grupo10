@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block title %}Cambiar contraseña{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-5 col-xl-4">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-1">Elegí una contraseña nueva</h1>
+          <p class="text-body-secondary small mb-4">
+            Por seguridad, cambiá la contraseña provisoria antes de continuar.
+          </p>
+
+          <form method="post" action="{{ url_for('autenticacion.cambiar_contrasena') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <label for="contrasena" class="form-label">Contraseña nueva</label>
+              <input type="password" class="form-control" id="contrasena" name="contrasena"
+                     autocomplete="new-password" minlength="8" required autofocus>
+              {% if errores.get("contrasena") %}
+                <div class="text-danger small mt-1">{{ errores["contrasena"] }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-4">
+              <label for="confirmar_contrasena" class="form-label">Confirmar contraseña</label>
+              <input type="password" class="form-control" id="confirmar_contrasena"
+                     name="confirmar_contrasena" autocomplete="new-password" minlength="8" required>
+              {% if errores.get("confirmacion") %}
+                <div class="text-danger small mt-1">{{ errores["confirmacion"] }}</div>
+              {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Guardar contraseña</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

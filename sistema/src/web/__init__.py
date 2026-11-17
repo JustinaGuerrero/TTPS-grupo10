@@ -48,6 +48,7 @@ def create_app(env: str | None = None) -> Flask:
     auth.init_app(app)
     # Después de auth: si el token falla, la página de error ya conoce al usuario logueado.
     csrf.init_app(app)
+    auth.init_guardia_cambio_contrasena(app)
     menu.init_app(app)
     formato.init_app(app)
     comandos.registrar(app)

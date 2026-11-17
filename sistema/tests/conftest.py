@@ -10,6 +10,7 @@ fabricas.py, que se carga con pytest_plugins.
 """
 
 import os
+import re
 
 import pytest
 import sqlalchemy as sa
@@ -17,13 +18,21 @@ from dotenv import load_dotenv
 
 from src.core import migraciones
 from src.core.database import db
+from src.core.usuarios import buscar_por_email
 from src.web import create_app
+from src.web.helpers.auth import CLAVE_DE_SESION
 
 pytest_plugins = ["fabricas"]
 
 # Contraseña de los usuarios que crea la fábrica crear_usuario (no es la de `flask seeds`).
 # Los tests la importan de acá: `from conftest import CONTRASENA_DE_TEST`.
 CONTRASENA_DE_TEST = "contrasena-de-test"
+
+
+def codigo_de_verificacion(mensaje) -> str:
+    coincidencia = re.search(r"(?m)^\s+([0-9]{6})$", mensaje.body)
+    assert coincidencia is not None, "El mail no contiene un código de seis dígitos"
+    return coincidencia.group(1)
 
 
 def _url_de_test() -> str:
@@ -88,13 +97,28 @@ def client(app):
 
 
 @pytest.fixture
-def login_como(client, crear_usuario):
-    """Fábrica: `login_como(roles.ADMINISTRATIVO)` crea un usuario de ese rol y loguea `client`."""
+def autenticar_como(app, client):
+    """Instala una sesión autenticada por email para tests que no prueban el login."""
+
+    def _autenticar(email: str, otro_cliente=None):
+        with app.app_context():
+            usuario = buscar_por_email(email)
+            assert usuario is not None
+            usuario_id = usuario.id
+        cliente = otro_cliente or client
+        with cliente.session_transaction() as sesion:
+            sesion[CLAVE_DE_SESION] = usuario_id
+            sesion.permanent = True
+        return cliente
+
+    return _autenticar
+
+
+@pytest.fixture
+def login_como(crear_usuario, autenticar_como):
+    """Crea un usuario e instala una sesión autenticada para los tests que no prueban el login."""
 
     def _login(rol: str):
-        email = crear_usuario(rol)
-        respuesta = client.post("/login", data={"email": email, "contrasena": CONTRASENA_DE_TEST})
-        assert respuesta.status_code == 302, f"No se pudo iniciar sesión como {rol}"
-        return client
+        return autenticar_como(crear_usuario(rol))
 
     return _login

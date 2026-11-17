@@ -188,7 +188,7 @@ Cada combinación de dispositivo y red desde la que el usuario ya validó un có
 |---|---|---|---|
 | id | bigint | PK | |
 | usuario_id | bigint | FK → usuarios | |
-| huella_hash | text | | Hash del dispositivo (cookie del navegador) y de la red (IP). Nunca se guarda en claro |
+| huella_hash | text | | HMAC de la cookie aleatoria del navegador y la IP. Nunca se guardan en claro |
 | creado_en | timestamptz | | |
 | ultimo_ingreso_en | timestamptz | | |
 
@@ -204,11 +204,11 @@ Cada combinación de dispositivo y red desde la que el usuario ya validó un có
 |---|---|---|---|
 | id | bigint | PK | |
 | usuario_id | bigint | FK → usuarios | |
-| codigo_hash | text | | El código que va por mail, hasheado |
+| codigo_hash | text | | Código aleatorio de 6 dígitos enviado por mail, hasheado |
 | huella_hash | text | | Dispositivo y red que lo pidieron. Al validarlo, se agregan a `dispositivos_confiables` |
-| intentos | smallint | | Intentos fallidos; al llegar al máximo, el código deja de valer |
-| expira_en | timestamptz | | Por ejemplo, 10 minutos después de enviado |
-| usado_en | timestamptz | | |
+| intentos | smallint | | Intentos fallidos; al quinto, el código deja de valer |
+| expira_en | timestamptz | | Diez minutos después de enviado |
+| usado_en | timestamptz | | Al validar, vencer o reenviar deja de ser válido |
 | creado_en | timestamptz | | |
 
 **Escenarios:** E04.
