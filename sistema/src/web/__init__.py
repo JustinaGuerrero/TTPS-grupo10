@@ -22,6 +22,7 @@ from src.web.controllers import (
     estudios,
     historial,
     inicio,
+    logistica,
     pacientes,
     pagos,
     patologias,
@@ -74,6 +75,7 @@ def create_app(env: str | None = None) -> Flask:
     app.register_blueprint(estudios.bp)
     app.register_blueprint(coberturas.bp)
     app.register_blueprint(bot.bp)
+    app.register_blueprint(logistica.bp)
     errores.registrar(app)
 
     return app
