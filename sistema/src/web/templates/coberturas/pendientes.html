@@ -3,10 +3,17 @@
 {% block title %}Coberturas{% endblock %}
 
 {% block content %}
-  <h1 class="h3 mb-2">Coberturas para autorizar</h1>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h1 class="h3 mb-0">Coberturas para autorizar</h1>
+    <form method="post" action="{{ url_for('coberturas.consultar_modulo') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-primary">Consultar el módulo ahora</button>
+    </form>
+  </div>
   <p class="text-body-secondary">
-    Pedile la autorización a cada obra social por teléfono y registrá su respuesta. Una autorización
-    equivale a un pago de la obra social.
+    Cada pedido va al módulo de obras sociales, donde la obra social autoriza o rechaza, y el sistema
+    toma su respuesta cada 30 minutos. Si el módulo no responde, registrá la respuesta a mano. Una
+    autorización equivale a un pago de la obra social.
   </p>
 
   {% if filas %}
@@ -19,7 +26,7 @@
             <th scope="col">Obra social</th>
             <th scope="col">Cobertura</th>
             <th scope="col">Pedida</th>
-            <th scope="col">Respuesta</th>
+            <th scope="col">Respuesta a mano</th>
           </tr>
         </thead>
         <tbody>
@@ -32,6 +39,13 @@
               </td>
               <td>
                 {{ cobertura.obra_social.nombre }}
+                <div class="small">
+                  {% if cobertura.id_estudio_modulo %}
+                    <span class="text-body-secondary">En el módulo: {{ cobertura.id_estudio_modulo }}</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Sin enviar al módulo</span>
+                  {% endif %}
+                </div>
                 {% if cobertura.demandas %}
                   <div>
                     <span class="badge text-bg-warning">Reautorización</span>
