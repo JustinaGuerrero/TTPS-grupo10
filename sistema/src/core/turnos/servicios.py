@@ -189,6 +189,41 @@ def cancelar(
     return turno
 
 
+# --- E22 Asistencia e inasistencia (supuesto O7) ----------------------------------------------
+
+
+def marcar_asistido(turno: TurnoExtraccion) -> TurnoExtraccion:
+    """E22: el centro avisó que tomó la muestra. La franja sigue ocupada (ESTADOS_QUE_OCUPAN).
+
+    Lanza ErrorDeTurno si el turno no está reservado.
+    """
+    if turno.estado != EstadoTurno.RESERVADO:
+        raise ErrorDeTurno("Ese turno no está reservado.")
+    turno.estado = EstadoTurno.ASISTIDO
+    db.session.flush()
+    return turno
+
+
+def marcar_ausentes(hasta: datetime) -> list[TurnoExtraccion]:
+    """O7: pasa a ausente los turnos reservados que empezaron antes de `hasta` y los devuelve.
+
+    Solo toma los de estudios en Turno sacado. Los marca con un solo UPDATE: si la tarea corre dos
+    veces a la vez, cada turno lo procesa una sola. No cambia el estado del estudio.
+    """
+    marcados = db.session.scalars(
+        sa.update(TurnoExtraccion)
+        .where(
+            TurnoExtraccion.estado == EstadoTurno.RESERVADO,
+            TurnoExtraccion.inicio < hasta,
+            TurnoExtraccion.estudio_id == Estudio.id,
+            Estudio.estado == EstadoEstudio.TURNO_SACADO,
+        )
+        .values(estado=EstadoTurno.AUSENTE)
+        .returning(TurnoExtraccion.id)
+    ).all()
+    return [db.session.get(TurnoExtraccion, turno_id) for turno_id in sorted(marcados)]
+
+
 # --- E21 Recordar turno -----------------------------------------------------------------------
 
 

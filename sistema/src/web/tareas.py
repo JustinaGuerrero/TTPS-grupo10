@@ -25,6 +25,7 @@ from flask import Flask
 
 from src.core.calendario import ZONA_HORARIA
 from src.core.database import db
+from src.core.muestras import procesar_inasistencias
 from src.core.turnos import enviar_recordatorios
 
 
@@ -39,6 +40,12 @@ class Tarea(NamedTuple):
 TAREAS: list[Tarea] = [
     # E21: los días hábiles a las 10, el recordatorio de los turnos del próximo día hábil.
     Tarea("recordatorios_de_turno", enviar_recordatorios, {"day_of_week": "mon-fri", "hour": 10}),
+    # O7: los días hábiles a las 18:30, libera los turnos del día sin mensaje de muestra tomada.
+    Tarea(
+        "inasistencias",
+        procesar_inasistencias,
+        {"day_of_week": "mon-fri", "hour": 18, "minute": 30},
+    ),
 ]
 
 _planificador: BackgroundScheduler | None = None

@@ -61,10 +61,10 @@ def test_cada_demo_es_un_paciente_nuevo(app, con_seeds):
 
 
 def test_demo_de_un_estado_que_necesita_filas_de_otro_issue_lo_dice(app, con_seeds):
-    resultado = app.test_cli_runner().invoke(args=["demo", "en_laboratorio_central"])
+    resultado = app.test_cli_runner().invoke(args=["demo", "pendiente_envio"])
 
     assert resultado.exit_code != 0
-    assert "falta la muestra (#8)" in resultado.output
+    assert "falta el sample set (#14)" in resultado.output
     with app.app_context():
         assert buscar_por_email("demo.1@exoma.test") is None
 

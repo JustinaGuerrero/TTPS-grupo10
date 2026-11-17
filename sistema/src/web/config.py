@@ -71,6 +71,8 @@ class Config:
         self.CUPONES_KEY = os.getenv("CUPONES_KEY")
         self.OBRAS_SOCIALES_URL = os.getenv("OBRAS_SOCIALES_URL")
         self.OBRAS_SOCIALES_KEY = os.getenv("OBRAS_SOCIALES_KEY")
+        # Secreto que Telegram manda en X-Telegram-Bot-Api-Secret-Token al webhook del bot (E22).
+        self.TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET")
         self.USE_MOCKS = _bool("USE_MOCKS")
         self.SEEDS_CONTRASENA = os.getenv("SEEDS_CONTRASENA")
 
@@ -105,6 +107,7 @@ class TestingConfig(Config):
         self.MAIL_DEFAULT_SENDER = REMITENTE_DE_PRUEBA
         self.URL_BASE = "http://exoma.test"
         self.USE_MOCKS = True
+        self.TELEGRAM_WEBHOOK_SECRET = "secreto-del-bot-de-tests"
         # Sesiones en memoria: cada app de test empieza sin sesiones y no deja archivos.
         self.SESSION_CACHELIB = SimpleCache()
         self.SEEDS_CONTRASENA = CONTRASENA_DE_SEEDS_POR_DEFECTO

@@ -128,6 +128,23 @@ def rechazar_cobertura_de_demo(estudio: Estudio) -> None:
 DATOS_POR_ESTADO[EstadoEstudio.PENDIENTE_AUTORIZACION] = crear_cobertura_de_demo
 DATOS_POR_ESTADO[EstadoEstudio.RECHAZADO_OBRA_SOCIAL] = rechazar_cobertura_de_demo
 
+
+def crear_muestra_de_demo(estudio: Estudio) -> None:
+    """Muestra tomada en el turno reservado del estudio, que pasa a asistido (E22)."""
+    from src.core.calendario import ahora
+    from src.core.muestras import Muestra
+    from src.core.turnos import marcar_asistido, turno_vigente
+
+    turno = turno_vigente(estudio)
+    if turno is None:
+        raise DemoImposible(f"El estudio {estudio.codigo} no tiene un turno reservado.")
+    marcar_asistido(turno)
+    db.session.add(Muestra(estudio_id=estudio.id, turno_id=turno.id, tomada_en=ahora()))
+    db.session.flush()
+
+
+DATOS_POR_ESTADO[EstadoEstudio.LISTO_PARA_RETIRAR] = crear_muestra_de_demo
+
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {
     EstadoEstudio.PENDIENTE_AUTORIZACION: "la cobertura de obra social (#17)",
