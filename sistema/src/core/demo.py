@@ -95,6 +95,39 @@ DATOS_POR_ESTADO[EstadoEstudio.PRESUPUESTADO] = crear_presupuesto_de_demo
 DATOS_POR_ESTADO[EstadoEstudio.HABILITADO_TURNO] = crear_pago_de_demo
 DATOS_POR_ESTADO[EstadoEstudio.TURNO_SACADO] = crear_turno_de_demo
 
+
+def crear_cobertura_de_demo(estudio: Estudio) -> None:
+    """Cobertura pendiente de la obra social de prueba al 70 % (E16)."""
+    from decimal import Decimal
+
+    from src.core.coberturas import Cobertura
+    from src.core.obras_sociales import ObraSocial
+
+    if db.session.get(ObraSocial, "OS-070") is None:
+        db.session.add(ObraSocial(codigo="OS-070", nombre="Obra Social de Prueba Parcial"))
+        db.session.flush()
+    db.session.add(
+        Cobertura(estudio_id=estudio.id, obra_social_codigo="OS-070", porcentaje=Decimal(70))
+    )
+    db.session.flush()
+
+
+def rechazar_cobertura_de_demo(estudio: Estudio) -> None:
+    """La obra social rechazó la cobertura, registrado por administrativo@exoma.test (E17)."""
+    from src.core.calendario import ahora
+    from src.core.coberturas import EstadoCobertura, cobertura_de
+
+    administrativo = buscar_por_email("administrativo@exoma.test")
+    cobertura = cobertura_de(estudio)
+    cobertura.estado = EstadoCobertura.RECHAZADA
+    cobertura.respondida_en = ahora()
+    cobertura.respondida_por = administrativo.id
+    db.session.flush()
+
+
+DATOS_POR_ESTADO[EstadoEstudio.PENDIENTE_AUTORIZACION] = crear_cobertura_de_demo
+DATOS_POR_ESTADO[EstadoEstudio.RECHAZADO_OBRA_SOCIAL] = rechazar_cobertura_de_demo
+
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {
     EstadoEstudio.PENDIENTE_AUTORIZACION: "la cobertura de obra social (#17)",
