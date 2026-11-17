@@ -65,6 +65,8 @@ class Config:
         self.CHATBOT_URL = os.getenv("CHATBOT_URL")
         self.CHATBOT_APIKEY = os.getenv("CHATBOT_APIKEY")
         self.CHATBOT_TOKEN = os.getenv("CHATBOT_TOKEN")
+        self.TRANSCRIPCION_URL = os.getenv("TRANSCRIPCION_URL")
+        self.FAMILIOGRAMA_URL = os.getenv("FAMILIOGRAMA_URL")
         self.CUPONES_URL = os.getenv("CUPONES_URL")
         self.CUPONES_KEY = os.getenv("CUPONES_KEY")
         self.USE_MOCKS = _bool("USE_MOCKS")
