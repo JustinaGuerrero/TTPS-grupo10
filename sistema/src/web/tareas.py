@@ -25,6 +25,7 @@ from flask import Flask
 
 from src.core.calendario import ZONA_HORARIA
 from src.core.database import db
+from src.core.logistica.servicios import generar_ordenes
 from src.core.muestras import procesar_inasistencias
 from src.core.turnos import enviar_recordatorios
 
@@ -46,6 +47,8 @@ TAREAS: list[Tarea] = [
         procesar_inasistencias,
         {"day_of_week": "mon-fri", "hour": 18, "minute": 30},
     ),
+    # E23: los días hábiles a las 7, la orden del día de cada provincia con muestras para retirar.
+    Tarea("ordenes_del_dia", generar_ordenes, {"day_of_week": "mon-fri", "hour": 7}),
 ]
 
 _planificador: BackgroundScheduler | None = None

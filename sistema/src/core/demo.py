@@ -145,6 +145,62 @@ def crear_muestra_de_demo(estudio: Estudio) -> None:
 
 DATOS_POR_ESTADO[EstadoEstudio.LISTO_PARA_RETIRAR] = crear_muestra_de_demo
 
+
+def retirar_muestra_de_demo(estudio: Estudio) -> None:
+    """El transportista de la provincia retiró la muestra en la orden del día hábil anterior
+    (E24). Es del día anterior para no ocupar la orden de hoy, que genera E23."""
+    from datetime import datetime, time, timedelta
+
+    from src.core.calendario import ZONA_HORARIA, es_dia_habil
+    from src.core.logistica import OrdenDelDia, ParadaOrdenDelDia
+    from src.core.logistica.servicios import orden_de, transportista_de
+    from src.core.muestras import Muestra
+
+    muestra = db.session.scalars(
+        sa.select(Muestra).where(Muestra.estudio_id == estudio.id).order_by(Muestra.id.desc())
+    ).first()
+    if muestra is None:
+        raise DemoImposible(f"El estudio {estudio.codigo} no tiene muestra.")
+    centro = muestra.turno.centro
+    transportista = transportista_de(centro.provincia)
+    if transportista is None:
+        raise DemoImposible(
+            f"{centro.provincia.nombre} no tiene transportista: corré `flask seeds`."
+        )
+    fecha = hoy() - timedelta(days=1)
+    while not es_dia_habil(fecha):
+        fecha -= timedelta(days=1)
+    orden = orden_de(transportista.usuario, fecha)
+    if orden is None:
+        orden = OrdenDelDia(transportista_id=transportista.usuario_id, fecha=fecha)
+        db.session.add(orden)
+        db.session.flush()
+    parada = db.session.scalar(
+        sa.select(ParadaOrdenDelDia).where(
+            ParadaOrdenDelDia.orden_del_dia_id == orden.id,
+            ParadaOrdenDelDia.centro_id == centro.id,
+        )
+    )
+    if parada is None:
+        posicion = db.session.scalar(
+            sa.select(sa.func.coalesce(sa.func.max(ParadaOrdenDelDia.posicion), 0)).where(
+                ParadaOrdenDelDia.orden_del_dia_id == orden.id
+            )
+        )
+        db.session.add(
+            ParadaOrdenDelDia(
+                orden_del_dia_id=orden.id,
+                posicion=posicion + 1,
+                centro_id=centro.id,
+                retirado_en=datetime.combine(fecha, time(10), tzinfo=ZONA_HORARIA),
+            )
+        )
+    muestra.orden_del_dia_id = orden.id
+    db.session.flush()
+
+
+DATOS_POR_ESTADO[EstadoEstudio.EN_CAMINO_LABORATORIO] = retirar_muestra_de_demo
+
 # Estados que no tienen sentido sin filas de un issue posterior, y qué issue las agrega.
 FILAS_DE_OTRO_ISSUE: dict[EstadoEstudio, str] = {
     EstadoEstudio.PENDIENTE_AUTORIZACION: "la cobertura de obra social (#17)",

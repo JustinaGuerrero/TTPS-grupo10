@@ -71,6 +71,8 @@ class Config:
         self.CUPONES_KEY = os.getenv("CUPONES_KEY")
         self.OBRAS_SOCIALES_URL = os.getenv("OBRAS_SOCIALES_URL")
         self.OBRAS_SOCIALES_KEY = os.getenv("OBRAS_SOCIALES_KEY")
+        self.OPTIMIZACION_URL = os.getenv("OPTIMIZACION_URL")
+        self.OPTIMIZACION_KEY = os.getenv("OPTIMIZACION_KEY")
         # Secreto que Telegram manda en X-Telegram-Bot-Api-Secret-Token al webhook del bot (E22).
         self.TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET")
         self.USE_MOCKS = _bool("USE_MOCKS")
