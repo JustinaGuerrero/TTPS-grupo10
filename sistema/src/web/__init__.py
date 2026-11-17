@@ -15,10 +15,12 @@ from src.web.controllers import (
     auditoria,
     autenticacion,
     avisos,
+    bioinformatica,
     bot,
     chatbot,
     coberturas,
     cupones,
+    datos_crudos,
     estudios,
     historial,
     inicio,
@@ -76,6 +78,8 @@ def create_app(env: str | None = None) -> Flask:
     app.register_blueprint(coberturas.bp)
     app.register_blueprint(bot.bp)
     app.register_blueprint(logistica.bp)
+    app.register_blueprint(datos_crudos.bp)
+    app.register_blueprint(bioinformatica.bp)
     errores.registrar(app)
 
     return app
