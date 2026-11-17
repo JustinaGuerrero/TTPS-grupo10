@@ -476,3 +476,57 @@ def crear_mensaje_bot():
         return mensaje
 
     return _crear
+
+
+@pytest.fixture
+def crear_transportista(usuario_rapido):
+    """Fábrica: `crear_transportista("Córdoba")` agrega el transportista de esa provincia (E03).
+
+    `provincia` es el nombre de una de las 24 de la migración; hay un transportista por
+    provincia. No hace commit. Llamarla dentro de un app_context.
+    """
+    import sqlalchemy as sa
+
+    from src.core.provincias import Provincia
+    from src.core.usuarios import Transportista
+
+    def _crear(provincia: str = "Buenos Aires", activo: bool = True) -> Transportista:
+        usuario = usuario_rapido(roles.TRANSPORTISTA)
+        usuario.activo = activo
+        transportista = Transportista(
+            usuario=usuario,
+            provincia=db.session.scalars(
+                sa.select(Provincia).where(Provincia.nombre == provincia)
+            ).one(),
+        )
+        db.session.add(transportista)
+        db.session.flush()
+        return transportista
+
+    return _crear
+
+
+@pytest.fixture
+def crear_orden_del_dia():
+    """Fábrica: `crear_orden_del_dia(transportista, [centro1, centro2])` agrega la orden (E23).
+
+    Las paradas quedan en el orden de la lista, sin retirar. Sin `fecha`, es la de hoy. No pide el
+    recorrido al módulo ni avisa al transportista. No hace commit. Llamarla dentro de un
+    app_context.
+    """
+    from src.core.calendario import hoy
+    from src.core.logistica import OrdenDelDia, ParadaOrdenDelDia
+
+    def _crear(transportista, centros, fecha: date | None = None) -> OrdenDelDia:
+        orden = OrdenDelDia(transportista_id=transportista.usuario_id, fecha=fecha or hoy())
+        db.session.add(orden)
+        db.session.flush()
+        for posicion, centro in enumerate(centros, start=1):
+            db.session.add(
+                ParadaOrdenDelDia(orden_del_dia_id=orden.id, posicion=posicion, centro_id=centro.id)
+            )
+        db.session.flush()
+        db.session.refresh(orden)
+        return orden
+
+    return _crear
