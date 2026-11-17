@@ -33,6 +33,10 @@
               <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary"
                    href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Ver detalle</a>
+                {% if paciente.id not in con_estudio %}
+                  <a class="btn btn-sm btn-primary"
+                     href="{{ url_for('estudios.nuevo', paciente_id=paciente.id) }}">Dar de alta estudio</a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}

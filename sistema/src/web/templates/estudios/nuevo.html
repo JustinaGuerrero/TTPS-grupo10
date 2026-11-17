@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block title %}Dar de alta estudio{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Dar de alta estudio</h1>
+      <p class="text-body-secondary mb-0">
+        {{ paciente.usuario.nombre_completo }} · DNI {{ paciente.dni }}
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('pacientes.detalle', paciente_id=paciente.id) }}">Volver al paciente</a>
+  </div>
+
+  {% if errores.get("paciente") %}
+    <div class="alert alert-danger" role="alert">{{ errores["paciente"] }}</div>
+  {% endif %}
+  {% if error_apigen %}
+    <div class="alert alert-danger" role="alert">
+      No pudimos consultar los genes en la API de bioinformática. {{ error_apigen }}
+      Probá de nuevo en unos minutos.
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <section class="card shadow-sm mb-3">
+      <div class="card-header">Genes del diagnóstico presuntivo</div>
+      <div class="card-body">
+        <p class="mb-2">
+          {% for patologia in patologias %}
+            <span class="badge text-bg-primary">{{ patologia.nombre }}</span>
+          {% endfor %}
+        </p>
+        {% if genes %}
+          <p class="mb-0">
+            {% for gen in genes %}<span class="badge text-bg-secondary">{{ gen }}</span> {% endfor %}
+          </p>
+        {% elif not error_apigen %}
+          <p class="text-body-secondary mb-0">La API no devolvió genes para estas patologías.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card shadow-sm mb-3">
+      <div class="card-header">Otra causa sospechada</div>
+      <div class="card-body">
+        <label for="genes_a_mano" class="form-label">Genes a agregar</label>
+        <input type="text" class="form-control{% if 'genes_a_mano' in errores %} is-invalid{% endif %}"
+               id="genes_a_mano" name="genes_a_mano" value="{{ genes_a_mano }}"
+               placeholder="Por ejemplo: GLA, NPC1" aria-describedby="genes_a_mano-ayuda genes_a_mano-error">
+        <div class="form-text" id="genes_a_mano-ayuda">
+          Opcional. Símbolos separados por comas; cada uno tiene que existir en Apigen.
+        </div>
+        <div class="invalid-feedback" id="genes_a_mano-error">{{ errores.get("genes_a_mano", "") }}</div>
+      </div>
+    </section>
+
+    <section class="card shadow-sm mb-3">
+      <div class="card-body form-check ms-3">
+        <input class="form-check-input" type="checkbox" id="evalua_hallazgos_secundarios"
+               name="evalua_hallazgos_secundarios" {% if hallazgos %}checked{% endif %}>
+        <label class="form-check-label" for="evalua_hallazgos_secundarios">
+          El estudio evalúa hallazgos secundarios
+        </label>
+      </div>
+    </section>
+
+    <button class="btn btn-primary" type="submit" {% if error_apigen %}disabled{% endif %}>Dar de alta estudio</button>
+  </form>
+{% endblock %}
