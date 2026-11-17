@@ -62,6 +62,9 @@ class Config:
         self.APIGEN_URL = os.getenv("APIGEN_URL")
         self.APIGEN_KEY = os.getenv("APIGEN_KEY")
         self.APIGEN_GRUPO_ID = os.getenv("APIGEN_GRUPO_ID") or "grupo10"
+        self.CHATBOT_URL = os.getenv("CHATBOT_URL")
+        self.CHATBOT_APIKEY = os.getenv("CHATBOT_APIKEY")
+        self.CHATBOT_TOKEN = os.getenv("CHATBOT_TOKEN")
         self.CUPONES_URL = os.getenv("CUPONES_URL")
         self.CUPONES_KEY = os.getenv("CUPONES_KEY")
         self.USE_MOCKS = _bool("USE_MOCKS")
