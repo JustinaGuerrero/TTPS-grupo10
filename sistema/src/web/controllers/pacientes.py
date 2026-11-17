@@ -45,10 +45,16 @@ bp = Blueprint("pacientes", __name__, url_prefix="/pacientes")
 @rol_requerido(roles.MEDICO_TRATANTE)
 def listar():
     busqueda = request.args.get("q", "").strip()
+    pacientes = listar_del_medico(g.usuario, busqueda)
+    con_estudio = set(
+        db.session.scalars(
+            sa.select(Estudio.paciente_id).where(
+                Estudio.paciente_id.in_([paciente.id for paciente in pacientes])
+            )
+        )
+    )
     return render_template(
-        "pacientes/listado.html",
-        pacientes=listar_del_medico(g.usuario, busqueda),
-        busqueda=busqueda,
+        "pacientes/listado.html", pacientes=pacientes, busqueda=busqueda, con_estudio=con_estudio
     )
 
 
@@ -162,6 +168,7 @@ def detalle(paciente_id: int):
     return render_template(
         "pacientes/detalle.html",
         paciente=paciente,
+        estudio=db.session.scalar(sa.select(Estudio).where(Estudio.paciente_id == paciente.id)),
         estudios_vinculados=vinculados,
     )
 
