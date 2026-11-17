@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}Pedir la reautorización{% endblock %}
+
+{% block content %}
+  <nav aria-label="Ruta de navegación">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('pagos.presupuesto', estudio_id=estudio.id) }}">Mi presupuesto</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Reautorización</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 mb-2">Pedir la reautorización</h1>
+
+  {% if puede_cargar %}
+    <p class="text-body-secondary">
+      {{ cobertura.obra_social.nombre }} rechazó la cobertura de tu estudio {{ estudio.codigo }}.
+      Si la justicia falló a tu favor, subí la resolución judicial y el laboratorio le vuelve a pedir
+      la autorización.
+    </p>
+    <form method="post" enctype="multipart/form-data" class="card shadow-sm" style="max-width: 32rem;"
+          action="{{ url_for('coberturas.cargar_reautorizacion', estudio_id=estudio.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="card-body">
+        <label for="resolucion" class="form-label">Resolución judicial favorable (PDF, hasta 5 MB)</label>
+        <input type="file" class="form-control mb-3" id="resolucion" name="resolucion"
+               accept="application/pdf" required>
+        <button type="submit" class="btn btn-primary">Pedir la reautorización</button>
+      </div>
+    </form>
+  {% else %}
+    <p class="text-body-secondary" id="sin-rechazo">
+      Tu estudio {{ estudio.codigo }} está <strong>{{ estudio.estado.nombre }}</strong>. La
+      reautorización se pide cuando la obra social rechazó la cobertura.
+    </p>
+  {% endif %}
+{% endblock %}

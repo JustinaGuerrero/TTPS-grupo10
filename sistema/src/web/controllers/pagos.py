@@ -7,6 +7,7 @@ commit y renderiza. Un paciente solo ve y paga su propio estudio: el de otro res
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
+from src.core.coberturas import cobertura_de, diferencia_a_pagar
 from src.core.cupones import ErrorDeCupon, calcular_descuento, codigo_desde_pdf, resolver_cupon
 from src.core.database import db
 from src.core.estudios import TransicionInvalida
@@ -95,6 +96,8 @@ def presupuesto(estudio_id: int):
         "pagos/presupuesto.html",
         estudio=estudio,
         presupuesto=presupuesto_de(estudio),
+        cobertura=cobertura_de(estudio),
+        diferencia=diferencia_a_pagar(estudio),
     )
 
 

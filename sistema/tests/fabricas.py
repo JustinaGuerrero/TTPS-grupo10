@@ -393,3 +393,27 @@ def crear_turno(crear_centro):
         return turno
 
     return _crear
+
+
+@pytest.fixture
+def crear_cobertura(crear_obra_social):
+    """Fábrica: `crear_cobertura(estudio)` agrega la cobertura pendiente del estudio y la devuelve.
+
+    No cambia el estado del estudio (para eso, crear_estudio(estado="pendiente_autorizacion")).
+    No hace commit. Llamarla dentro de un app_context.
+    """
+    from decimal import Decimal
+
+    from src.core.coberturas import Cobertura
+
+    def _crear(estudio: Estudio, porcentaje: int | str = 70) -> Cobertura:
+        cobertura = Cobertura(
+            estudio_id=estudio.id,
+            obra_social_codigo=crear_obra_social().codigo,
+            porcentaje=Decimal(str(porcentaje)),
+        )
+        db.session.add(cobertura)
+        db.session.flush()
+        return cobertura
+
+    return _crear

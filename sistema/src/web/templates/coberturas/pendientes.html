@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %}Coberturas{% endblock %}
+
+{% block content %}
+  <h1 class="h3 mb-2">Coberturas para autorizar</h1>
+  <p class="text-body-secondary">
+    Pedile la autorización a cada obra social por teléfono y registrá su respuesta. Una autorización
+    equivale a un pago de la obra social.
+  </p>
+
+  {% if filas %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle bg-body shadow-sm" id="coberturas">
+        <thead>
+          <tr>
+            <th scope="col">Estudio</th>
+            <th scope="col">Paciente</th>
+            <th scope="col">Obra social</th>
+            <th scope="col">Cobertura</th>
+            <th scope="col">Pedida</th>
+            <th scope="col">Respuesta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cobertura, total, cubriria in filas %}
+            <tr>
+              <td>{{ cobertura.estudio.codigo }}</td>
+              <td>
+                {{ cobertura.estudio.paciente.usuario.nombre_completo }}
+                <div class="small text-body-secondary">DNI {{ cobertura.estudio.paciente.dni }}</div>
+              </td>
+              <td>
+                {{ cobertura.obra_social.nombre }}
+                {% if cobertura.demandas %}
+                  <div>
+                    <span class="badge text-bg-warning">Reautorización</span>
+                    <a class="small" href="{{ url_for('coberturas.resolucion_pdf', cobertura_id=cobertura.id) }}">
+                      Resolución judicial
+                    </a>
+                  </div>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">
+                {{ cobertura.porcentaje.normalize() }} %
+                {% if cubriria is not none %}
+                  <div class="small text-body-secondary">{{ cubriria }} de {{ total }} USD</div>
+                {% endif %}
+              </td>
+              <td class="text-nowrap">{{ cobertura.solicitada_en | fecha_hora }}</td>
+              <td>
+                <div class="d-flex flex-wrap gap-2">
+                  <form method="post" action="{{ url_for('coberturas.autorizar_cobertura', cobertura_id=cobertura.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success btn-sm">Autorizó</button>
+                  </form>
+                  <form method="post" class="d-flex gap-1"
+                        action="{{ url_for('coberturas.rechazar_cobertura', cobertura_id=cobertura.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" class="form-control form-control-sm" name="motivo"
+                           placeholder="Motivo (opcional)" maxlength="200" aria-label="Motivo del rechazo">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Rechazó</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-body-secondary" id="sin-coberturas">No hay coberturas esperando respuesta.</p>
+  {% endif %}
+{% endblock %}

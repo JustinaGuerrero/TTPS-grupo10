@@ -16,6 +16,7 @@ from src.web.controllers import (
     autenticacion,
     avisos,
     chatbot,
+    coberturas,
     cupones,
     estudios,
     historial,
@@ -69,6 +70,7 @@ def create_app(env: str | None = None) -> Flask:
     app.register_blueprint(cupones.bp)
     app.register_blueprint(turnos.bp)
     app.register_blueprint(estudios.bp)
+    app.register_blueprint(coberturas.bp)
     errores.registrar(app)
 
     return app

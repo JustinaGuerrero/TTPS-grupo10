@@ -1,0 +1,5 @@
+[
+  {"codigo": "OS-100", "nombre": "Obra Social de Prueba Total", "porcentaje_cobertura": 100},
+  {"codigo": "OS-070", "nombre": "Obra Social de Prueba Parcial", "porcentaje_cobertura": 70},
+  {"codigo": "OS-040", "nombre": "Obra Social de Prueba Básica", "porcentaje_cobertura": 40}
+]

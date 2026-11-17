@@ -2,12 +2,21 @@
 
 {% block title %}Pagar estudio{% endblock %}
 
+{# Con una cobertura parcial autorizada, el importe final es la diferencia y no se usa cupón (G6). #}
+{% set paga_diferencia = not cupon and importe_final < presupuesto.total_usd %}
+
 {% block content %}
-  <h1 class="h3 mb-3">Pagar estudio</h1>
+  <h1 class="h3 mb-3">{{ "Pagar la diferencia" if paga_diferencia else "Pagar estudio" }}</h1>
 
   <div class="card shadow-sm mb-3" style="max-width: 32rem;">
     <div class="card-body">
       <p class="mb-1">Estudio {{ estudio.codigo }}</p>
+      {% if paga_diferencia %}
+        <p class="mb-0 text-body-secondary" id="importe-presupuesto">Presupuesto: {{ presupuesto.total_usd }} USD</p>
+        <p class="mb-1 text-success" id="cubre-obra-social">
+          Cubre tu obra social: −{{ presupuesto.total_usd - importe_final }} USD
+        </p>
+      {% endif %}
       {% if cupon %}
         <p class="mb-0 text-body-secondary" id="importe-presupuesto">Presupuesto: {{ presupuesto.total_usd }} USD</p>
         <p class="mb-1 text-success" id="descuento-cupon">
@@ -28,7 +37,7 @@
     </div>
   </div>
 
-  {% if not cupon %}
+  {% if not cupon and not paga_diferencia %}
     <div class="card shadow-sm" style="max-width: 32rem;">
       <div class="card-body">
         <h2 class="h5">¿Tenés un cupón de descuento?</h2>
