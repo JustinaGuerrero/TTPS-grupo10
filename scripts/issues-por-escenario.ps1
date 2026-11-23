@@ -100,8 +100,9 @@ function Buscar-Escenario {
     <# La issue que ya es de ese escenario («E19 · ...»), o $null. #>
     param([string]$Codigo)
     $prefijo = "$Codigo · "
+    # Si hubiera repetidas, la abierta de menor número.
     $encontradas = @($script:issuesGh | Where-Object { $_.Titulo.StartsWith($prefijo, [System.StringComparison]::Ordinal) } |
-        Sort-Object Numero)
+        Sort-Object @{ Expression = { $_.Estado -eq 'OPEN' }; Descending = $true }, Numero)
     if ($encontradas.Count -gt 1) {
         Write-Host "    Ojo: hay $($encontradas.Count) issues de $Codigo; se usa #$($encontradas[0].Numero)." -ForegroundColor Yellow
     }
@@ -305,6 +306,11 @@ Write-Host "`n3. Issues por escenario" -ForegroundColor Cyan
 $ordenados = @($escenarios | Sort-Object codigo)
 # Primero las que se editan y después las que se crean, para que las nuevas queden numeradas en
 # el orden de los escenarios.
+# Los escenarios que no venían de una issue de la guía (los requerimientos nuevos) se buscan por
+# su título: si ya se crearon en otra corrida, se editan y no se vuelven a crear.
+foreach ($e in $ordenados) {
+    if (-not $destino.ContainsKey($e.codigo)) { $destino[$e.codigo] = Buscar-Escenario -Codigo $e.codigo }
+}
 $aEditar = @($ordenados | Where-Object { $null -ne $destino[$_.codigo] })
 $aCrear = @($ordenados | Where-Object { $null -eq $destino[$_.codigo] })
 
