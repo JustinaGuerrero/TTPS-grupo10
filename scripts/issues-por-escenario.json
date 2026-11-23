@@ -767,6 +767,71 @@
         "integracion"
       ],
       "cuerpo": "## E45 · Elegir la estrategia del CDSS\n\n**Objetivo:** Que el gerente médico elija con qué estrategia calcula el CDSS la patología sugerida.\n**Actores:** Gerente médico, CDSS, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E45.1 El gerente médico consulta la estrategia vigente del CDSS.\n- [ ] E45.2 El gerente médico elige otra estrategia: patología con más síntomas, patología con más síntomas cardinales coincidentes, o la menor diferencia entre los síntomas de la patología y los del paciente.\n- [ ] E45.3 El sistema informa la estrategia al CDSS, que la usa desde la consulta siguiente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E44 |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Sugerencia de patología del CDSS y su estrategia».\n"
+    },
+    {
+      "codigo": "E46",
+      "titulo": "E46 · Pagar en cuotas con Mercado Pago",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:pagos",
+        "integracion"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E46 · Pagar en cuotas con Mercado Pago\n\n**Objetivo:** Que el paciente pague el estudio en una o varias cuotas con una billetera virtual.\n**Actores:** Paciente, Mercado Pago, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E46.1 El paciente elige la cantidad de cuotas y, si tiene un cupón de descuento, realiza APLICAR CUPÓN.\n- [ ] E46.2 El sistema arma el plan de cuotas: divide el importe final en cuotas iguales; la primera vence en el día y las demás, cada mes.\n- [ ] E46.3 El paciente paga una cuota en Mercado Pago.\n- [ ] E46.4 El sistema confirma el pago con Mercado Pago, marca la cuota como pagada y realiza REGISTRAR OPERACIÓN FINANCIERA.\n- [ ] E46.5 Al pagarse la primera cuota, el sistema cambia el estudio a Habilitado para turno y notifica al paciente.\n- [ ] E46.6 El paciente paga las cuotas siguientes de la misma forma hasta completar el plan.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E13, E14 y E15 (hechos) |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl diseño, los supuestos y los tests mínimos están en `docs/requerimientos-23-11.md`.\n"
+    },
+    {
+      "codigo": "E47",
+      "titulo": "E47 · Consultar cuotas",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:pagos"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E47 · Consultar cuotas\n\n**Objetivo:** Que el administrativo sepa cuántas cuotas pagó cada paciente y cuáles debe.\n**Actores:** Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E47.1 El administrativo consulta los planes de cuotas, con la opción de ver solo los que tienen cuotas vencidas.\n- [ ] E47.2 El sistema muestra por paciente cuántas cuotas están pagadas, vencidas y pendientes, y cuánto adeuda.\n- [ ] E47.3 El administrativo selecciona un paciente.\n- [ ] E47.4 El sistema muestra cada cuota con su importe, su vencimiento y su estado: pagada (con la fecha del pago), vencida o pendiente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E46 |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl diseño, los supuestos y los tests mínimos están en `docs/requerimientos-23-11.md`.\n"
+    },
+    {
+      "codigo": "E48",
+      "titulo": "E48 · Dar acceso a la historia clínica",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:acceso"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E48 · Dar acceso a la historia clínica\n\n**Objetivo:** Que el paciente pueda atenderse con otros médicos y que ellos vean su historia clínica.\n**Actores:** Paciente, Médico tratante, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E48.1 El paciente consulta qué médicos pueden ver su historia clínica.\n- [ ] E48.2 El sistema muestra su médico tratante y los médicos a los que ya les dio acceso.\n- [ ] E48.3 El paciente busca en la lista de médicos tratantes y elige uno o varios.\n- [ ] E48.4 El sistema da acceso a la historia clínica a los médicos elegidos y realiza REGISTRAR CAMBIOS.\n- [ ] E48.5 El sistema notifica a cada médico que puede ver la historia clínica del paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E06 y E43 (hechos) |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl diseño, los supuestos y los tests mínimos están en `docs/requerimientos-23-11.md`.\n"
+    },
+    {
+      "codigo": "E49",
+      "titulo": "E49 · Consultar historia clínica",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:acceso"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E49 · Consultar historia clínica\n\n**Objetivo:** Que un médico vea lo que se sabe del paciente antes de atenderlo.\n**Actores:** Médico tratante, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E49.1 El médico tratante consulta los pacientes cuya historia clínica puede ver: los suyos y los que le dieron acceso.\n- [ ] E49.2 El médico tratante selecciona un paciente.\n- [ ] E49.3 El sistema muestra la historia clínica: los datos del paciente, el resumen de historia clínica, los síntomas, el diagnóstico presuntivo, los familiares con el familiograma, y el estudio con sus análisis y resultados.\n- [ ] E49.4 El sistema muestra los médicos que pueden ver esa historia clínica.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E48 |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl diseño, los supuestos y los tests mínimos están en `docs/requerimientos-23-11.md`.\n"
     }
   ],
   "viejas": [

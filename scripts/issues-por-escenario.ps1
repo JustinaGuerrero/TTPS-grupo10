@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Pasa las issues de GitHub a una por escenario (E01 a E45).
+    Pasa las issues de GitHub a una por escenario (E01 a E49).
 
 .DESCRIPTION
     Lee scripts/issues-por-escenario.json (cuerpo, estado, labels y milestone de cada escenario;
@@ -132,6 +132,20 @@ function Unir {
     return (($Partes[0..($Partes.Count - 2)]) -join ', ') + ' y ' + $Partes[-1]
 }
 
+function Texto-Antes {
+    <# La fila «Antes» del cuerpo: de dónde viene el escenario. Los requerimientos nuevos traen la suya. #>
+    param($Escenario)
+    $texto = $script:antes[$Escenario.codigo]
+    if (-not $texto) { $texto = [string]$Escenario.antes }
+    return $texto
+}
+
+function Normalizar {
+    <# El cuerpo sin diferencias de saltos de línea ni espacios al final, para comparar. #>
+    param([string]$Texto)
+    return ($Texto -replace "`r`n", "`n").TrimEnd()
+}
+
 function Texto-Numero {
     param($Numero)
     if ($null -eq $Numero) { return '#(nueva)' }
@@ -196,13 +210,17 @@ foreach ($ms in $milestones) {
 
 Write-Host "`n2. Issues actuales" -ForegroundColor Cyan
 $jsonIssues = Invocar-Gh -Argumentos @('issue', 'list', '--state', 'all', '--limit', '1000',
-    '--json', 'number,title,state,labels')
+    '--json', 'number,title,state,labels,body,milestone')
 $script:issuesGh = @(foreach ($i in (ConvertFrom-Json $jsonIssues)) {
+        $milestoneActual = ''
+        if ($null -ne $i.milestone) { $milestoneActual = [string]$i.milestone.title }
         [pscustomobject]@{
-            Numero = [int]$i.number
-            Titulo = [string]$i.title
-            Estado = [string]$i.state
-            Labels = @(foreach ($l in $i.labels) { [string]$l.name })
+            Numero    = [int]$i.number
+            Titulo    = [string]$i.title
+            Estado    = [string]$i.state
+            Labels    = @(foreach ($l in $i.labels) { [string]$l.name })
+            Cuerpo    = [string]$i.body
+            Milestone = $milestoneActual
         }
     })
 Write-Host "  $($script:issuesGh.Count) issues en GitHub"
@@ -292,31 +310,40 @@ $aCrear = @($ordenados | Where-Object { $null -eq $destino[$_.codigo] })
 
 foreach ($e in $aEditar) {
     $issue = $destino[$e.codigo]
-    $cuerpo = $e.cuerpo.Replace('{{ANTES}}', $antes[$e.codigo])
-    $archivo = Guardar-Temporal -Texto $cuerpo
-    try {
-        $argumentos = @('issue', 'edit', "$($issue.Numero)", '--title', $e.titulo, '--body-file', $archivo,
-            '--milestone', $e.milestone)
-        $deseados = @($e.labels)
-        $agregar = @($deseados | Where-Object { $issue.Labels -notcontains $_ })
-        $sacar = @($issue.Labels | Where-Object { $deseados -notcontains $_ })
-        if ($agregar.Count -gt 0) { $argumentos += @('--add-label', ($agregar -join ',')) }
-        if ($sacar.Count -gt 0) { $argumentos += @('--remove-label', ($sacar -join ',')) }
-        Escribir-Gh -Argumentos $argumentos | Out-Null
+    $cuerpo = $e.cuerpo.Replace('{{ANTES}}', (Texto-Antes $e))
+    $deseados = @($e.labels)
+    $agregar = @($deseados | Where-Object { $issue.Labels -notcontains $_ })
+    $sacar = @($issue.Labels | Where-Object { $deseados -notcontains $_ })
+    # Si ya está igual (otra corrida del script), no se toca.
+    $igual = ($issue.Titulo -ceq $e.titulo) -and ((Normalizar $issue.Cuerpo) -ceq (Normalizar $cuerpo)) -and
+        ($issue.Milestone -eq $e.milestone) -and $agregar.Count -eq 0 -and $sacar.Count -eq 0
+    if ($igual) {
+        $accion = 'sin cambios'
     }
-    finally {
-        Remove-Item $archivo -ErrorAction SilentlyContinue
+    else {
+        $archivo = Guardar-Temporal -Texto $cuerpo
+        try {
+            $argumentos = @('issue', 'edit', "$($issue.Numero)", '--title', $e.titulo, '--body-file', $archivo,
+                '--milestone', $e.milestone)
+            if ($agregar.Count -gt 0) { $argumentos += @('--add-label', ($agregar -join ',')) }
+            if ($sacar.Count -gt 0) { $argumentos += @('--remove-label', ($sacar -join ',')) }
+            Escribir-Gh -Argumentos $argumentos | Out-Null
+        }
+        finally {
+            Remove-Item $archivo -ErrorAction SilentlyContinue
+        }
+        $contador.editadas++
+        $accion = 'editada'
     }
-    $contador.editadas++
     $estado = Aplicar-Estado -Escenario $e -Numero $issue.Numero -EstadoActual $issue.Estado
     $resultado[$e.codigo] = $issue.Numero
-    Write-Host ("  #{0,-4} {1}  (editada, {2})" -f $issue.Numero, $e.titulo, $estado)
+    Write-Host ("  #{0,-4} {1}  ({2}, {3})" -f $issue.Numero, $e.titulo, $accion, $estado)
     $filas += [pscustomobject]@{ Escenario = $e.codigo; GitHub = $issue.Numero; Titulo = $e.titulo
         Estado = $e.estado; Responsable = $e.responsable; Accion = 'editada' }
 }
 
 foreach ($e in $aCrear) {
-    $cuerpo = $e.cuerpo.Replace('{{ANTES}}', $antes[$e.codigo])
+    $cuerpo = $e.cuerpo.Replace('{{ANTES}}', (Texto-Antes $e))
     $archivo = Guardar-Temporal -Texto $cuerpo
     try {
         $argumentos = @('issue', 'create', '--title', $e.titulo, '--body-file', $archivo,
