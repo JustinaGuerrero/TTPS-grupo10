@@ -53,10 +53,13 @@ los requerimientos del 23/11 (`docs/requerimientos-23-11.md`).
 | E43 | Registrar cambios | Hecho | Integrante 3 | #48 | #43 (la de antes) |
 | E44 | Sugerir patología con el CDSS | **Falta** | Integrante 2 | — | #60 (la de antes) |
 | E45 | Elegir la estrategia del CDSS | **Falta** | Integrante 2 | — | #88 (nueva; antes en #60) |
-| E46 | Pagar en cuotas con Mercado Pago | **Falta** | Integrante 4 | — | Nueva (requerimiento del 23/11) |
-| E47 | Consultar cuotas | **Falta** | Integrante 4 | — | Nueva (requerimiento del 23/11) |
-| E48 | Dar acceso a la historia clínica | **Falta** | Integrante 4 | — | Nueva (requerimiento del 23/11) |
-| E49 | Consultar historia clínica | **Falta** | Integrante 4 | — | Nueva (requerimiento del 23/11) |
+| E46 | Pagar en cuotas con Mercado Pago | **Falta** | Integrante 2 | — | #90 (nueva; requerimiento del 23/11) |
+| E47 | Consultar cuotas | **Falta** | Integrante 2 | — | #91 (nueva; requerimiento del 23/11) |
+| E48 | Dar acceso a la historia clínica | **Falta** | Integrante 4 | — | #92 (nueva; requerimiento del 23/11) |
+| E49 | Consultar historia clínica | **Falta** | Integrante 4 | — | #93 (nueva; requerimiento del 23/11) |
+
+Integrantes: 1 es Nicolás Díaz, 2 es Leonel David Gomez, 3 es Justina Guerrero y 4 es Iván
+Sgriletti. Cada issue está asignada en GitHub a su responsable (`scripts/asignar-issues.ps1`).
 
 «La de antes»: la issue vieja se editó y quedó solo con ese escenario. «Nueva»: se creó una issue
 para ese escenario el 23/11, con el número que seguía en GitHub (no se puede empezar de #1, porque
