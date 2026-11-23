@@ -1,6 +1,7 @@
 # Requerimientos del 23/11
 
-Tres pedidos nuevos del profesor. Los hace Integrante 4 (milestone Entrega, 8/12). Los escenarios
+Tres pedidos nuevos del profesor (milestone Entrega, 8/12): los de pagos (E46 y E47) los hace
+Integrante 2 y los de historia clínica (E48 y E49), Integrante 4. Los escenarios
 están en `docs/escenarios.md` (E46 a E49) y las issues en `docs/issues-por-escenario.md`.
 
 | Pedido | Escenarios | Rama |
