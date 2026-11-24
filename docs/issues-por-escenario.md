@@ -1,9 +1,10 @@
 # Issues por escenario
 
-Una issue por escenario, de E01 a E45. Reemplaza el reparto de la guía, donde una issue juntaba
+Una issue por escenario, de E01 a E49. Reemplaza el reparto de la guía, donde una issue juntaba
 dos o tres escenarios. Lo carga en GitHub `scripts/issues-por-escenario.ps1` (ver abajo).
 
-**Estado al 22/11:** 32 escenarios hechos y mergeados en `development`, 13 por hacer.
+**Estado al 23/11:** 32 escenarios hechos y mergeados en `development`, 17 por hacer. E46 a E49 son
+los requerimientos del 23/11 (`docs/requerimientos-23-11.md`).
 
 | Escenario | Título | Estado | Responsable | PR | Issue |
 |---|---|---|---|---|---|
@@ -52,6 +53,13 @@ dos o tres escenarios. Lo carga en GitHub `scripts/issues-por-escenario.ps1` (ve
 | E43 | Registrar cambios | Hecho | Integrante 3 | #48 | #43 (la de antes) |
 | E44 | Sugerir patología con el CDSS | **Falta** | Integrante 2 | — | #60 (la de antes) |
 | E45 | Elegir la estrategia del CDSS | **Falta** | Integrante 2 | — | #88 (nueva; antes en #60) |
+| E46 | Pagar en cuotas con Mercado Pago | **Falta** | Integrante 2 | — | #90 (nueva; requerimiento del 23/11) |
+| E47 | Consultar cuotas | **Falta** | Integrante 2 | — | #91 (nueva; requerimiento del 23/11) |
+| E48 | Dar acceso a la historia clínica | **Falta** | Integrante 4 | — | #92 (nueva; requerimiento del 23/11) |
+| E49 | Consultar historia clínica | **Falta** | Integrante 4 | — | #93 (nueva; requerimiento del 23/11) |
+
+Integrantes: 1 es Nicolás Díaz, 2 es Leonel David Gomez, 3 es Justina Guerrero y 4 es Iván
+Sgriletti. Cada issue está asignada en GitHub a su responsable (`scripts/asignar-issues.ps1`).
 
 «La de antes»: la issue vieja se editó y quedó solo con ese escenario. «Nueva»: se creó una issue
 para ese escenario el 23/11, con el número que seguía en GitHub (no se puede empezar de #1, porque

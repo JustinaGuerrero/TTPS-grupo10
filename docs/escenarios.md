@@ -60,6 +60,10 @@ Convenciones usadas:
 | E40 | Consultar chatbot | Paciente |
 | E41 | Registrar operación financiera | Sistema |
 | E43 | Registrar cambios | Sistema |
+| E46 | Pagar en cuotas con Mercado Pago | Paciente |
+| E47 | Consultar cuotas | Administrativo |
+| E48 | Dar acceso a la historia clínica | Paciente |
+| E49 | Consultar historia clínica | Médico tratante |
 
 # 1. Acceso y usuarios
 
@@ -978,3 +982,90 @@ Convenciones usadas:
 1. El sistema registra cada cambio de un dato de un paciente, un estudio o un sample set con la fecha y la hora, el usuario (o "sistema" si fue una tarea automática), el campo, el valor anterior y el valor nuevo.
 2. El usuario autorizado selecciona un paciente, un estudio o un sample set y consulta su historial de cambios, del más nuevo al más viejo.
 3. El administrador general consulta la lista de todos los cambios y la filtra por entidad, usuario y rango de fechas.
+
+# Requerimientos del 23/11
+
+## E46 · Pagar en cuotas con Mercado Pago
+
+**Título:** Pagar en cuotas con Mercado Pago.
+
+**Objetivo:** Que el paciente pague el estudio en una o varias cuotas con una billetera virtual.
+
+**Contexto:** Vista del paciente, con el presupuesto emitido.
+- **Precondición:** el estudio está Presupuestado, o en Pendiente de autorización con una cobertura parcial autorizada (paga la diferencia).
+- **Restricción:** 1, 3 o 6 cuotas mensuales iguales y sin interés. Mercado Pago se usa en su ambiente de prueba.
+
+**Actores:** Paciente, Mercado Pago, Sistema.
+
+**Recursos:** Presupuesto, Plan de cuotas, Cuota, Estudio.
+
+**Episodios:**
+
+1. El paciente elige la cantidad de cuotas y, si tiene un cupón de descuento, realiza APLICAR CUPÓN.
+2. El sistema arma el plan de cuotas: divide el importe final en cuotas iguales; la primera vence en el día y las demás, cada mes.
+3. El paciente paga una cuota en Mercado Pago.
+4. El sistema confirma el pago con Mercado Pago, marca la cuota como pagada y realiza REGISTRAR OPERACIÓN FINANCIERA.
+5. Al pagarse la primera cuota, el sistema cambia el estudio a Habilitado para turno y notifica al paciente.
+6. El paciente paga las cuotas siguientes de la misma forma hasta completar el plan.
+
+## E47 · Consultar cuotas
+
+**Título:** Consultar cuotas.
+
+**Objetivo:** Que el administrativo sepa cuántas cuotas pagó cada paciente y cuáles debe.
+
+**Contexto:** Vista del administrativo.
+- **Precondición:** el paciente tiene un plan de cuotas.
+
+**Actores:** Administrativo, Sistema.
+
+**Recursos:** Plan de cuotas, Cuota, Paciente.
+
+**Episodios:**
+
+1. El administrativo consulta los planes de cuotas, con la opción de ver solo los que tienen cuotas vencidas.
+2. El sistema muestra por paciente cuántas cuotas están pagadas, vencidas y pendientes, y cuánto adeuda.
+3. El administrativo selecciona un paciente.
+4. El sistema muestra cada cuota con su importe, su vencimiento y su estado: pagada (con la fecha del pago), vencida o pendiente.
+
+## E48 · Dar acceso a la historia clínica
+
+**Título:** Dar acceso a la historia clínica.
+
+**Objetivo:** Que el paciente pueda atenderse con otros médicos y que ellos vean su historia clínica.
+
+**Contexto:** Vista del paciente, en cualquier momento después del alta.
+- **Restricción:** el paciente elige los médicos de la lista de médicos tratantes del sistema. El acceso no se quita.
+
+**Actores:** Paciente, Médico tratante, Sistema.
+
+**Recursos:** Historia clínica, Médico tratante, Paciente.
+
+**Episodios:**
+
+1. El paciente consulta qué médicos pueden ver su historia clínica.
+2. El sistema muestra su médico tratante y los médicos a los que ya les dio acceso.
+3. El paciente busca en la lista de médicos tratantes y elige uno o varios.
+4. El sistema da acceso a la historia clínica a los médicos elegidos y realiza REGISTRAR CAMBIOS.
+5. El sistema notifica a cada médico que puede ver la historia clínica del paciente.
+
+## E49 · Consultar historia clínica
+
+**Título:** Consultar historia clínica.
+
+**Objetivo:** Que un médico vea lo que se sabe del paciente antes de atenderlo.
+
+**Contexto:** Vista del médico tratante.
+- **Precondición:** es el médico tratante del paciente o el paciente le dio acceso (DAR ACCESO A LA HISTORIA CLÍNICA).
+- **Restricción:** la historia clínica se consulta, no se modifica.
+
+**Actores:** Médico tratante, Sistema.
+
+**Recursos:** Historia clínica, Paciente, Estudio.
+
+**Episodios:**
+
+1. El médico tratante consulta los pacientes cuya historia clínica puede ver: los suyos y los que le dieron acceso.
+2. El médico tratante selecciona un paciente.
+3. El sistema muestra la historia clínica: los datos del paciente, el resumen de historia clínica, los síntomas, el diagnóstico presuntivo, los familiares con el familiograma, y el estudio con sus análisis y resultados.
+4. El sistema muestra los médicos que pueden ver esa historia clínica.

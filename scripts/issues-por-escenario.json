@@ -15,7 +15,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E01 · Registrarse como médico tratante o gerente médico\n\n**Objetivo:** Que el médico tratante o el gerente médico obtenga acceso al sistema con su rol.\n**Actores:** Médico tratante, Gerente médico, Sistema.\n\n### Criterios de aceptación\n\n- [x] E01.1 El médico tratante o el gerente médico completa matrícula, nombre, apellido, teléfono y mail.\n- [x] E01.2 El médico tratante o el gerente médico selecciona sus especialidades desde el módulo SNOMED.\n- [x] E01.3 El médico tratante o el gerente médico indica su rol.\n- [x] E01.4 El sistema crea las credenciales de acceso con el rol indicado.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #46) |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Registro de médicos y del personal del laboratorio».\n"
+      "cuerpo": "## E01 · Registrarse como médico tratante o gerente médico\n\n**Objetivo:** Que el médico tratante o el gerente médico obtenga acceso al sistema con su rol.\n"
     },
     {
       "codigo": "E02",
@@ -32,7 +32,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E02 · Registrarse como administrativo o bioinformático\n\n**Objetivo:** Que el administrativo o el bioinformático obtenga acceso al sistema con su rol.\n**Actores:** Administrativo, Bioinformático, Sistema.\n\n### Criterios de aceptación\n\n- [x] E02.1 El administrativo o el bioinformático completa nombre, apellido, teléfono y mail.\n- [x] E02.2 El administrativo o el bioinformático indica su rol.\n- [x] E02.3 El sistema crea las credenciales de acceso con el rol indicado.\n- [x] E02.4 Si el rol es bioinformático, el sistema lo agrega a los destinatarios de las notificaciones de datos crudos (por el modelo, son todos los bioinformáticos activos: `listar_activos_por_rol`).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #46) |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Registro de médicos y del personal del laboratorio».\n"
+      "cuerpo": "## E02 · Registrarse como administrativo o bioinformático\n\n**Objetivo:** Que el administrativo o el bioinformático obtenga acceso al sistema con su rol.\n"
     },
     {
       "codigo": "E03",
@@ -49,7 +49,7 @@
       "labels": [
         "infra"
       ],
-      "cuerpo": "## E03 · Dar de alta usuario\n\n**Objetivo:** Centralizar la gestión de usuarios como alternativa al auto registro.\n**Actores:** Administrador general, Usuario, Sistema.\n\n### Criterios de aceptación\n\n- [x] E03.1 El administrador general elige el rol del nuevo usuario: médico tratante, gerente médico, administrativo, bioinformático o transportista.\n- [x] E03.2 El administrador general completa los datos que corresponden al rol (matrícula para médicos y gerentes; provincia para transportistas, con un solo transportista por provincia).\n- [x] E03.3 El sistema crea las credenciales de acceso (contraseña generada al azar).\n- [x] E03.4 El sistema envía al nuevo usuario una notificación por mail con sus credenciales.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #22) |\n| Responsable | Integrante 1 |\n| Milestone | Control 1 (17/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Base: estados, notificaciones, integraciones y módulo de usuarios».\n"
+      "cuerpo": "## E03 · Dar de alta usuario\n\n**Objetivo:** Centralizar la gestión de usuarios como alternativa al auto registro.\n"
     },
     {
       "codigo": "E04",
@@ -66,7 +66,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E04 · Iniciar sesión\n\n**Objetivo:** Acceder al sistema protegiendo los datos genéticos de los pacientes.\n**Actores:** Usuario, Sistema.\n\n### Criterios de aceptación\n\n- [x] E04.1 El usuario ingresa su usuario y su contraseña (hecho en la base).\n- [x] E04.2 El sistema valida las credenciales de acceso (hecho en la base).\n- [x] E04.3 Si las credenciales no son válidas, el sistema rechaza el ingreso (hecho en la base).\n- [x] E04.4 Si el dispositivo o la red son nuevos, el sistema envía un código de verificación al mail del usuario.\n- [x] E04.5 Si recibió un código, el usuario ingresa el código de verificación.\n- [x] E04.6 El sistema muestra la vista que corresponde al rol del usuario (hecho en la base).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #55) |\n| Responsable | Integrante 2 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nLos episodios 1 a 3 y 6 los hizo la base; el código de verificación (4 y 5), el PR #55.\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Código de verificación y activación de la cuenta del paciente».\n"
+      "cuerpo": "## E04 · Iniciar sesión\n\n**Objetivo:** Acceder al sistema protegiendo los datos genéticos de los pacientes.\n"
     },
     {
       "codigo": "E05",
@@ -83,7 +83,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E05 · Activar cuenta del paciente\n\n**Objetivo:** Que el paciente reemplace la contraseña provisoria y acceda a su vista.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E05.1 El paciente recibe por mail su usuario y su contraseña provisoria (lo manda E06).\n- [x] E05.2 El paciente ingresa al sistema con las credenciales provisorias.\n- [x] E05.3 El sistema solicita el cambio de contraseña.\n- [x] E05.4 El paciente define una contraseña nueva.\n- [x] E05.5 El sistema habilita la vista del paciente con sus estudios y sus avisos (historial de E11).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #55) |\n| Responsable | Integrante 2 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Código de verificación y activación de la cuenta del paciente».\n"
+      "cuerpo": "## E05 · Activar cuenta del paciente\n\n**Objetivo:** Que el paciente reemplace la contraseña provisoria y acceda a su vista.\n"
     },
     {
       "codigo": "E06",
@@ -101,7 +101,7 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E06 · Dar de alta paciente\n\n**Objetivo:** Registrar al paciente durante la consulta médica, porque puede que no vuelva.\n**Actores:** Médico tratante, Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E06.1 El médico tratante carga DNI, nombre, apellido, fecha de nacimiento, teléfono y mail del paciente.\n- [x] E06.2 El médico tratante registra el diagnóstico presuntivo, con una o más patologías lisosómicas, y el tipo de sospecha.\n- [x] E06.3 El médico tratante graba el resumen de historia clínica y el sistema lo transcribe a texto.\n- [x] E06.4 El médico tratante carga la lista de síntomas del paciente mediante BUSCAR SÍNTOMA.\n- [x] E06.5 Si el paciente informa familiares, el médico tratante realiza REGISTRAR FAMILIOGRAMA.\n- [x] E06.6 El sistema realiza VALIDAR DIAGNÓSTICO PRESUNTIVO y, si es válido, envía las credenciales de acceso al paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #51) |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Alta de paciente y familiograma».\n"
+      "cuerpo": "## E06 · Dar de alta paciente\n\n**Objetivo:** Registrar al paciente durante la consulta médica, porque puede que no vuelva.\n"
     },
     {
       "codigo": "E07",
@@ -119,7 +119,7 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E07 · Buscar síntoma\n\n**Objetivo:** Que todos los médicos codifiquen los síntomas de igual forma, con la terminología SNOMED.\n**Actores:** Médico tratante, Gerente médico, Sistema.\n\n### Criterios de aceptación\n\n- [x] E07.1 El médico tratante o el gerente médico escribe parte del síntoma.\n- [x] E07.2 El sistema consulta el módulo SNOMED a medida que se escribe.\n- [x] E07.3 El sistema muestra los términos que coinciden con lo escrito.\n- [x] E07.4 El médico tratante o el gerente médico elige el síntoma.\n- [x] E07.5 El sistema agrega el síntoma a la lista.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #45) |\n| Responsable | Integrante 2 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Patologías, síntomas SNOMED y validación del diagnóstico».\n"
+      "cuerpo": "## E07 · Buscar síntoma\n\n**Objetivo:** Que todos los médicos codifiquen los síntomas de igual forma, con la terminología SNOMED.\n"
     },
     {
       "codigo": "E08",
@@ -136,7 +136,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E08 · Validar diagnóstico presuntivo\n\n**Objetivo:** Impedir el alta de un paciente cuyo diagnóstico presuntivo no coincide con sus síntomas.\n**Actores:** Sistema, Médico tratante.\n\n### Criterios de aceptación\n\n- [x] E08.1 El sistema obtiene el síntoma cardinal y los síntomas secundarios de cada patología del diagnóstico presuntivo.\n- [x] E08.2 El sistema compara esos síntomas con la lista de síntomas del paciente.\n- [x] E08.3 Si el paciente presenta el síntoma cardinal o al menos dos síntomas secundarios, el sistema acepta el alta.\n- [x] E08.4 Si no se cumple la regla, el sistema rechaza el alta.\n- [x] E08.5 Si rechaza el alta, el sistema informa la inconsistencia al médico tratante (qué patología y qué falta).\n- [x] E08.6 Si se rechazó el alta, el médico tratante corrige el diagnóstico presuntivo o la lista de síntomas (la función se puede volver a llamar; el formulario es de E06).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #45) |\n| Responsable | Integrante 2 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Patologías, síntomas SNOMED y validación del diagnóstico».\n"
+      "cuerpo": "## E08 · Validar diagnóstico presuntivo\n\n**Objetivo:** Impedir el alta de un paciente cuyo diagnóstico presuntivo no coincide con sus síntomas.\n"
     },
     {
       "codigo": "E09",
@@ -154,7 +154,7 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E09 · Registrar familiograma\n\n**Objetivo:** Identificar familiares con riesgo aumentado a los que conviene estudiar.\n**Actores:** Médico tratante, Sistema.\n\n### Criterios de aceptación\n\n- [x] E09.1 El médico tratante da de alta un familiar con su parentesco y su nombre.\n- [x] E09.2 El médico tratante carga los síntomas del familiar mediante BUSCAR SÍNTOMA.\n- [x] E09.3 El médico tratante indica si el familiar tiene diagnóstico de alguna patología lisosómica.\n- [x] E09.4 El médico tratante repite los episodios anteriores por cada familiar.\n- [x] E09.5 El sistema envía los familiares a la API de familiograma.\n- [x] E09.6 El sistema asocia al paciente el familiograma en PDF devuelto.\n- [x] E09.7 Si el familiar tiene DNI y ya es paciente del sistema, el sistema lo vincula con ese paciente al darlo de alta y deja el identificador del vínculo (su DNI y su paciente).\n- [x] E09.8 Cuando se da de alta un paciente cuyo DNI coincide con el de un familiar de otro paciente, el sistema vincula ese familiar con el paciente nuevo, sin que nadie lo pida.\n- [x] E09.9 El médico tratante ve en el detalle del paciente cada familiar y, si ya es paciente, el código y el estado de su estudio.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #51) |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Alta de paciente y familiograma».\n"
+      "cuerpo": "## E09 · Registrar familiograma\n\n**Objetivo:** Identificar familiares con riesgo aumentado a los que conviene estudiar.\n"
     },
     {
       "codigo": "E10",
@@ -171,7 +171,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E10 · Dar de alta estudio\n\n**Objetivo:** Iniciar el circuito del exoma clínico para un paciente.\n**Actores:** Médico tratante, Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [x] E10.1 El médico tratante selecciona al paciente; si no existe, realiza DAR DE ALTA PACIENTE (botón hacia el alta de E06).\n- [x] E10.2 El sistema obtiene de la API de bioinformática los genes asociados al diagnóstico presuntivo.\n- [x] E10.3 Si sospecha otra causa, el médico tratante agrega genes manualmente.\n- [x] E10.4 El médico tratante indica si el estudio evalúa hallazgos secundarios.\n- [x] E10.5 El sistema registra el estudio en estado Creado y avisa al administrativo para emitir el presupuesto.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #53) |\n| Responsable | Integrante 3 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Alta de estudio con genes de Apigen».\n"
+      "cuerpo": "## E10 · Dar de alta estudio\n\n**Objetivo:** Iniciar el circuito del exoma clínico para un paciente.\n"
     },
     {
       "codigo": "E11",
@@ -188,7 +188,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E11 · Consultar historial de estudios\n\n**Objetivo:** Ver los estudios de un paciente y el estado de cada uno.\n**Actores:** Médico tratante, Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E11.1 El médico tratante o el paciente accede al historial de estudios del paciente.\n- [x] E11.2 El sistema muestra cada estudio con su estado actual (por O20 hay uno solo, con sus análisis: el inicial y cada reanálisis, y las fechas de cada cambio de estado).\n- [x] E11.3 El médico tratante o el paciente selecciona un estudio.\n- [x] E11.4 El sistema muestra el detalle del estudio y, si está Finalizado, el resultado del estudio (descarga del PDF).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #50) |\n| Responsable | Integrante 1 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Historial de estudios y chatbot del paciente».\n"
+      "cuerpo": "## E11 · Consultar historial de estudios\n\n**Objetivo:** Ver los estudios de un paciente y el estado de cada uno.\n"
     },
     {
       "codigo": "E12",
@@ -203,7 +203,7 @@
       "labels": [
         "area:analisis"
       ],
-      "cuerpo": "## E12 · Solicitar reanálisis\n\n**Objetivo:** Analizar otros genes del mismo exoma sin nueva extracción ni nueva lectura del ADN.\n**Actores:** Médico tratante, Bioinformático, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E12.1 El médico tratante realiza CONSULTAR HISTORIAL DE ESTUDIOS (pantalla de E11).\n- [ ] E12.2 El médico tratante selecciona un estudio finalizado.\n- [ ] E12.3 El médico tratante elige la nueva patología lisosómica o los nuevos genes a analizar.\n- [ ] E12.4 El sistema obtiene de la API de bioinformática los genes de la nueva patología lisosómica.\n- [ ] E12.5 El sistema devuelve el estudio a En área de bioinformática, con los mismos datos crudos.\n- [ ] E12.6 El sistema notifica a los bioinformáticos.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E34 y E35 |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Reanálisis».\n"
+      "cuerpo": "## E12 · Solicitar reanálisis\n\n**Objetivo:** Analizar otros genes del mismo exoma sin nueva extracción ni nueva lectura del ADN.\n"
     },
     {
       "codigo": "E13",
@@ -220,7 +220,7 @@
       "labels": [
         "area:pagos"
       ],
-      "cuerpo": "## E13 · Emitir presupuesto\n\n**Objetivo:** Informar al paciente el costo del estudio antes del pago.\n**Actores:** Administrativo, Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E13.1 El administrativo consulta los estudios en estado Creado.\n- [x] E13.2 El sistema calcula el importe: 500 USD hasta 5 genes y 30 USD por cada gen adicional, con la extracción incluida.\n- [x] E13.3 El administrativo emite el presupuesto del estudio.\n- [x] E13.4 El sistema publica el presupuesto en la vista del paciente y cambia el estudio a Presupuestado.\n- [x] E13.5 El sistema notifica al paciente por mail y por aviso.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #47) |\n| Responsable | Integrante 3 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Presupuesto, pago particular y registro financiero».\n"
+      "cuerpo": "## E13 · Emitir presupuesto\n\n**Objetivo:** Informar al paciente el costo del estudio antes del pago.\n"
     },
     {
       "codigo": "E14",
@@ -237,7 +237,7 @@
       "labels": [
         "area:pagos"
       ],
-      "cuerpo": "## E14 · Pagar estudio\n\n**Objetivo:** Pagar el estudio de forma particular para habilitar la reserva del turno.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E14.1 El paciente consulta el presupuesto del estudio.\n- [x] E14.2 El paciente elige pagar de forma particular.\n- [x] E14.3 Si tiene un cupón de descuento, el paciente realiza APLICAR CUPÓN (lo completa E15).\n- [x] E14.4 El paciente confirma el pago simulado por el importe final.\n- [x] E14.5 El sistema realiza REGISTRAR OPERACIÓN FINANCIERA.\n- [x] E14.6 El sistema cambia el estudio a Habilitado para turno y notifica al paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #47) |\n| Responsable | Integrante 3 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl episodio 3 (aplicar cupón) lo completa E15.\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Presupuesto, pago particular y registro financiero».\n"
+      "cuerpo": "## E14 · Pagar estudio\n\n**Objetivo:** Pagar el estudio de forma particular para habilitar la reserva del turno.\n"
     },
     {
       "codigo": "E15",
@@ -255,7 +255,7 @@
         "area:pagos",
         "integracion"
       ],
-      "cuerpo": "## E15 · Aplicar cupón\n\n**Objetivo:** Descontar del presupuesto el beneficio que el médico tratante otorgó al paciente.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E15.1 El paciente sube el PDF del cupón o ingresa su código.\n- [x] E15.2 El sistema consulta al módulo de cupones si el cupón está vigente.\n- [x] E15.3 Si el cupón no está vigente, el sistema lo rechaza.\n- [x] E15.4 Si rechaza el cupón, el sistema informa el rechazo al paciente.\n- [x] E15.5 Si el cupón está vigente, el sistema aplica el descuento al presupuesto.\n- [x] E15.6 Si se confirma el pago, el sistema informa al módulo de cupones el uso del cupón para que lo venza.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #49) |\n| Responsable | Integrante 3 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cupones de descuento».\n"
+      "cuerpo": "## E15 · Aplicar cupón\n\n**Objetivo:** Descontar del presupuesto el beneficio que el médico tratante otorgó al paciente.\n"
     },
     {
       "codigo": "E16",
@@ -275,7 +275,7 @@
         "area:pagos",
         "integracion"
       ],
-      "cuerpo": "## E16 · Solicitar cobertura de obra social\n\n**Objetivo:** Que la obra social del paciente cubra el estudio.\n**Actores:** Paciente, Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [x] E16.1 El paciente elige usar la cobertura de su obra social.\n- [x] E16.2 El sistema consulta la API de obras sociales y muestra las obras sociales con su porcentaje de cobertura.\n- [x] E16.3 El paciente selecciona su obra social.\n- [x] E16.4 El sistema cambia el estudio a Pendiente de autorización.\n- [x] E16.5 Al elegir la obra social, el sistema da de alta el estudio en el módulo de obras sociales (nombre del paciente y fecha) y avisa al administrativo que el pedido está en curso.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #54, #63 y #64) |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nDesde el 17/11 el pedido va al módulo de obras sociales del grupo 9 (antes era una issue aparte, «Autorización de la obra social desde su módulo»: PRs #63 y #64).\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cobertura de obra social y reautorización».\n"
+      "cuerpo": "## E16 · Solicitar cobertura de obra social\n\n**Objetivo:** Que la obra social del paciente cubra el estudio.\n"
     },
     {
       "codigo": "E17",
@@ -295,7 +295,7 @@
         "area:pagos",
         "integracion"
       ],
-      "cuerpo": "## E17 · Autorizar cobertura\n\n**Objetivo:** Registrar la respuesta de la obra social para que el estudio avance o quede rechazado.\n**Actores:** Administrativo, Obra social, Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E17.1 La obra social autoriza o rechaza en la web del módulo de obras sociales (fuera del sistema), y el sistema consulta la respuesta.\n- [x] E17.2 Ante una autorización, el sistema realiza REGISTRAR OPERACIÓN FINANCIERA.\n- [x] E17.3 Ante una autorización, el sistema cambia el estudio a Habilitado para turno (con cobertura parcial, recién cuando el paciente paga la diferencia: O3 y O18).\n- [x] E17.4 Si la obra social rechaza, el sistema registra el rechazo (el administrativo, solo si el módulo no responde).\n- [x] E17.5 Ante un rechazo, el sistema cambia el estudio a Rechazado por obra social.\n- [x] E17.6 El sistema envía una notificación al paciente con la respuesta de la obra social.\n- [x] E17.7 Si el módulo no responde, el administrativo puede registrar la respuesta a mano.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #54, #63 y #64) |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nLa respuesta la toma el sistema del módulo de obras sociales cada 30 minutos; a mano solo si el módulo no responde (PRs #63 y #64).\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cobertura de obra social y reautorización».\n"
+      "cuerpo": "## E17 · Autorizar cobertura\n\n**Objetivo:** Registrar la respuesta de la obra social para que el estudio avance o quede rechazado.\n"
     },
     {
       "codigo": "E18",
@@ -315,7 +315,7 @@
         "area:pagos",
         "integracion"
       ],
-      "cuerpo": "## E18 · Solicitar reautorización\n\n**Objetivo:** Destrabar un estudio rechazado cuando la justicia falla a favor del paciente.\n**Actores:** Paciente, Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [x] E18.1 El paciente carga una demanda de reautorización asociada al estudio.\n- [x] E18.2 El paciente sube el PDF de la resolución judicial favorable.\n- [x] E18.3 El sistema cambia el estudio a Pendiente de autorización.\n- [x] E18.4 El sistema avisa al administrativo que hay una reautorización pendiente.\n- [x] E18.5 El administrativo realiza AUTORIZAR COBERTURA.\n- [x] E18.6 El sistema presenta la demanda en el módulo de obras sociales, sobre la misma solicitud.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #54, #63 y #64) |\n| Responsable | Integrante 4 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cobertura de obra social y reautorización».\n"
+      "cuerpo": "## E18 · Solicitar reautorización\n\n**Objetivo:** Destrabar un estudio rechazado cuando la justicia falla a favor del paciente.\n"
     },
     {
       "codigo": "E19",
@@ -332,7 +332,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E19 · Reservar turno de extracción\n\n**Objetivo:** Que el paciente acuda a un centro de extracción a tomarse la muestra.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E19.1 El paciente consulta en un mapa los centros de extracción.\n- [x] E19.2 El paciente elige el centro de extracción que le queda más cerca.\n- [x] E19.3 El sistema muestra los turnos libres de ese centro.\n- [x] E19.4 El paciente reserva un turno libre.\n- [x] E19.5 El sistema cambia el estudio a Turno sacado.\n- [x] E19.6 El sistema envía al paciente la orden de extracción y el consentimiento informado.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #52) |\n| Responsable | Integrante 4 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Turnos de extracción: reservar, cancelar y recordar».\n"
+      "cuerpo": "## E19 · Reservar turno de extracción\n\n**Objetivo:** Que el paciente acuda a un centro de extracción a tomarse la muestra.\n"
     },
     {
       "codigo": "E20",
@@ -349,7 +349,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E20 · Cancelar turno\n\n**Objetivo:** Liberar un turno al que el paciente no puede asistir.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E20.1 El paciente consulta su turno de extracción.\n- [x] E20.2 El paciente cancela el turno.\n- [x] E20.3 El sistema libera el turno en el turnero del centro de extracción.\n- [x] E20.4 El sistema cambia el estudio a Habilitado para turno.\n- [x] E20.5 El paciente realiza RESERVAR TURNO DE EXTRACCIÓN cuando pueda asistir.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #52) |\n| Responsable | Integrante 4 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Turnos de extracción: reservar, cancelar y recordar».\n"
+      "cuerpo": "## E20 · Cancelar turno\n\n**Objetivo:** Liberar un turno al que el paciente no puede asistir.\n"
     },
     {
       "codigo": "E21",
@@ -366,7 +366,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E21 · Recordar turno\n\n**Objetivo:** Evitar que el paciente olvide su turno de extracción.\n**Actores:** Sistema, Paciente.\n\n### Criterios de aceptación\n\n- [x] E21.1 El sistema identifica los turnos de extracción próximos.\n- [x] E21.2 El sistema envía al paciente un recordatorio por mail con la fecha, la hora y el centro de extracción.\n- [x] E21.3 El sistema publica el recordatorio en la lista de avisos del paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #52) |\n| Responsable | Integrante 4 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Turnos de extracción: reservar, cancelar y recordar».\n"
+      "cuerpo": "## E21 · Recordar turno\n\n**Objetivo:** Evitar que el paciente olvide su turno de extracción.\n"
     },
     {
       "codigo": "E22",
@@ -385,7 +385,7 @@
         "area:turnos",
         "integracion"
       ],
-      "cuerpo": "## E22 · Registrar toma de muestra\n\n**Objetivo:** Informar al laboratorio central, sin intervención de personas, que la muestra está lista para retirar.\n**Actores:** Paciente, Centro de extracción, Sistema.\n\n### Criterios de aceptación\n\n- [x] E22.1 El paciente presenta la orden de extracción (fuera del sistema; la orden de E19 lleva el código del estudio).\n- [x] E22.2 El paciente entrega el consentimiento informado firmado (fuera del sistema; no se guarda).\n- [x] E22.3 El centro de extracción toma la muestra de sangre (fuera del sistema).\n- [x] E22.4 El centro de extracción envía el mensaje de muestra tomada al bot de mensajería.\n- [x] E22.5 El sistema cambia el estudio a Listo para retirar.\n- [x] E22.6 El sistema incluye el centro de extracción en la próxima orden del día de su provincia (consulta `centros_con_muestras_listas(provincia)`, que usa E23).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #56 y #57) |\n| Responsable | Integrante 1 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Toma de muestra por el bot e inasistencias».\n"
+      "cuerpo": "## E22 · Registrar toma de muestra\n\n**Objetivo:** Informar al laboratorio central, sin intervención de personas, que la muestra está lista para retirar.\n"
     },
     {
       "codigo": "E23",
@@ -404,7 +404,7 @@
         "area:turnos",
         "integracion"
       ],
-      "cuerpo": "## E23 · Generar orden del día\n\n**Objetivo:** Que cada transportista sepa qué centros de extracción visitar y en qué orden.\n**Actores:** Sistema, Transportista.\n\n### Criterios de aceptación\n\n- [x] E23.1 El sistema reúne, por provincia, los centros de extracción con estudios Listo para retirar.\n- [x] E23.2 El sistema envía las direcciones de esos centros al módulo de optimización de recorridos.\n- [x] E23.3 El sistema recibe el orden del recorrido.\n- [x] E23.4 El sistema asigna la orden del día al transportista de la provincia.\n- [x] E23.5 El transportista recibe la orden del día (aviso y mail).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #58 y #65) |\n| Responsable | Integrante 4 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nConectado al módulo de optimización de recorridos (módulo 9) en el PR #65.\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Orden del día y retiro de muestras».\n"
+      "cuerpo": "## E23 · Generar orden del día\n\n**Objetivo:** Que cada transportista sepa qué centros de extracción visitar y en qué orden.\n"
     },
     {
       "codigo": "E24",
@@ -422,7 +422,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E24 · Retirar muestras\n\n**Objetivo:** Trasladar las muestras desde los centros de extracción al laboratorio central.\n**Actores:** Transportista, Centro de extracción, Sistema.\n\n### Criterios de aceptación\n\n- [x] E24.1 El transportista llega al siguiente centro de extracción de la orden del día.\n- [x] E24.2 El centro de extracción entrega las muestras al transportista (fuera del sistema).\n- [x] E24.3 El transportista registra el retiro de las muestras.\n- [x] E24.4 El sistema cambia esos estudios a En camino al laboratorio central.\n- [x] E24.5 El transportista repite los episodios en cada centro hasta completar la orden del día.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #58 y #65) |\n| Responsable | Integrante 4 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Orden del día y retiro de muestras».\n"
+      "cuerpo": "## E24 · Retirar muestras\n\n**Objetivo:** Trasladar las muestras desde los centros de extracción al laboratorio central.\n"
     },
     {
       "codigo": "E25",
@@ -437,7 +437,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E25 · Seguir ubicación de la muestra\n\n**Objetivo:** Saber en todo momento por dónde va una muestra en traslado.\n**Actores:** Transportista, Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E25.1 El transportista informa su ubicación durante el recorrido.\n- [ ] E25.2 El administrativo busca el estudio de un paciente.\n- [ ] E25.3 El sistema identifica al transportista que lleva la muestra.\n- [ ] E25.4 El sistema muestra en un mapa la ubicación del transportista.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E23 y E24 (hechos) |\n| Responsable | Integrante 3 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Seguimiento y llegada de las muestras al laboratorio central».\n"
+      "cuerpo": "## E25 · Seguir ubicación de la muestra\n\n**Objetivo:** Saber en todo momento por dónde va una muestra en traslado.\n"
     },
     {
       "codigo": "E26",
@@ -452,7 +452,7 @@
       "labels": [
         "area:turnos"
       ],
-      "cuerpo": "## E26 · Registrar llegada al laboratorio central\n\n**Objetivo:** Confirmar la recepción de las muestras en el laboratorio central.\n**Actores:** Transportista, Administrativo, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E26.1 El transportista entrega las muestras en el laboratorio central (fuera del sistema).\n- [ ] E26.2 El transportista registra la llegada con todas las muestras recolectadas.\n- [ ] E26.3 El sistema cambia esos estudios a En laboratorio central.\n- [ ] E26.4 El sistema realiza ARMAR SAMPLE SET con las muestras recibidas (`agregar_muestra` de E28). Reemplaza a los episodios 4 y 5 anteriores (registrar el volumen y pedir una nueva extracción si era menor a 2 ml).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E24 (hecho) y E28 |\n| Responsable | Integrante 3 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl episodio 4 llama a ARMAR SAMPLE SET (E28): la usa, no la reescribe.\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Seguimiento y llegada de las muestras al laboratorio central».\n"
+      "cuerpo": "## E26 · Registrar llegada al laboratorio central\n\n**Objetivo:** Confirmar la recepción de las muestras en el laboratorio central.\n"
     },
     {
       "codigo": "E27",
@@ -469,7 +469,7 @@
       "labels": [
         "area:analisis"
       ],
-      "cuerpo": "## E27 · Solicitar nueva extracción\n\n**Objetivo:** Reemplazar una muestra que no sirve, sin costo para el paciente.\n**Actores:** Administrativo, Sistema, Paciente, Médico tratante.\n\n### Criterios de aceptación\n\n- [x] E27.1 El administrativo, avisado por el laboratorio de Corea (por mail, fuera del sistema), registra que la muestra no sirve e indica el motivo (`adn`, `volumen` u `otro`, con un detalle opcional). Solo puede hacerlo mientras el estudio está En viaje a Corea.\n- [x] E27.2 El sistema cambia el estudio a Requiere nueva extracción.\n- [x] E27.3 El sistema notifica al paciente y al médico tratante.\n- [x] E27.4 El paciente realiza RESERVAR TURNO DE EXTRACCIÓN sin un nuevo pago (ya lo permite E19).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #59) |\n| Responsable | Integrante 4 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Nueva extracción, datos crudos y toma del estudio».\n"
+      "cuerpo": "## E27 · Solicitar nueva extracción\n\n**Objetivo:** Reemplazar una muestra que no sirve, sin costo para el paciente.\n"
     },
     {
       "codigo": "E28",
@@ -484,7 +484,7 @@
       "labels": [
         "area:corea"
       ],
-      "cuerpo": "## E28 · Armar sample set\n\n**Objetivo:** Enviar las muestras a Corea en paquetes de 10 para obtener el envío gratuito.\n**Actores:** Sistema.\n\n### Criterios de aceptación\n\n- [ ] E28.1 El sistema agrega cada muestra En laboratorio central al sample set en armado (`agregar_muestra`, que llama E26 al registrar la llegada de la muestra; ya no hay chequeo de volumen).\n- [ ] E28.2 El sistema identifica como Pompe urgente todo estudio con diagnóstico presuntivo de Pompe en un paciente menor de 4 meses (la marca `pompe_urgente` que calcula E10).\n- [ ] E28.3 Si el sample set llega a 10 muestras, el sistema lo cierra.\n- [ ] E28.4 Si el sample set contiene un Pompe urgente, el sistema lo cierra aunque esté incompleto.\n- [ ] E28.5 El sistema cambia los estudios del sample set cerrado a Pendiente de autorización ministerial.\n- [ ] E28.6 El sistema realiza SOLICITAR AUTORIZACIÓN MINISTERIAL.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E22 y E43 (hechos) |\n| Responsable | Integrante 1 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Sample set y autorización ministerial».\n"
+      "cuerpo": "## E28 · Armar sample set\n\n**Objetivo:** Enviar las muestras a Corea en paquetes de 10 para obtener el envío gratuito.\n"
     },
     {
       "codigo": "E29",
@@ -500,7 +500,7 @@
         "area:corea",
         "integracion"
       ],
-      "cuerpo": "## E29 · Solicitar autorización ministerial\n\n**Objetivo:** Cumplir la exigencia del Ministerio de Salud de autorizar la salida de muestras al exterior.\n**Actores:** Sistema, Ministerio de Salud, Administrativo.\n\n### Criterios de aceptación\n\n- [ ] E29.1 El sistema genera el CCB con los pacientes del sample set.\n- [ ] E29.2 El sistema envía el CCB a la API del Ministerio de Salud.\n- [ ] E29.3 El Ministerio de Salud devuelve el PDF de autorización.\n- [ ] E29.4 El sistema asocia el CCB y el PDF de autorización a cada estudio del sample set.\n- [ ] E29.5 El sistema cambia el sample set a Pendiente de retiro y sus estudios a Pendiente de envío.\n- [ ] E29.6 El sistema avisa al administrativo que el sample set está listo para programar el retiro.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E28 |\n| Responsable | Integrante 1 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Sample set y autorización ministerial».\n"
+      "cuerpo": "## E29 · Solicitar autorización ministerial\n\n**Objetivo:** Cumplir la exigencia del Ministerio de Salud de autorizar la salida de muestras al exterior.\n"
     },
     {
       "codigo": "E30",
@@ -516,7 +516,7 @@
         "area:corea",
         "integracion"
       ],
-      "cuerpo": "## E30 · Programar retiro\n\n**Objetivo:** Coordinar con FedEx el retiro del sample set.\n**Actores:** Administrativo, FedEx, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E30.1 El administrativo consulta los sample sets pendientes de retiro.\n- [ ] E30.2 El administrativo elige un día y una hora hábiles para el retiro.\n- [ ] E30.3 El administrativo envía a FedEx el día, la hora y el lugar del retiro (la dirección del laboratorio central), y el sistema guarda la URL de estado que devuelve FedEx.\n- [ ] E30.4 El sistema cambia el sample set a Retiro programado.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E28 y E29 |\n| Responsable | Integrante 3 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Retiro de FedEx y despacho del sample set».\n"
+      "cuerpo": "## E30 · Programar retiro\n\n**Objetivo:** Coordinar con FedEx el retiro del sample set.\n"
     },
     {
       "codigo": "E31",
@@ -532,7 +532,7 @@
         "area:corea",
         "integracion"
       ],
-      "cuerpo": "## E31 · Despachar sample set\n\n**Objetivo:** Actualizar sin intervención los estados cuando FedEx retira el paquete.\n**Actores:** FedEx, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E31.1 FedEx retira el sample set en el día y la hora programados (fuera del sistema).\n- [ ] E31.2 El sistema consulta la URL de estado del retiro y encuentra el pedido retirado.\n- [ ] E31.3 El sistema cambia el sample set a Despachado.\n- [ ] E31.4 El sistema cambia todos los estudios del sample set a En viaje a Corea.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E30 |\n| Responsable | Integrante 3 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Retiro de FedEx y despacho del sample set».\n"
+      "cuerpo": "## E31 · Despachar sample set\n\n**Objetivo:** Actualizar sin intervención los estados cuando FedEx retira el paquete.\n"
     },
     {
       "codigo": "E32",
@@ -549,7 +549,7 @@
       "labels": [
         "area:analisis"
       ],
-      "cuerpo": "## E32 · Cargar datos crudos\n\n**Objetivo:** Poner los datos crudos a disposición del equipo de bioinformática.\n**Actores:** Laboratorio de secuenciación, Administrativo, Bioinformático, Sistema.\n\n### Criterios de aceptación\n\n- [x] E32.1 El laboratorio de secuenciación envía los datos crudos de un estudio (fuera del sistema).\n- [x] E32.2 Si el laboratorio de secuenciación informa ADN insuficiente, el administrativo realiza SOLICITAR NUEVA EXTRACCIÓN.\n- [x] E32.3 Si el ADN es suficiente, el administrativo carga los datos crudos en el estudio.\n- [x] E32.4 Si el ADN es suficiente, el sistema cambia el estudio a En área de bioinformática.\n- [x] E32.5 Si el ADN es suficiente, el sistema notifica a todos los bioinformáticos.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #59) |\n| Responsable | Integrante 4 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Nueva extracción, datos crudos y toma del estudio».\n"
+      "cuerpo": "## E32 · Cargar datos crudos\n\n**Objetivo:** Poner los datos crudos a disposición del equipo de bioinformática.\n"
     },
     {
       "codigo": "E33",
@@ -566,7 +566,7 @@
       "labels": [
         "area:analisis"
       ],
-      "cuerpo": "## E33 · Tomar estudio\n\n**Objetivo:** Que un solo bioinformático analice cada estudio y que los demás lo sepan.\n**Actores:** Bioinformático, Sistema.\n\n### Criterios de aceptación\n\n- [x] E33.1 El bioinformático consulta la lista de estudios En área de bioinformática.\n- [x] E33.2 El sistema ordena la lista con los Pompe urgentes primero y el resto por orden de llegada.\n- [x] E33.3 El bioinformático toma un estudio.\n- [x] E33.4 El sistema cambia el estudio a En análisis y lo quita de la lista de los demás bioinformáticos.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #59) |\n| Responsable | Integrante 4 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Nueva extracción, datos crudos y toma del estudio».\n"
+      "cuerpo": "## E33 · Tomar estudio\n\n**Objetivo:** Que un solo bioinformático analice cada estudio y que los demás lo sepan.\n"
     },
     {
       "codigo": "E34",
@@ -582,7 +582,7 @@
         "area:analisis",
         "integracion"
       ],
-      "cuerpo": "## E34 · Registrar variante\n\n**Objetivo:** Dejar constancia de las variantes encontradas en los genes solicitados.\n**Actores:** Bioinformático, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E34.1 El bioinformático elige un gen de los solicitados en el estudio.\n- [ ] E34.2 El sistema consulta a la API de bioinformática las variantes conocidas de ese gen.\n- [ ] E34.3 El bioinformático selecciona la variante encontrada.\n- [ ] E34.4 El sistema registra la variante con su clasificación: patogénica, probablemente patogénica, benigna o VUS (O12).\n- [ ] E34.5 El bioinformático repite los episodios por cada gen con variantes, incluidos los de hallazgos secundarios.\n- [ ] E34.6 El bioinformático finaliza el análisis y el sistema realiza INFORMAR RESULTADO.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E10, E11 y E33 (hechos) |\n| Responsable | Integrante 2 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Variantes y resultado del estudio».\n"
+      "cuerpo": "## E34 · Registrar variante\n\n**Objetivo:** Dejar constancia de las variantes encontradas en los genes solicitados.\n"
     },
     {
       "codigo": "E35",
@@ -598,7 +598,7 @@
         "area:analisis",
         "integracion"
       ],
-      "cuerpo": "## E35 · Informar resultado\n\n**Objetivo:** Comunicar el diagnóstico al médico tratante y al paciente.\n**Actores:** Sistema, Médico tratante, Paciente.\n\n### Criterios de aceptación\n\n- [ ] E35.1 El sistema determina si el estudio es positivo, es decir, si hay una variante patogénica en los genes del diagnóstico presuntivo (con O12, el resultado puede ser además portador o negativo).\n- [ ] E35.2 El sistema genera el resultado del estudio en PDF con la plantilla del laboratorio.\n- [ ] E35.3 El sistema cambia el estudio a Finalizado.\n- [ ] E35.4 El sistema notifica el resultado al médico tratante y al paciente por mail y por aviso.\n- [ ] E35.5 El médico tratante y el paciente descargan el resultado del estudio (descarga de E11).\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E34 |\n| Responsable | Integrante 2 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Variantes y resultado del estudio».\n"
+      "cuerpo": "## E35 · Informar resultado\n\n**Objetivo:** Comunicar el diagnóstico al médico tratante y al paciente.\n"
     },
     {
       "codigo": "E36",
@@ -616,7 +616,7 @@
         "area:gestion",
         "integracion"
       ],
-      "cuerpo": "## E36 · Dar de alta patología\n\n**Objetivo:** Definir las patologías lisosomales y los síntomas que validan el diagnóstico presuntivo.\n**Actores:** Gerente médico, Sistema.\n\n### Criterios de aceptación\n\n- [x] E36.1 El gerente médico carga el nombre de la patología lisosómica (y, si es propia del grupo, el código y la herencia que pide el endpoint 9 de Apigen).\n- [x] E36.2 El gerente médico selecciona el síntoma cardinal mediante BUSCAR SÍNTOMA.\n- [x] E36.3 El gerente médico selecciona los síntomas secundarios mediante BUSCAR SÍNTOMA.\n- [x] E36.4 El sistema guarda la patología para su uso en VALIDAR DIAGNÓSTICO PRESUNTIVO.\n- [x] E36.5 Cuando lo necesite, el gerente médico modifica el síntoma cardinal o los síntomas secundarios.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #45) |\n| Responsable | Integrante 2 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Patologías, síntomas SNOMED y validación del diagnóstico».\n"
+      "cuerpo": "## E36 · Dar de alta patología\n\n**Objetivo:** Definir las patologías lisosomales y los síntomas que validan el diagnóstico presuntivo.\n"
     },
     {
       "codigo": "E37",
@@ -634,7 +634,7 @@
         "area:gestion",
         "integracion"
       ],
-      "cuerpo": "## E37 · Generar cupón\n\n**Objetivo:** Que el laboratorio otorgue descuentos a través de los médicos tratantes.\n**Actores:** Gerente médico, Sistema.\n\n### Criterios de aceptación\n\n- [x] E37.1 El gerente médico define el descuento y la cantidad de cupones.\n- [x] E37.2 El sistema solicita los cupones al módulo de cupones.\n- [x] E37.3 El sistema recibe los cupones en PDF, con código QR o código numérico.\n- [x] E37.4 El gerente médico asigna los cupones a un médico tratante.\n- [x] E37.5 El sistema notifica al médico tratante los cupones recibidos.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #49) |\n| Responsable | Integrante 3 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cupones de descuento».\n"
+      "cuerpo": "## E37 · Generar cupón\n\n**Objetivo:** Que el laboratorio otorgue descuentos a través de los médicos tratantes.\n"
     },
     {
       "codigo": "E38",
@@ -651,7 +651,7 @@
       "labels": [
         "area:gestion"
       ],
-      "cuerpo": "## E38 · Asignar cupón\n\n**Objetivo:** Que el médico tratante decida a qué pacientes beneficiar con sus cupones.\n**Actores:** Médico tratante, Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E38.1 El médico tratante consulta sus cupones disponibles.\n- [x] E38.2 El médico tratante elige un cupón y un paciente.\n- [x] E38.3 El médico tratante asigna el cupón al paciente.\n- [x] E38.4 El sistema envía una notificación al paciente.\n- [x] E38.5 El sistema deja el cupón disponible en la vista del paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #49) |\n| Responsable | Integrante 3 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Cupones de descuento».\n"
+      "cuerpo": "## E38 · Asignar cupón\n\n**Objetivo:** Que el médico tratante decida a qué pacientes beneficiar con sus cupones.\n"
     },
     {
       "codigo": "E39",
@@ -667,7 +667,7 @@
         "infra",
         "integracion"
       ],
-      "cuerpo": "## E39 · Notificar\n\n**Objetivo:** Que cada usuario se entere de lo que tiene pendiente sin depender de llamados telefónicos.\n**Actores:** Sistema, Usuario.\n\n### Criterios de aceptación\n\n- [x] E39.1 El sistema detecta un evento que requiere avisar a un usuario (lo invoca cada issue con `notificar(usuario, asunto, mensaje, link, estudio=None)`).\n- [x] E39.2 El sistema envía una notificación por mail (en desarrollo, por consola).\n- [x] E39.3 El sistema publica un aviso en la lista de pendientes del usuario.\n- [x] E39.4 El usuario consulta sus avisos y accede a la tarea pendiente (`GET /avisos/<id>` marca el aviso leído y redirige al link).\n\n**Ampliación del 17/11: módulo de avisos (falta)**\n\n- [ ] El sistema manda el aviso por mail a través del módulo de avisos (módulo 7).\n- [ ] Si el usuario tiene teléfono y el aviso es un recordatorio de turno (E21) o una orden del día (E23), lo manda además por WhatsApp a través del módulo.\n- [ ] Si el módulo no responde, el mail sale por SMTP como hasta ahora y el aviso queda guardado igual.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | nada |\n| Responsable | Integrante 3 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nLa base (Integrante 1, PR #22) hizo los avisos con mail por SMTP. Falta la ampliación del 17/11: mandarlos por el módulo de avisos (módulo 7), que era una issue aparte (Integrante 3).\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Avisos por el módulo de avisos (mail y WhatsApp)».\n"
+      "cuerpo": "## E39 · Notificar\n\n**Objetivo:** Que cada usuario se entere de lo que tiene pendiente sin depender de llamados telefónicos.\n"
     },
     {
       "codigo": "E40",
@@ -685,7 +685,7 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E40 · Consultar chatbot\n\n**Objetivo:** Responder las dudas del paciente sobre las patologías lisosomales.\n**Actores:** Paciente, Sistema.\n\n### Criterios de aceptación\n\n- [x] E40.1 El paciente escribe una pregunta en la interfaz del sistema.\n- [x] E40.2 El sistema delega la pregunta al chatbot de pacientes.\n- [x] E40.3 El sistema muestra la respuesta al paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #50) |\n| Responsable | Integrante 1 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Historial de estudios y chatbot del paciente».\n"
+      "cuerpo": "## E40 · Consultar chatbot\n\n**Objetivo:** Responder las dudas del paciente sobre las patologías lisosomales.\n"
     },
     {
       "codigo": "E41",
@@ -702,7 +702,7 @@
       "labels": [
         "area:pagos"
       ],
-      "cuerpo": "## E41 · Registrar operación financiera\n\n**Objetivo:** Conservar desde el inicio la información de caja y deuda para el futuro tablero de control.\n**Actores:** Sistema.\n\n### Criterios de aceptación\n\n- [x] E41.1 El sistema registra cada pago particular con su importe, el paciente y la fecha.\n- [x] E41.2 El sistema registra el descuento aplicado con cada cupón (la función queda lista; la usa E15).\n- [x] E41.3 El sistema registra el importe que cubre la obra social al autorizarse la cobertura (la función queda lista; la usa E17).\n- [x] E41.4 El sistema conserva los registros para consultar la caja y la deuda por obra social y por paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #47) |\n| Responsable | Integrante 3 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl episodio 2 (descuento del cupón) se acepta en E15 y el 3 (cobertura de la obra social) en E17.\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Presupuesto, pago particular y registro financiero».\n"
+      "cuerpo": "## E41 · Registrar operación financiera\n\n**Objetivo:** Conservar desde el inicio la información de caja y deuda para el futuro tablero de control.\n"
     },
     {
       "codigo": "E42",
@@ -717,7 +717,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E42 · Modificar datos del paciente\n\n**Objetivo:** Que el médico tratante corrija los datos de un paciente y agregue o quite familiares después del alta, con cada cambio en el registro de cambios.\n**Actores:** Médico tratante, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E42.1 El médico tratante abre los datos de uno de sus pacientes y modifica nombre, apellido, fecha de nacimiento, teléfono, mail o DNI.\n- [ ] E42.2 El sistema valida los datos como en el alta (E06) y guarda los cambios.\n- [ ] E42.3 El médico tratante agrega o quita un familiar del paciente, con sus síntomas y diagnósticos como en E09.\n- [ ] E42.4 Si cambian los familiares, el sistema vincula los que ya son pacientes (E09.7 y E09.8) y vuelve a pedir el familiograma.\n- [ ] E42.5 El sistema registra cada cambio con `auditoria.registrar` (valor anterior, valor nuevo, usuario, fecha y hora) y el médico lo ve en el historial de cambios del paciente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E06, E09 y E43 (hechos) |\n| Responsable | Integrante 1 |\n| Milestone | Entrega (8/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Modificación de los datos del paciente y de sus familiares».\n"
+      "cuerpo": "## E42 · Modificar datos del paciente\n\n**Objetivo:** Que el médico tratante corrija los datos de un paciente y agregue o quite familiares después del alta, con cada cambio en el registro de cambios.\n"
     },
     {
       "codigo": "E43",
@@ -734,7 +734,7 @@
       "labels": [
         "area:acceso"
       ],
-      "cuerpo": "## E43 · Registrar cambios\n\n**Objetivo:** Saber qué cambió, quién lo cambió y cuándo en los datos de un paciente, de un estudio y de un sample set.\n**Actores:** Sistema, Médico tratante, Administrativo, Administrador general.\n\n### Criterios de aceptación\n\n- [x] E43.1 Cada vez que el sistema o un usuario da de alta, modifica o da de baja un dato de un paciente, un estudio o un sample set, el sistema registra el cambio con la fecha y la hora, el usuario (o \"sistema\" si fue una tarea automática), el campo, el valor anterior y el valor nuevo.\n- [x] E43.2 El usuario autorizado selecciona un paciente, un estudio o un sample set y consulta su historial de cambios, del más nuevo al más viejo.\n- [x] E43.3 El administrador general consulta la lista de todos los cambios y la filtra por entidad, usuario y rango de fechas.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Hecho, mergeado en `development` (PR #48) |\n| Responsable | Integrante 3 |\n| Milestone | Control 2 (24/11) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Registro de cambios (auditoría) y su consulta».\n"
+      "cuerpo": "## E43 · Registrar cambios\n\n**Objetivo:** Saber qué cambió, quién lo cambió y cuándo en los datos de un paciente, de un estudio y de un sample set.\n"
     },
     {
       "codigo": "E44",
@@ -750,7 +750,7 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E44 · Sugerir patología con el CDSS\n\n**Objetivo:** Que, mientras el médico tratante carga los síntomas, el CDSS (módulo 4) le sugiera la patología lisosomal que mejor coincide.\n**Actores:** Médico tratante, CDSS, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E44.1 El médico tratante carga los síntomas del paciente en el alta (E07).\n- [ ] E44.2 El sistema envía los códigos SNOMED de los síntomas al CDSS.\n- [ ] E44.3 Si el CDSS devuelve una patología, el sistema la muestra como sugerencia y el médico puede agregarla al diagnóstico presuntivo.\n- [ ] E44.4 Si el CDSS responde que no hay ningún síntoma cardinal, el sistema muestra «No compatible con patologías lisosomales» como advertencia.\n- [ ] E44.5 El médico decide el diagnóstico presuntivo y el sistema lo valida con la regla de E08, sin cambios.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E06, E07 y E08 (hechos) |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Sugerencia de patología del CDSS y su estrategia».\n"
+      "cuerpo": "## E44 · Sugerir patología con el CDSS\n\n**Objetivo:** Que, mientras el médico tratante carga los síntomas, el CDSS (módulo 4) le sugiera la patología lisosomal que mejor coincide.\n"
     },
     {
       "codigo": "E45",
@@ -766,7 +766,72 @@
         "area:acceso",
         "integracion"
       ],
-      "cuerpo": "## E45 · Elegir la estrategia del CDSS\n\n**Objetivo:** Que el gerente médico elija con qué estrategia calcula el CDSS la patología sugerida.\n**Actores:** Gerente médico, CDSS, Sistema.\n\n### Criterios de aceptación\n\n- [ ] E45.1 El gerente médico consulta la estrategia vigente del CDSS.\n- [ ] E45.2 El gerente médico elige otra estrategia: patología con más síntomas, patología con más síntomas cardinales coincidentes, o la menor diferencia entre los síntomas de la patología y los del paciente.\n- [ ] E45.3 El sistema informa la estrategia al CDSS, que la usa desde la consulta siguiente.\n\n### Datos\n\n| | |\n|---|---|\n| Estado | Falta |\n| Depende de | E44 |\n| Responsable | Integrante 2 |\n| Milestone | Control 3 (1/12) |\n| Antes | {{ANTES}} |\n\nEl detalle técnico (qué toca por capa, reglas y tests) está en la guía de issues, sección «Sugerencia de patología del CDSS y su estrategia».\n"
+      "cuerpo": "## E45 · Elegir la estrategia del CDSS\n\n**Objetivo:** Que el gerente médico elija con qué estrategia calcula el CDSS la patología sugerida.\n"
+    },
+    {
+      "codigo": "E46",
+      "titulo": "E46 · Pagar en cuotas con Mercado Pago",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 2",
+      "labels": [
+        "area:pagos",
+        "integracion"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E46 · Pagar en cuotas con Mercado Pago\n\n**Objetivo:** Que el paciente pague el estudio en una o varias cuotas con una billetera virtual.\n"
+    },
+    {
+      "codigo": "E47",
+      "titulo": "E47 · Consultar cuotas",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 2",
+      "labels": [
+        "area:pagos"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E47 · Consultar cuotas\n\n**Objetivo:** Que el administrativo sepa cuántas cuotas pagó cada paciente y cuáles debe.\n"
+    },
+    {
+      "codigo": "E48",
+      "titulo": "E48 · Dar acceso a la historia clínica",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:acceso"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E48 · Dar acceso a la historia clínica\n\n**Objetivo:** Que el paciente pueda atenderse con otros médicos y que ellos vean su historia clínica.\n"
+    },
+    {
+      "codigo": "E49",
+      "titulo": "E49 · Consultar historia clínica",
+      "guia": null,
+      "titulo_viejo": null,
+      "primero": false,
+      "estado": "falta",
+      "prs": [],
+      "milestone": "Entrega (8/12)",
+      "responsable": "Integrante 4",
+      "labels": [
+        "area:acceso"
+      ],
+      "antes": "Requerimiento nuevo del 23/11",
+      "cuerpo": "## E49 · Consultar historia clínica\n\n**Objetivo:** Que un médico vea lo que se sabe del paciente antes de atenderlo.\n"
     }
   ],
   "viejas": [
